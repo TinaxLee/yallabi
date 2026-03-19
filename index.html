@@ -371,14 +371,82 @@ let expensePersonFilter = 'all';
 let exchangeRates = {};
 let baseCurrency = 'TWD';
 let tripCurrency = 'THB';
+let ratesUpdatedAt = null;
 
 async function fetchExchangeRates() {
+  // 1. 先用 localStorage 快取，讓畫面立即有值
+  try {
+    const cached = localStorage.getItem('yallabi_rates');
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      exchangeRates = parsed.rates || {};
+      ratesUpdatedAt = parsed.updatedAt ? new Date(parsed.updatedAt) : null;
+      renderExpenses();
+      updateRatesTimestamp();
+    }
+  } catch(e) {}
+
+  // 2. 背景更新 — 主力 API
   try {
     const res = await fetch(`https://open.er-api.com/v6/latest/${baseCurrency}`);
     const data = await res.json();
-    exchangeRates = data.rates || {};
-    renderExpenses();
-  } catch(e) { console.log('匯率載入失敗'); }
+    if (data.rates) {
+      exchangeRates = data.rates;
+      ratesUpdatedAt = new Date();
+      localStorage.setItem('yallabi_rates', JSON.stringify({ rates: exchangeRates, updatedAt: ratesUpdatedAt.toISOString(), base: baseCurrency }));
+      renderExpenses();
+      updateConverterRates();
+      updateRatesTimestamp();
+      return;
+    }
+  } catch(e) { console.log('主力匯率 API 失敗，切換備用'); }
+
+  // 3. 備用 API
+  try {
+    const res = await fetch(`https://api.exchangerate-api.com/v4/latest/${baseCurrency}`);
+    const data = await res.json();
+    if (data.rates) {
+      exchangeRates = data.rates;
+      ratesUpdatedAt = new Date();
+      localStorage.setItem('yallabi_rates', JSON.stringify({ rates: exchangeRates, updatedAt: ratesUpdatedAt.toISOString(), base: baseCurrency }));
+      renderExpenses();
+      updateConverterRates();
+      updateRatesTimestamp();
+    }
+  } catch(e) { console.log('備用匯率 API 也失敗'); }
+}
+
+function updateRatesTimestamp() {
+  const el = document.getElementById('rates-updated-at');
+  if (!el || !ratesUpdatedAt) return;
+  const mins = Math.round((Date.now() - ratesUpdatedAt.getTime()) / 60000);
+  if (mins < 1) el.textContent = '匯率剛剛更新';
+  else if (mins < 60) el.textContent = `匯率 ${mins} 分鐘前更新`;
+  else {
+    const hrs = Math.floor(mins / 60);
+    el.textContent = `匯率 ${hrs} 小時前更新`;
+  }
+}
+
+function updateConverterRates() {
+  // 更新換算卡片顯示的即時匯率
+  const rate = getDisplayRate();
+  const rateEl = document.getElementById('converter-rate-display');
+  if (rateEl && rate) {
+    const sym = getCurrencySymbol(tripCurrency);
+    rateEl.textContent = `1 TWD ≈ ${sym}${rate.toFixed(4)}`;
+  }
+  quickConvert();
+}
+
+function getDisplayRate() {
+  if (!exchangeRates[tripCurrency]) return null;
+  return exchangeRates[tripCurrency] / (exchangeRates['TWD'] || 1);
+}
+
+function getCurrencySymbol(cur) {
+  const syms = { TWD:'NT$', THB:'฿', JPY:'¥', EUR:'€', USD:'$', KRW:'₩', SGD:'S$', AUD:'A$', GBP:'£' };
+  return syms[cur] || cur + ' ';
 }
 
 function convertCurrency(amount, from, to) {
@@ -1640,6 +1708,12 @@ window.deleteDay = deleteDay;
 window.editDayName = editDayName;
 window.openInvite = openInvite;
 window.createNewTrip = createNewTrip;
+window.toggleCustomCountry = toggleCustomCountry;
+function toggleCustomCountry(val) {
+  const group = document.getElementById('custom-country-group');
+  if (group) group.style.display = val === 'other' ? 'block' : 'none';
+}
+
 window.archiveTrip = archiveTrip;
 window.loginGoogle = loginGoogle;
 window.loginApple = loginApple;
@@ -1648,6 +1722,9 @@ window.openModal = openModal;
 window.closeModal = closeModal;
 window.showToast = showToast;
 window.requestNotifications = requestNotifications;
+window.quickConvert = quickConvert;
+window.toggleConverter = toggleConverter;
+window.updateExpensePreview = updateExpensePreview;
 window.renderBibiQuickBtns = renderBibiQuickBtns;
 </script>
 </head>
@@ -1761,14 +1838,62 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
         <button class="btn-add" onclick="openAddExpense()">＋ 新增</button>
       </div>
 
-      <!-- Currency converter quick bar -->
-      <div class="card card-sm mb-3 flex items-center gap-3">
-        <input id="convert-input" type="number" placeholder="輸入金額" class="form-input" style="flex:1;padding:8px 12px" oninput="quickConvert()">
-        <select id="convert-from" class="form-select" style="width:90px;padding:8px 28px 8px 10px" onchange="quickConvert()">
-          <option value="TWD">TWD</option><option value="THB">THB</option><option value="JPY">JPY</option>
-          <option value="EUR">EUR</option><option value="USD">USD</option><option value="KRW">KRW</option>
-        </select>
-        <div id="convert-result" style="font-size:.8rem;color:var(--text2);min-width:80px;text-align:right">—</div>
+      <!-- Currency converter - collapsible card -->
+      <div style="background:var(--surface);border-radius:var(--r-md);border:1px solid var(--border);box-shadow:0 2px 8px var(--shadow);margin-bottom:12px;overflow:visible" id="converter-card">
+        <!-- 標題列，可點擊收合 -->
+        <div onclick="toggleConverter()" style="display:flex;align-items:center;justify-content:space-between;padding:13px 16px;cursor:pointer;user-select:none">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:.88rem;font-weight:600;color:var(--text)">💱 匯率換算</span>
+            <span id="converter-rate-display" style="font-size:.72rem;color:var(--text3);background:var(--bg2);padding:2px 8px;border-radius:999px">載入中...</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span id="rates-updated-at" style="font-size:.62rem;color:var(--text3)"></span>
+            <span id="converter-arrow" style="font-size:.72rem;color:var(--text3);transition:transform .2s">▾</span>
+          </div>
+        </div>
+        <!-- 展開內容 -->
+        <div id="converter-body" style="display:none;padding:0 16px 16px;border-top:1px solid var(--border)">
+          <!-- 來源幣別 + 金額 -->
+          <div style="margin-top:12px;margin-bottom:10px">
+            <div style="font-size:.62rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:6px">金額</div>
+            <div style="display:flex;gap:8px">
+              <select id="convert-from" class="form-select" style="width:110px" onchange="quickConvert()">
+                <option value="TWD">🇹🇼 TWD</option>
+                <option value="THB">🇹🇭 THB</option>
+                <option value="JPY">🇯🇵 JPY</option>
+                <option value="EUR">🇪🇺 EUR</option>
+                <option value="USD">🇺🇸 USD</option>
+                <option value="KRW">🇰🇷 KRW</option>
+                <option value="SGD">🇸🇬 SGD</option>
+                <option value="AUD">🇦🇺 AUD</option>
+                <option value="GBP">🇬🇧 GBP</option>
+              </select>
+              <input id="convert-input" type="number" placeholder="輸入金額" class="form-input" style="flex:1" oninput="quickConvert()">
+            </div>
+          </div>
+          <!-- 目標幣別 -->
+          <div style="margin-bottom:12px">
+            <div style="font-size:.62rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:6px">換算成</div>
+            <select id="convert-to" class="form-select" onchange="quickConvert()">
+              <option value="TWD">🇹🇼 TWD 台幣</option>
+              <option value="THB">🇹🇭 THB 泰銖</option>
+              <option value="JPY">🇯🇵 JPY 日圓</option>
+              <option value="EUR">🇪🇺 EUR 歐元</option>
+              <option value="USD">🇺🇸 USD 美金</option>
+              <option value="KRW">🇰🇷 KRW 韓圜</option>
+              <option value="SGD">🇸🇬 SGD 新幣</option>
+              <option value="AUD">🇦🇺 AUD 澳幣</option>
+              <option value="GBP">🇬🇧 GBP 英鎊</option>
+            </select>
+          </div>
+          <!-- 換算結果 -->
+          <div id="convert-result" style="background:var(--bg2);border-radius:var(--r-sm);padding:14px 16px;text-align:center">
+            <div style="font-family:'Noto Serif TC',serif;font-size:1.6rem;font-weight:400;color:var(--text)" id="convert-result-main">—</div>
+            <div style="font-size:.7rem;color:var(--text3);margin-top:4px" id="convert-result-rate"></div>
+          </div>
+          <!-- 快速對照表 -->
+          <div id="convert-table" style="margin-top:12px"></div>
+        </div>
       </div>
 
       <!-- Summary -->
@@ -1778,12 +1903,14 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
       <div id="expense-person-tabs" class="person-tabs"></div>
 
       <!-- Chart -->
-      <div class="card card-p mb-3">
-        <div class="flex items-center justify-between mb-3">
-          <div style="font-size:.72rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text3)">📊 支出比例分析</div>
-          <button onclick="settleExpenses()" style="font-size:.7rem;color:var(--text3)">標記結清</button>
+      <div style="background:var(--surface);border-radius:var(--r-md);border:1px solid var(--border);box-shadow:0 2px 8px var(--shadow);margin-bottom:12px;overflow:visible">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px">
+          <div style="font-size:.78rem;font-weight:600;color:var(--text)">支出比例分析</div>
+          <button onclick="settleExpenses()" style="font-size:.7rem;color:var(--text3);padding:4px 8px;background:var(--bg2);border-radius:6px">標記結清</button>
         </div>
-        <canvas id="expense-chart" height="180"></canvas>
+        <div style="padding:0 16px 16px">
+          <canvas id="expense-chart" height="180"></canvas>
+        </div>
       </div>
 
       <!-- List -->
@@ -2065,12 +2192,13 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
             <div>
               <label class="form-label">幣別 / 金額</label>
               <div style="display:flex;gap:4px">
-                <select id="exp-currency" class="form-select" style="width:80px;padding:11px 20px 11px 8px">
+                <select id="exp-currency" class="form-select" style="width:80px;padding:11px 20px 11px 8px" onchange="updateExpensePreview()">
                   <option value="TWD">TWD</option><option value="THB">THB</option><option value="JPY">JPY</option>
                   <option value="EUR">EUR</option><option value="USD">USD</option><option value="KRW">KRW</option>
                 </select>
-                <input id="exp-amount" type="number" class="form-input" placeholder="金額" style="flex:1">
+                <input id="exp-amount" type="number" class="form-input" placeholder="金額" style="flex:1" oninput="updateExpensePreview()">
               </div>
+              <div id="exp-twd-preview" style="font-size:.72rem;color:var(--text3);text-align:right;margin-top:4px;min-height:16px"></div>
             </div>
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
@@ -2249,46 +2377,46 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
   <div class="modal-sheet">
     <div class="modal-handle"></div>
     <div class="modal-header">
-      <span class="modal-title">新增旅行 ✈️</span>
+      <span class="modal-title">新增旅行</span>
       <button class="modal-close" onclick="closeModal('modal-new-trip')">✕</button>
     </div>
     <div class="modal-body">
       <form id="form-new-trip" onsubmit="return false">
         <div class="card-dashed mb-4">
           <div class="form-group">
-            <label class="form-label">旅行名稱（選填）</label>
-            <input id="nt-name" type="text" class="form-input" placeholder="如：泰國蜜月 2026">
+            <label class="form-label">旅行暱稱（顯示在清單裡）</label>
+            <input id="nt-name" type="text" class="form-input" placeholder="如：泰國蜜月 2026、日本賞楓">
           </div>
           <div class="form-group">
-            <label class="form-label">選擇國家</label>
-            <select id="nt-country" class="form-select">
-              <option value="default">🌍 全球</option>
-              <option value="thailand">🇹🇭 Thailand</option>
-              <option value="japan">🇯🇵 Japan</option>
-              <option value="france">🇫🇷 France</option>
-              <option value="italy">🇮🇹 Italy</option>
-              <option value="greece">🇬🇷 Greece</option>
-              <option value="morocco">🇲🇦 Morocco</option>
-              <option value="maldives">🇲🇻 Maldives</option>
-              <option value="korea">🇰🇷 Korea</option>
-              <option value="singapore">🇸🇬 Singapore</option>
-              <option value="usa">🇺🇸 USA</option>
-              <option value="australia">🇦🇺 Australia</option>
-              <option value="other">🌍 其他（自訂）</option>
+            <label class="form-label">目的地</label>
+            <select id="nt-country" class="form-select" onchange="toggleCustomCountry(this.value)">
+              <option value="default">🌍 全球／未定</option>
+              <option value="thailand">🇹🇭 Thailand 泰國</option>
+              <option value="japan">🇯🇵 Japan 日本</option>
+              <option value="france">🇫🇷 France 法國</option>
+              <option value="italy">🇮🇹 Italy 義大利</option>
+              <option value="greece">🇬🇷 Greece 希臘</option>
+              <option value="morocco">🇲🇦 Morocco 摩洛哥</option>
+              <option value="maldives">🇲🇻 Maldives 馬爾地夫</option>
+              <option value="korea">🇰🇷 Korea 韓國</option>
+              <option value="singapore">🇸🇬 Singapore 新加坡</option>
+              <option value="usa">🇺🇸 USA 美國</option>
+              <option value="australia">🇦🇺 Australia 澳洲</option>
+              <option value="other">✏️ 其他國家（自己填）</option>
             </select>
           </div>
-          <div class="form-group">
-            <label class="form-label">自訂國家名（選填）</label>
-            <input id="nt-country-name" type="text" class="form-input" placeholder="如：冰島、峇里島">
+          <div class="form-group" id="custom-country-group" style="display:none">
+            <label class="form-label">國家名稱</label>
+            <input id="nt-country-name" type="text" class="form-input" placeholder="如：冰島、峇里島、土耳其">
           </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px">
             <div>
-              <label class="form-label">📅 出發日期</label>
-              <input id="nt-departure" type="date" class="form-input" style="width:100%">
+              <label class="form-label">出發日期</label>
+              <input id="nt-departure" type="date" class="form-input" style="min-height:46px;width:100%">
             </div>
             <div>
               <label class="form-label">主要幣別</label>
-              <select id="nt-currency" class="form-select" style="width:100%">
+              <select id="nt-currency" class="form-select" style="width:100%;min-height:46px">
                 <option value="TWD">TWD 台幣</option>
                 <option value="THB">THB 泰銖</option>
                 <option value="JPY">JPY 日圓</option>
@@ -2302,7 +2430,7 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
             </div>
           </div>
         </div>
-        <button class="btn btn-primary btn-full" onclick="createNewTrip()">🎉 新增旅行</button>
+        <button class="btn btn-primary btn-full" onclick="createNewTrip()">新增旅行</button>
       </form>
     </div>
   </div>
@@ -2406,16 +2534,100 @@ if ('serviceWorker' in navigator) {
 }
 
 // Quick convert function
+function toggleConverter() {
+  const body = document.getElementById('converter-body');
+  const arrow = document.getElementById('converter-arrow');
+  const isOpen = body.style.display !== 'none';
+  body.style.display = isOpen ? 'none' : 'block';
+  arrow.style.transform = isOpen ? '' : 'rotate(180deg)';
+  if (!isOpen) {
+    // 預設來源幣別為旅行幣別，目標為TWD
+    const fromSel = document.getElementById('convert-from');
+    const toSel = document.getElementById('convert-to');
+    if (fromSel && toSel) {
+      fromSel.value = tripCurrency || 'THB';
+      toSel.value = 'TWD';
+    }
+    quickConvert();
+  }
+}
+
 function quickConvert() {
-  const amount = parseFloat(document.getElementById('convert-input').value);
-  const from = document.getElementById('convert-from').value;
-  const result = document.getElementById('convert-result');
-  if (!amount || isNaN(amount) || !window.exchangeRates) { result.textContent = '—'; return; }
-  const to = from === 'TWD' ? (window.tripCurrency || 'THB') : 'TWD';
-  const rates = window.exchangeRates;
-  if (!rates[from] || !rates[to]) { result.textContent = '—'; return; }
-  const converted = (amount / rates[from]) * rates[to];
-  result.textContent = `${to} ${converted.toLocaleString('zh-TW', {maximumFractionDigits:0})}`;
+  const amountEl = document.getElementById('convert-input');
+  const fromEl = document.getElementById('convert-from');
+  const toEl = document.getElementById('convert-to');
+  const resultMain = document.getElementById('convert-result-main');
+  const resultRate = document.getElementById('convert-result-rate');
+  const tableEl = document.getElementById('convert-table');
+  if (!amountEl || !fromEl || !toEl) return;
+
+  const amount = parseFloat(amountEl.value) || 0;
+  const from = fromEl.value;
+  const to = toEl.value;
+
+  if (!exchangeRates[from] || !exchangeRates[to]) {
+    if (resultMain) resultMain.textContent = '匯率載入中...';
+    return;
+  }
+
+  const converted = convertCurrency(amount || 1, from, to);
+  const sym = getCurrencySymbol(to);
+
+  // 換算結果
+  if (resultMain) {
+    if (amount > 0) {
+      resultMain.textContent = `${sym}${converted.toLocaleString('zh-TW', { maximumFractionDigits: from === 'JPY' || to === 'JPY' || from === 'KRW' || to === 'KRW' ? 0 : 2 })}`;
+    } else {
+      resultMain.textContent = '—';
+    }
+  }
+
+  // 即時匯率說明
+  const rate1 = convertCurrency(1, from, to);
+  if (resultRate) {
+    resultRate.textContent = `1 ${from} = ${getCurrencySymbol(to)}${rate1.toFixed(4)} ${to}`;
+  }
+
+  // 更新標題欄匯率
+  const rateDisplay = document.getElementById('converter-rate-display');
+  if (rateDisplay) {
+    const twdToTrip = convertCurrency(1, 'TWD', tripCurrency);
+    rateDisplay.textContent = `1 TWD ≈ ${getCurrencySymbol(tripCurrency)}${twdToTrip.toFixed(4)}`;
+  }
+
+  // 快速對照表（常用金額）
+  if (tableEl && amount <= 0) {
+    const presets = from === 'TWD'
+      ? [100, 500, 1000, 5000]
+      : [100, 500, 1000, 5000];
+    tableEl.innerHTML = `
+      <div style="font-size:.62rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:6px">快速對照</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+        ${presets.map(p => {
+          const conv = convertCurrency(p, from, to);
+          const convStr = conv.toLocaleString('zh-TW', { maximumFractionDigits: to === 'JPY' || to === 'KRW' ? 0 : 0 });
+          return `<div style="background:var(--bg2);border-radius:8px;padding:8px 12px;display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:.75rem;color:var(--text3)">${p.toLocaleString()} ${from}</span>
+            <span style="font-family:'Noto Serif TC',serif;font-size:.82rem;color:var(--text);font-weight:500">${getCurrencySymbol(to)}${convStr}</span>
+          </div>`;
+        }).join('')}
+      </div>`;
+  } else if (tableEl) {
+    tableEl.innerHTML = '';
+  }
+}
+
+// 記帳時台幣預覽
+function updateExpensePreview() {
+  const amountEl = document.getElementById('exp-amount');
+  const currEl = document.getElementById('exp-currency');
+  const previewEl = document.getElementById('exp-twd-preview');
+  if (!amountEl || !currEl || !previewEl) return;
+  const amount = parseFloat(amountEl.value) || 0;
+  const cur = currEl.value;
+  if (cur === 'TWD' || amount <= 0) { previewEl.textContent = ''; return; }
+  const converted = convertCurrency(amount, cur, 'TWD');
+  previewEl.textContent = `≈ NT$${Math.round(converted).toLocaleString()} 台幣`;
 }
 
 async function translateText() {
