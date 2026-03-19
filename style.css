@@ -369,6 +369,11 @@ textarea.form-input{resize:none;white-space:pre-wrap;line-height:1.6;}
 .chat-bubble-user{background:var(--primary);color:white;border-radius:var(--r-lg) var(--r-lg) 4px var(--r-lg);padding:11px 14px;max-width:86%;font-size:.88rem;line-height:1.55;margin-left:auto;transition:background-color var(--dur) var(--ease);}
 .chat-quick-chip{padding:7px 14px;border-radius:999px;background:var(--primary);color:white;font-size:.72rem;font-weight:600;display:inline-flex;align-items:center;gap:5px;transition:all var(--dur-fast) var(--ease);white-space:nowrap;opacity:.88;}
 .chat-quick-chip:active{transform:scale(.93);opacity:1;}
+/* Bibi 快捷按鈕 */
+.quick-btn{flex-shrink:0;padding:7px 14px;border-radius:999px;font-size:.75rem;font-weight:600;white-space:nowrap;cursor:pointer;transition:all var(--fast) var(--ease);background:var(--surface);border:1.5px solid var(--border2);color:var(--text2);display:inline-flex;align-items:center;}
+.quick-btn:active{transform:scale(.92);background:var(--bg2);}
+.quick-btns{display:flex;gap:7px;overflow-x:auto;padding:2px 0 4px;scrollbar-width:none;}
+.quick-btns::-webkit-scrollbar{display:none;}
 .chat-typing{display:flex;gap:4px;padding:10px 14px;}
 .chat-typing span{width:6px;height:6px;border-radius:50%;background:var(--text3);animation:typing 1.2s ease infinite;}
 .chat-typing span:nth-child(2){animation-delay:.2s;}
