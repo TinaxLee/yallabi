@@ -984,9 +984,16 @@ function getMissionCategories() {
 function renderMissionSections() {
   const card = document.getElementById('missions-card');
   if (!card) return;
-  card.innerHTML = getMissionCategories().map(cat => `
-    <div class="mb-4">
-      <div style="font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:8px">${cat.icon} ${cat.label}</div>
+  const cats = getMissionCategories();
+  card.innerHTML = cats.map(cat => `
+    <div class="card card-p mb-3">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)">
+        <div style="display:flex;align-items:center;gap:7px">
+          <span style="font-size:1rem">${cat.icon}</span>
+          <span style="font-size:.85rem;font-weight:600;color:var(--text)">${cat.label}</span>
+        </div>
+        <span id="missions-count-${cat.id}" style="font-size:.65rem;background:var(--bg2);color:var(--text3);padding:2px 8px;border-radius:999px;font-weight:600"></span>
+      </div>
       <div id="missions-${cat.id}"></div>
     </div>`).join('');
 }
@@ -997,13 +1004,21 @@ function renderMissions() {
     const container = document.getElementById(`missions-${cat.id}`);
     if (!container) return;
     const items = missionsData.filter(m => m.category === cat.id).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
-    if (items.length === 0) { container.innerHTML = `<div style="text-align:center;padding:12px;color:var(--text3);font-size:.8rem">ALL CLEAR ✨</div>`; return; }
+    // update count badge
+    const countEl = document.getElementById(`missions-count-${cat.id}`);
+    if (countEl) {
+      const undone = items.filter(i => !i.done).length;
+      countEl.textContent = undone > 0 ? `${undone} 項待辦` : 'ALL CLEAR ✨';
+      countEl.style.background = undone > 0 ? 'var(--bg2)' : 'color-mix(in srgb, var(--green) 15%, transparent)';
+      countEl.style.color = undone > 0 ? 'var(--text3)' : 'var(--green)';
+    }
+    if (items.length === 0) { container.innerHTML = `<div style="text-align:center;padding:12px 0;color:var(--text3);font-size:.8rem">ALL CLEAR ✨</div>`; return; }
     container.innerHTML = items.map(m => `
       <div class="pack-item" style="${m.done ? 'opacity:.42' : ''}">
         <div class="pack-check ${m.done ? 'checked' : ''}" onclick="toggleMission('${m.id}',${!m.done})">
           ${m.done ? '✓' : ''}
         </div>
-        <span class="pack-name" style="flex:1;font-size:.88rem;color:var(--text);${m.done?'text-decoration:line-through':''}">${m.name}</span>
+        <span class="pack-name" style="flex:1;font-size:.85rem;color:var(--text);${m.done?'text-decoration:line-through':''};word-break:break-word;line-height:1.5">${m.name}</span>
         <div class="flex gap-1">
           ${m.done ? `<button onclick="deleteMission('${m.id}')" style="color:var(--red);font-size:.9rem;padding:4px">✕</button>` : ''}
           <button onclick="editMissionItem('${m.id}')" style="color:var(--text3);font-size:.85rem;padding:4px">✏️</button>
@@ -1636,10 +1651,17 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
 <!-- ══════════════════════════════════════
      SPLASH SCREEN
 ══════════════════════════════════════ -->
-<div id="splash" class="splash-screen">
-  <div style="font-family:'Noto Sans TC',sans-serif;font-size:2.2rem;font-weight:300;letter-spacing:.18em;text-transform:uppercase;color:var(--text);animation:splashPop .6s var(--spring) both"><em style="font-style:normal;color:var(--accent);font-weight:700">Y</em>ALLABI</div>
-  <div style="font-family:'Noto Sans TC',sans-serif;font-size:.65rem;font-weight:300;letter-spacing:.22em;text-transform:uppercase;color:var(--text3);margin-top:8px;animation:splashFade .8s var(--ease) .3s both">every trip, a story</div>
-  <div style="font-size:2.2rem;margin-top:40px;animation:splashFly 1.2s var(--ease) .2s both">✈️</div>
+<div id="splash" class="splash-screen" style="background:#1E1810;position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity .5s ease;">
+  <div style="text-align:center;animation:splashPop .6s cubic-bezier(.34,1.56,.64,1) both">
+    <div style="font-family:'Noto Sans TC',sans-serif;font-size:2.4rem;font-weight:300;letter-spacing:.2em;text-transform:uppercase;color:#C8AA7C;margin-bottom:8px"><em style="font-style:normal;font-weight:700">Y</em>ALLABI</div>
+    <div style="font-family:'Noto Sans TC',sans-serif;font-size:.6rem;font-weight:300;letter-spacing:.24em;text-transform:uppercase;color:rgba(200,170,100,.4);margin-bottom:40px;animation:splashFade .8s ease .3s both">every trip, a story</div>
+  </div>
+  <div style="font-size:2.6rem;animation:splashFly 1.4s ease .1s both">✈️</div>
+  <div style="display:flex;gap:7px;margin-top:36px;animation:splashFade .8s ease .5s both">
+    <div style="width:6px;height:6px;border-radius:50%;background:rgba(200,170,100,.8);animation:dotPulse 1.2s ease infinite"></div>
+    <div style="width:6px;height:6px;border-radius:50%;background:rgba(200,170,100,.4);animation:dotPulse 1.2s ease .2s infinite"></div>
+    <div style="width:6px;height:6px;border-radius:50%;background:rgba(200,170,100,.2);animation:dotPulse 1.2s ease .4s infinite"></div>
+  </div>
 </div>
 
 <!-- ══════════════════════════════════════
@@ -1821,10 +1843,16 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
         </div>
       </div>
 
-      <!-- Stamps -->
       <div class="flex items-center justify-between mb-3">
         <div class="section-title">國家印章</div>
-        <button onclick="archiveTrip()" class="btn-add" style="background:var(--accent-soft);color:var(--primary)">封存旅行 🛂</button>
+      </div>
+      <!-- 封存旅行橫幅 -->
+      <div onclick="archiveTrip()" style="background:var(--primary);border-radius:var(--r-md);padding:16px 18px;display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;cursor:pointer;active:opacity:.8;transition:opacity .15s ease;" onmousedown="this.style.opacity='.8'" onmouseup="this.style.opacity='1'" ontouchstart="this.style.opacity='.8'" ontouchend="this.style.opacity='1'">
+        <div>
+          <div style="font-size:.88rem;font-weight:600;color:white;margin-bottom:3px">旅行結束了嗎？</div>
+          <div style="font-size:.68rem;color:rgba(255,255,255,.6);letter-spacing:.02em">封存以解鎖護照印章 ✦</div>
+        </div>
+        <div style="font-size:2rem;margin-left:12px">🗂️</div>
       </div>
       <div id="stamp-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px"></div>
 
@@ -2205,37 +2233,46 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
   <div class="modal-sheet">
     <div class="modal-handle"></div>
     <div class="modal-header">
-      <span class="modal-title">新建旅行 ✈️</span>
+      <span class="modal-title">新增旅行 ✈️</span>
       <button class="modal-close" onclick="closeModal('modal-new-trip')">✕</button>
     </div>
     <div class="modal-body">
       <form id="form-new-trip" onsubmit="return false">
         <div class="card-dashed mb-4">
           <div class="form-group">
-            <label class="form-label">旅行名稱 (選填)</label>
+            <label class="form-label">旅行名稱（選填）</label>
             <input id="nt-name" type="text" class="form-input" placeholder="如：泰國蜜月 2026">
           </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
-            <div>
-              <label class="form-label">選擇國家</label>
-              <select id="nt-country" class="form-select">
-                ${Object.entries(COUNTRY_THEMES).map(([k,v]) => `<option value="${k}">${v.flag} ${v.name}</option>`).join('')}
-                <option value="other">🌍 其他</option>
-              </select>
-            </div>
-            <div>
-              <label class="form-label">自訂國家名</label>
-              <input id="nt-country-name" type="text" class="form-input" placeholder="如：冰島">
-            </div>
+          <div class="form-group">
+            <label class="form-label">選擇國家</label>
+            <select id="nt-country" class="form-select">
+              <option value="default">🌍 全球</option>
+              <option value="thailand">🇹🇭 Thailand</option>
+              <option value="japan">🇯🇵 Japan</option>
+              <option value="france">🇫🇷 France</option>
+              <option value="italy">🇮🇹 Italy</option>
+              <option value="greece">🇬🇷 Greece</option>
+              <option value="morocco">🇲🇦 Morocco</option>
+              <option value="maldives">🇲🇻 Maldives</option>
+              <option value="korea">🇰🇷 Korea</option>
+              <option value="singapore">🇸🇬 Singapore</option>
+              <option value="usa">🇺🇸 USA</option>
+              <option value="australia">🇦🇺 Australia</option>
+              <option value="other">🌍 其他（自訂）</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">自訂國家名（選填）</label>
+            <input id="nt-country-name" type="text" class="form-input" placeholder="如：冰島、峇里島">
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
             <div>
               <label class="form-label">📅 出發日期</label>
-              <input id="nt-departure" type="date" class="form-input">
+              <input id="nt-departure" type="date" class="form-input" style="width:100%">
             </div>
             <div>
               <label class="form-label">主要幣別</label>
-              <select id="nt-currency" class="form-select">
+              <select id="nt-currency" class="form-select" style="width:100%">
                 <option value="TWD">TWD 台幣</option>
                 <option value="THB">THB 泰銖</option>
                 <option value="JPY">JPY 日圓</option>
@@ -2249,7 +2286,7 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
             </div>
           </div>
         </div>
-        <button class="btn btn-primary btn-full" onclick="createNewTrip()">🎉 建立旅行</button>
+        <button class="btn btn-primary btn-full" onclick="createNewTrip()">🎉 新增旅行</button>
       </form>
     </div>
   </div>
@@ -2265,7 +2302,7 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
     </div>
     <div class="modal-body">
       <div id="trip-list" class="mb-4"></div>
-      <button class="btn btn-accent btn-full" onclick="closeModal('modal-trips');openModal('modal-new-trip')">＋ 新建旅行</button>
+      <button class="btn btn-accent btn-full" onclick="closeModal('modal-trips');openModal('modal-new-trip')">＋ 新增旅行</button>
     </div>
   </div>
 </div>
@@ -2336,6 +2373,15 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
 
 <!-- Toast -->
 <div id="toast" class="toast"></div>
+
+<!-- Splash + global styles -->
+<style>
+@keyframes splashPop{from{opacity:0;transform:scale(.85) translateY(8px);}to{opacity:1;transform:scale(1) translateY(0);}}
+@keyframes splashFade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+@keyframes splashFly{from{opacity:0;transform:translateX(-24px);}to{opacity:1;transform:translateX(0);}}
+@keyframes dotPulse{0%,100%{transform:translateY(0);opacity:.35;}50%{transform:translateY(-5px);opacity:1;}}
+@keyframes loginFloat{0%,100%{transform:translateY(0) rotate(-2deg);}50%{transform:translateY(-10px) rotate(2deg);}}
+</style>
 
 <!-- PWA Service Worker -->
 <script>
