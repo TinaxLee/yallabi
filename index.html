@@ -198,40 +198,69 @@ function renderItinerary() {
     return;
   }
 
+  // 找最近的行程（當前時間之後最近的，或最後一個）
+  const nowTime = new Date().toTimeString().slice(0,5);
+  let autoExpandId = filtered[filtered.length - 1].id;
+  for (const item of filtered) {
+    if ((item.startTime || '00:00') >= nowTime) { autoExpandId = item.id; break; }
+  }
+
   container.innerHTML = filtered.map((item, idx) => {
     const next = filtered[idx + 1];
+    const isOpen = item.id === autoExpandId;
     const transport = item.transportText ? `
       <div class="transport-divider">
-        <span>${item.transportIcon || '🚕'}</span>
-        <div class="transport-line"></div>
-        <span>${item.transportText}</span>
-      </div>` : (next ? `<div class="transport-divider"><div class="transport-line" style="margin-left:16px"></div></div>` : '');
+        <div class="transport-row">
+          <div class="transport-line"></div>
+          <span class="transport-icon">${item.transportIcon || '🚕'}</span>
+          <div class="transport-line"></div>
+        </div>
+        <div class="transport-text">${item.transportText}</div>
+      </div>` : (next ? `<div class="transport-divider"><div class="transport-row"><div class="transport-line"></div></div></div>` : '');
+
+    const safeAddress = (item.address||'').replace(/'/g, "\\'");
+    const safeName = (item.name||'').replace(/'/g, "\\'");
 
     return `
-    <div class="itinerary-card" id="itcard-${item.id}" style="--acc:var(--accent)">
-      <div class="itinerary-card-inner">
-        <div class="flex items-center justify-between mb-2">
-          <div class="flex items-center gap-2">
-            <span style="font-size:.75rem;font-weight:600;color:var(--text3)">${item.startTime||''}${item.endTime?' - '+item.endTime:''}</span>
-            ${item.type ? `<span style="font-size:.68rem;color:var(--text3);background:var(--bg2);padding:2px 8px;border-radius:6px">${getTypeLabel(item.type)}</span>` : ''}
-          </div>
-          <div class="flex items-center gap-2">
-            <button onclick="editItinerary('${item.id}')" style="color:var(--text3);font-size:1rem;padding:4px">✏️</button>
-            <button onclick="deleteItinerary('${item.id}')" style="color:var(--text3);font-size:.9rem;padding:4px">✕</button>
-          </div>
+    <div class="it-col-card" id="itcard-${item.id}">
+      <!-- 收合標題列 -->
+      <div class="it-col-hd" onclick="toggleItCard('${item.id}')">
+        <div class="it-col-dot ${isOpen ? 'open' : ''}"></div>
+        <div class="it-col-info">
+          <div class="it-col-name">${item.name||'未命名'}</div>
+          <div class="it-col-meta">${item.startTime||''}${item.endTime?' – '+item.endTime:''} ${item.type ? '· '+getTypeLabel(item.type) : ''}</div>
         </div>
-        <div style="font-size:1.05rem;font-weight:700;color:var(--text);margin-bottom:6px">${item.name||''}</div>
-        ${item.address ? `<div style="display:flex;gap:6px;align-items:flex-start;font-size:.75rem;color:var(--text2);margin-bottom:6px"><span>📍</span><span>${item.address}</span></div>` : ''}
-        ${item.note ? `<div style="display:flex;gap:6px;align-items:flex-start;font-size:.75rem;color:var(--text2);margin-bottom:8px"><span>📝</span><span>${item.note}</span></div>` : ''}
-        <div class="flex gap-2 mt-2 flex-wrap">
-          ${item.address ? `<button class="btn btn-ghost btn-xs" onclick="openMaps('${encodeURIComponent(item.address)}')">📍 導航</button>` : ''}
-          ${item.address ? `<button class="btn btn-ghost btn-xs" onclick="copyAddress('${item.address}')">📋 複製地址</button>` : ''}
-          ${item.name ? `<button class="btn btn-ghost btn-xs" onclick="openBibiStrategy('${item.name}','${item.address||''}')">💡 攻略</button>` : ''}
+        <div class="flex items-center gap-1">
+          <button onclick="event.stopPropagation();editItinerary('${item.id}')" style="color:var(--text3);font-size:.85rem;padding:4px 6px">✏️</button>
+          <button onclick="event.stopPropagation();deleteItinerary('${item.id}')" style="color:var(--text3);font-size:.85rem;padding:4px 6px">✕</button>
+          <span class="it-col-arrow ${isOpen ? 'open' : ''}">▾</span>
+        </div>
+      </div>
+      <!-- 展開內容 -->
+      <div class="it-col-body ${isOpen ? '' : 'hidden'}">
+        ${item.address ? `<div class="it-col-addr"><span>📍</span><span>${item.address}</span></div>` : ''}
+        ${item.note ? `<div class="it-col-note"><span>📝</span><span style="white-space:pre-wrap">${escapeHtml(item.note)}</span></div>` : ''}
+        <div class="it-col-btns">
+          ${item.address ? `<button class="it-col-btn" onclick="openMaps('${encodeURIComponent(safeAddress)}')">📍 導航</button>` : ''}
+          ${item.address ? `<button class="it-col-btn" onclick="copyAddress('${safeAddress}')">📋 複製地址</button>` : ''}
+          ${item.name ? `<button class="it-col-btn" onclick="openBibiStrategy('${safeName}','${safeAddress}')">💡 攻略</button>` : ''}
         </div>
       </div>
     </div>
     ${next ? transport : ''}`;
   }).join('');
+}
+
+function toggleItCard(id) {
+  const card = document.getElementById('itcard-' + id);
+  if (!card) return;
+  const body = card.querySelector('.it-col-body');
+  const arrow = card.querySelector('.it-col-arrow');
+  const dot = card.querySelector('.it-col-dot');
+  const isHidden = body.classList.contains('hidden');
+  body.classList.toggle('hidden');
+  arrow.classList.toggle('open', isHidden);
+  dot.classList.toggle('open', isHidden);
 }
 
 function getTypeLabel(type) {
@@ -398,24 +427,30 @@ function renderExpenseSummary() {
   if (!el) return;
   el.innerHTML = `
     <div class="settle-card">
-      <div class="flex justify-between items-center mb-2">
-        <div>
-          <div style="font-size:.65rem;opacity:.7;letter-spacing:.08em;text-transform:uppercase">總計</div>
-          <div style="font-family:var(--font-display);font-size:1.6rem;font-weight:300">${tripCurrency} ${totalTrip.toLocaleString()}</div>
+      <div class="settle-total-row">
+        <div class="settle-total-col">
+          <div class="settle-total-label">${tripCurrency} 總計</div>
+          <div class="settle-total-num">${tripCurrency === 'TWD' ? 'NT$' : tripCurrency} ${totalTrip.toLocaleString()}</div>
         </div>
-        <div style="text-align:right">
-          <div style="font-size:.65rem;opacity:.7;letter-spacing:.08em;text-transform:uppercase">TWD</div>
-          <div style="font-family:var(--font-display);font-size:1.6rem;font-weight:300">NT$ ${Math.round(totalTWD).toLocaleString()}</div>
+        <div class="settle-total-col" style="text-align:right">
+          <div class="settle-total-label">TWD 換算</div>
+          <div class="settle-total-num">NT$ ${Math.round(totalTWD).toLocaleString()}</div>
         </div>
       </div>
       ${transfers.length > 0 ? `
-        <div style="font-size:.7rem;opacity:.7;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">共同結算</div>
+        <div class="settle-hr"></div>
+        <div class="settle-section-label">共同結算（已扣除個人/請客）</div>
         ${transfers.map(t => `
           <div class="settle-row">
-            <span>${t.from} 需給 ${t.to}</span>
+            <span class="settle-from-to">${t.from} 需給 ${t.to}</span>
             <span class="settle-amount">${baseCurrency === 'TWD' ? 'NT$' : baseCurrency} ${Math.round(t.amount).toLocaleString()}</span>
           </div>`).join('')}
-      ` : `<div class="settle-row" style="justify-content:center;opacity:.7">✓ 帳目平衡</div>`}
+      ` : `
+        <div class="settle-hr"></div>
+        <div class="settle-row" style="justify-content:center">
+          <span style="font-size:.82rem;color:rgba(255,255,255,.7)">✓ 帳目平衡，無需結算</span>
+        </div>
+      `}
     </div>`;
 }
 
@@ -479,7 +514,7 @@ function renderExpenseList() {
             <div style="font-size:.7rem;color:var(--text3)">${cat.label} · ${payer?.name||'我'} 支付 · ${getSplitLabel(e.splitType)}</div>
           </div>
           <div style="text-align:right">
-            <div class="expense-amount">${e.currency||tripCurrency} ${parseFloat(e.amount||0).toLocaleString()}</div>
+            <div style="font-family:'Noto Serif TC',serif;font-size:1rem;font-weight:400;color:var(--text)">${e.currency||tripCurrency} ${parseFloat(e.amount||0).toLocaleString()}</div>
             <div style="display:flex;gap:6px;justify-content:flex-end;margin-top:4px">
               <button onclick="editExpense('${e.id}')" style="font-size:.7rem;color:var(--text3)">✏️</button>
               <button onclick="deleteExpense('${e.id}')" style="font-size:.7rem;color:var(--text3)">✕</button>
@@ -939,7 +974,10 @@ const MISSION_CATEGORIES = [
 ];
 
 function getMissionCategories() {
-  const flag = currentTrip ? (COUNTRY_THEMES[currentTrip.country]?.flag || '🌍') : '🌍';
+  const country = currentTrip?.country;
+  const flag = country && country !== 'default'
+    ? (COUNTRY_THEMES[country]?.flag || '🚩')
+    : '🚩';
   return MISSION_CATEGORIES.map(c => c.dynamic ? { ...c, icon: flag } : c);
 }
 
@@ -1599,27 +1637,27 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
      SPLASH SCREEN
 ══════════════════════════════════════ -->
 <div id="splash" class="splash-screen">
-  <div class="splash-logo"><em>Y</em>allabi</div>
-  <div class="splash-sub">every trip, a story</div>
-  <div class="splash-plane">✈️</div>
+  <div style="font-family:'Noto Sans TC',sans-serif;font-size:2.2rem;font-weight:300;letter-spacing:.18em;text-transform:uppercase;color:var(--text);animation:splashPop .6s var(--spring) both"><em style="font-style:normal;color:var(--accent);font-weight:700">Y</em>ALLABI</div>
+  <div style="font-family:'Noto Sans TC',sans-serif;font-size:.65rem;font-weight:300;letter-spacing:.22em;text-transform:uppercase;color:var(--text3);margin-top:8px;animation:splashFade .8s var(--ease) .3s both">every trip, a story</div>
+  <div style="font-size:2.2rem;margin-top:40px;animation:splashFly 1.2s var(--ease) .2s both">✈️</div>
 </div>
 
 <!-- ══════════════════════════════════════
      LOGIN SCREEN
 ══════════════════════════════════════ -->
 <div id="login-screen" class="login-screen hidden">
-  <div class="login-wordmark"><em>Y</em>allabi</div>
-  <div class="login-tagline">every trip, a story</div>
-  <div class="login-illustration">🗺️</div>
-  <button class="login-btn login-btn-google" onclick="loginGoogle()">
-    <svg width="18" height="18" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
-    使用 Google 登入
-  </button>
-  <button class="login-btn login-btn-apple" onclick="loginApple()">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
-    使用 Apple 登入
-  </button>
-  <div class="login-privacy">登入即表示同意我們的服務條款與隱私政策<br>你的資料僅用於個人旅遊記錄</div>
+  <div style="margin-bottom:48px;text-align:center">
+    <div style="font-family:'Noto Sans TC',sans-serif;font-size:2.4rem;font-weight:300;letter-spacing:.18em;text-transform:uppercase;color:var(--text);margin-bottom:8px"><em style="font-style:normal;color:var(--accent);font-weight:700">Y</em>ALLABI</div>
+    <div style="font-family:'Noto Sans TC',sans-serif;font-size:.68rem;font-weight:300;letter-spacing:.2em;text-transform:uppercase;color:var(--text3)">every trip, a story</div>
+  </div>
+  <div style="font-size:3.5rem;margin-bottom:48px;animation:loginFloat 3.2s ease-in-out infinite">✈️</div>
+  <div style="width:100%;max-width:320px;display:flex;flex-direction:column;gap:12px">
+    <button class="login-btn login-btn-google" onclick="loginGoogle()">
+      <svg width="18" height="18" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+      使用 Google 登入
+    </button>
+  </div>
+  <div class="login-privacy" style="margin-top:28px">登入即表示同意我們的服務條款與隱私政策<br>你的資料僅用於個人旅遊記錄</div>
 </div>
 
 <!-- ══════════════════════════════════════
@@ -1631,7 +1669,7 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
   <header class="main-header">
     <div class="header-inner">
       <div class="flex items-center gap-2">
-        <button onclick="openModal('modal-trips')" style="font-family:var(--font-display);font-size:1.2rem;font-weight:300;color:var(--text);letter-spacing:-.01em"><em style="font-style:italic;color:var(--accent)">Y</em>allabi</button>
+        <button onclick="openModal('modal-trips')" style="font-family:'Noto Sans TC',sans-serif;font-size:1.1rem;font-weight:300;letter-spacing:.14em;text-transform:uppercase;color:var(--text)"><em style="font-style:normal;color:var(--accent);font-weight:700">Y</em>allabi</button>
         <button class="country-badge" onclick="openModal('modal-trips')">
           <span class="flag" id="country-flag">🌍</span>
           <span id="country-name">選擇旅行</span>
@@ -1833,8 +1871,13 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
         <div class="section-title">行李清單 🧳</div>
         <button class="btn-add" onclick="openAddPack()">＋ 新增</button>
       </div>
-      <div class="flex gap-2 mb-3 no-scrollbar" style="overflow-x:auto">
-        ${PACK_CATEGORIES.map(c => `<button class="chip pack-cat-btn ${c.id==='clothes'?'active':''}" data-cat="${c.id}" onclick="switchPackCategory('${c.id}')">${c.icon} ${c.label}</button>`).join('')}
+      <div class="flex gap-2 mb-3 no-scrollbar" style="overflow-x:auto" id="pack-cat-tabs">
+        <button class="chip pack-cat-btn active" data-cat="clothes" onclick="switchPackCategory('clothes')">👔 衣物</button>
+        <button class="chip pack-cat-btn" data-cat="toiletry" onclick="switchPackCategory('toiletry')">🧴 盥洗</button>
+        <button class="chip pack-cat-btn" data-cat="tech" onclick="switchPackCategory('tech')">📱 3C</button>
+        <button class="chip pack-cat-btn" data-cat="medicine" onclick="switchPackCategory('medicine')">💊 藥品</button>
+        <button class="chip pack-cat-btn" data-cat="docs" onclick="switchPackCategory('docs')">📄 文件</button>
+        <button class="chip pack-cat-btn" data-cat="other" onclick="switchPackCategory('other')">📦 其他</button>
       </div>
       <div class="card card-p" id="packing-list"></div>
 
@@ -1844,32 +1887,32 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
   <!-- BOTTOM NAV -->
   <nav class="bottom-nav">
     <button class="nav-btn active" id="nav-itinerary" onclick="switchTab('itinerary')">
-      <div class="nav-icon">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 4h-2V2h-2v2H9V2H7v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8c.13 0 .26-.03.38-.08s.23-.12.33-.22l7-7c.09-.09.15-.19.2-.29l.03-.09c.03-.08.05-.17.05-.26 0-.02.01-.04.01-.06V6c0-1.1-.9-2-2-2m0 9h-6c-.55 0-1 .45-1 1v6H5V8h14z"/></svg>
+      <div class="nav-icon" style="color:rgba(255,255,255,.38)">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M19 4h-2V2h-2v2H9V2H7v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8c.13 0 .26-.03.38-.08s.23-.12.33-.22l7-7c.09-.09.15-.19.2-.29l.03-.09c.03-.08.05-.17.05-.26 0-.02.01-.04.01-.06V6c0-1.1-.9-2-2-2m0 9h-6c-.55 0-1 .45-1 1v6H5V8h14z"/></svg>
       </div>
       <div class="nav-label">行程</div>
     </button>
     <button class="nav-btn" id="nav-expense" onclick="switchTab('expense')">
-      <div class="nav-icon">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.49 2 2 6.49 2 12s4.49 10 10 10 10-4.49 10-10S17.51 2 12 2m0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8"/><path d="M12 11c-2 0-2-.63-2-1 0-.48.7-1 2-1 1.18 0 1.39.64 1.4 1.02l1-.02h1c0-1.03-.67-2.47-2.4-2.88V6h-2v1.09C9.03 7.42 8 8.72 8 10c0 1.12.52 3 4 3 2 0 2 .68 2 1 0 .42-.62 1-2 1-1.84 0-1.99-.86-2-1H8c0 .92.66 2.55 3 2.92V18h2v-1.09c1.97-.33 3-1.63 3-2.91 0-1.12-.52-3-4-3"/></svg>
+      <div class="nav-icon" style="color:rgba(255,255,255,.38)">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 2C6.49 2 2 6.49 2 12s4.49 10 10 10 10-4.49 10-10S17.51 2 12 2m0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8"/><path d="M12 11c-2 0-2-.63-2-1 0-.48.7-1 2-1 1.18 0 1.39.64 1.4 1.02l1-.02h1c0-1.03-.67-2.47-2.4-2.88V6h-2v1.09C9.03 7.42 8 8.72 8 10c0 1.12.52 3 4 3 2 0 2 .68 2 1 0 .42-.62 1-2 1-1.84 0-1.99-.86-2-1H8c0 .92.66 2.55 3 2.92V18h2v-1.09c1.97-.33 3-1.63 3-2.91 0-1.12-.52-3-4-3"/></svg>
       </div>
       <div class="nav-label">花費</div>
     </button>
     <button class="nav-btn" id="nav-bibi" onclick="switchTab('bibi');renderBibiQuickBtns()">
-      <div class="nav-icon">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8.5 10a1.5 2 0 1 0 0 4 1.5 2 0 1 0 0-4m7 0a1.5 2 0 1 0 0 4 1.5 2 0 1 0 0-4M8 16h8v2H8z"/><path d="M21 11V8c0-1.1-.9-2-2-2h-6V4.61c.3-.27.5-.67.5-1.11 0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5c0 .44.2.84.5 1.11V6H5c-1.1 0-2 .9-2 2v3c-.55 0-1 .45-1 1v4c0 .55.45 1 1 1v3c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-3c.55 0 1-.45 1-1v-4c0-.55-.45-1-1-1M5 20V8h14v12z"/></svg>
+      <div class="nav-icon" style="color:rgba(255,255,255,.38)">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M8.5 10a1.5 2 0 1 0 0 4 1.5 2 0 1 0 0-4m7 0a1.5 2 0 1 0 0 4 1.5 2 0 1 0 0-4M8 16h8v2H8z"/><path d="M21 11V8c0-1.1-.9-2-2-2h-6V4.61c.3-.27.5-.67.5-1.11 0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5c0 .44.2.84.5 1.11V6H5c-1.1 0-2 .9-2 2v3c-.55 0-1 .45-1 1v4c0 .55.45 1 1 1v3c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-3c.55 0 1-.45 1-1v-4c0-.55-.45-1-1-1M5 20V8h14v12z"/></svg>
       </div>
       <div class="nav-label">Bibi</div>
     </button>
     <button class="nav-btn" id="nav-passport" onclick="switchTab('passport')">
-      <div class="nav-icon">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 8h-2V3a1 1 0 0 0-1.37-.93l-15 6c-.09.04-.16.1-.24.16-.03.02-.06.03-.09.06-.04.04-.05.08-.08.12-.05.06-.1.12-.13.19-.01.02 0 .05-.02.08-.03.1-.06.2-.06.31v3.55c0 .48.33.89.8.98a1.499 1.499 0 0 1 0 2.94c-.47.09-.8.5-.8.98v3.55c0 .55.45 1 1 1h18c.55 0 1-.45 1-1v-3.55c0-.48-.33-.89-.8-.98a1.499 1.499 0 0 1 0-2.94c.47-.09.8-.5.8-.98V8.99c0-.55-.45-1-1-1Zm-4 0H8.19L17 4.48zm3 3.84c-1.2.57-2 1.79-2 3.16s.8 2.59 2 3.16V20h-4v-2h-1v2H4v-1.84c1.2-.57 2-1.79 2-3.16s-.8-2.59-2-3.16V10h11v1h1v-1h4z"/><path d="M15 12h1v2h-1zm0 3h1v2h-1z"/></svg>
+      <div class="nav-icon" style="color:rgba(255,255,255,.38)">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M21 8h-2V3a1 1 0 0 0-1.37-.93l-15 6c-.09.04-.16.1-.24.16-.03.02-.06.03-.09.06-.04.04-.05.08-.08.12-.05.06-.1.12-.13.19-.01.02 0 .05-.02.08-.03.1-.06.2-.06.31v3.55c0 .48.33.89.8.98a1.499 1.499 0 0 1 0 2.94c-.47.09-.8.5-.8.98v3.55c0 .55.45 1 1 1h18c.55 0 1-.45 1-1v-3.55c0-.48-.33-.89-.8-.98a1.499 1.499 0 0 1 0-2.94c.47-.09.8-.5.8-.98V8.99c0-.55-.45-1-1-1Zm-4 0H8.19L17 4.48zm3 3.84c-1.2.57-2 1.79-2 3.16s.8 2.59 2 3.16V20h-4v-2h-1v2H4v-1.84c1.2-.57 2-1.79 2-3.16s-.8-2.59-2-3.16V10h11v1h1v-1h4z"/><path d="M15 12h1v2h-1zm0 3h1v2h-1z"/></svg>
       </div>
       <div class="nav-label">護照</div>
     </button>
     <button class="nav-btn" id="nav-depart" onclick="switchTab('depart')">
-      <div class="nav-icon">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="m16.3 3.45-1.4 1.4-7.98-1.33c-.32-.05-.64.05-.87.28L4.28 5.57c-.23.23-.33.56-.28.88s.26.59.56.73L10 9.76l-1.49 1.49-3.42-.31c-.29-.03-.59.08-.8.29l-1.41 1.41a.99.99 0 0 0-.27.9c.06.33.28.6.59.73l4.58 1.96 1.96 4.58c.13.31.4.53.73.59a1 1 0 0 0 .9-.27l1.41-1.41c.21-.21.32-.5.29-.8l-.31-3.42 1.49-1.49 2.57 5.44a.993.993 0 0 0 1.61.28l1.77-1.77c.23-.23.33-.55.28-.87l-1.33-7.98 1.4-1.4c.57-.57.88-1.32.88-2.12s-.31-1.55-.88-2.12a3 3 0 0 0-4.24 0Zm2.83 2.83-1.77 1.77c-.23.23-.33.55-.28.87l1.33 7.98-.4.4-2.57-5.43a.993.993 0 0 0-1.61-.28L11 14.42a.99.99 0 0 0-.29.8l.31 3.42-.04.04-1.54-3.59c-.1-.24-.29-.42-.52-.53l-3.59-1.54.04-.04 3.42.31c.3.03.59-.08.8-.29l2.83-2.83c.23-.23.33-.56.28-.88s-.26-.59-.56-.73L6.7 5.98l.4-.4 7.98 1.33c.32.05.64-.05.87-.28l1.77-1.77a.996.996 0 0 1 1.7.71c0 .27-.1.52-.29.71"/></svg>
+      <div class="nav-icon" style="color:rgba(255,255,255,.38)">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="m16.3 3.45-1.4 1.4-7.98-1.33c-.32-.05-.64.05-.87.28L4.28 5.57c-.23.23-.33.56-.28.88s.26.59.56.73L10 9.76l-1.49 1.49-3.42-.31c-.29-.03-.59.08-.8.29l-1.41 1.41a.99.99 0 0 0-.27.9c.06.33.28.6.59.73l4.58 1.96 1.96 4.58c.13.31.4.53.73.59a1 1 0 0 0 .9-.27l1.41-1.41c.21-.21.32-.5.29-.8l-.31-3.42 1.49-1.49 2.57 5.44a.993.993 0 0 0 1.61.28l1.77-1.77c.23-.23.33-.55.28-.87l-1.33-7.98 1.4-1.4c.57-.57.88-1.32.88-2.12s-.31-1.55-.88-2.12a3 3 0 0 0-4.24 0Zm2.83 2.83-1.77 1.77c-.23.23-.33.55-.28.87l1.33 7.98-.4.4-2.57-5.43a.993.993 0 0 0-1.61-.28L11 14.42a.99.99 0 0 0-.29.8l.31 3.42-.04.04-1.54-3.59c-.1-.24-.29-.42-.52-.53l-3.59-1.54.04-.04 3.42.31c.3.03.59-.08.8-.29l2.83-2.83c.23-.23.33-.56.28-.88s-.26-.59-.56-.73L6.7 5.98l.4-.4 7.98 1.33c.32.05.64-.05.87-.28l1.77-1.77a.996.996 0 0 1 1.7.71c0 .27-.1.52-.29.71"/></svg>
       </div>
       <div class="nav-label">出發</div>
     </button>
@@ -1946,7 +1989,7 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
           </div>
           <div class="form-group">
             <label class="form-label">備註</label>
-            <textarea id="it-note" class="form-input" rows="2" placeholder="備註、提醒、訂位連結..."></textarea>
+            <textarea id="it-note" class="form-input" rows="3" placeholder="備註、提醒、訂位連結..." style="resize:none;white-space:pre-wrap;line-height:1.6"></textarea>
           </div>
         </div>
         <button class="btn btn-primary btn-full" onclick="saveItinerary()">確認儲存 ✅</button>
@@ -2047,7 +2090,7 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
             <input id="fl-seat" type="text" class="form-input" placeholder="如 14A, 14B">
           </div>
           <div class="form-group">
-            <textarea id="fl-note" class="form-input" rows="2" placeholder="備註 (行李重量、餐點選擇...)"></textarea>
+            <textarea id="fl-note" class="form-input" rows="3" placeholder="備註 (行李重量、餐點選擇...)" style="resize:none;white-space:pre-wrap;line-height:1.6"></textarea>
           </div>
         </div>
         <button class="btn btn-primary btn-full" onclick="saveFlight()">儲 存 航 班</button>
@@ -2088,7 +2131,7 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
             <input id="ht-room" type="text" class="form-input" placeholder="房型或房號">
           </div>
           <div class="form-group">
-            <textarea id="ht-note" class="form-input" rows="3" placeholder="備註 (如：早到、加床、蜜月佈置)"></textarea>
+            <textarea id="ht-note" class="form-input" rows="3" placeholder="備註 (如：早到、加床、蜜月佈置)" style="resize:none;white-space:pre-wrap;line-height:1.6"></textarea>
           </div>
         </div>
         <button class="btn btn-primary btn-full" onclick="saveHotel()">儲 存 飯 店 資 訊</button>
