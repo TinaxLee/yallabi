@@ -254,10 +254,12 @@ function selectDay(day) {
 // ════════════════════════════════════════
 function noTripHTML(icon, msg) {
   return `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 24px;text-align:center">
-    <div style="font-size:3rem;margin-bottom:16px">${icon}</div>
-    <div style="font-size:.95rem;font-weight:600;color:var(--text);margin-bottom:6px">還沒有旅行</div>
-    <div style="font-size:.8rem;color:var(--text3);line-height:1.6;margin-bottom:24px">${msg}</div>
-    <button onclick="openModal('modal-new-trip')" style="display:inline-flex;align-items:center;gap:6px;background:var(--primary);color:white;border:none;border-radius:999px;padding:12px 24px;font-size:.88rem;font-weight:600;cursor:pointer">＋ 新增第一趟旅行</button>
+    <div style="width:72px;height:72px;border-radius:50%;border:1.5px solid var(--border2);display:flex;align-items:center;justify-content:center;margin-bottom:20px;background:var(--surface)">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    </div>
+    <div style="font-size:.92rem;font-weight:600;color:var(--text);margin-bottom:6px">還沒有旅行</div>
+    <div style="font-size:.78rem;color:var(--text3);line-height:1.7;margin-bottom:24px">${msg}</div>
+    <button onclick="openModal('modal-new-trip')" style="display:inline-flex;align-items:center;gap:6px;background:var(--primary);color:white;border:none;border-radius:999px;padding:11px 22px;font-size:.85rem;font-weight:600;cursor:pointer;letter-spacing:.02em">＋ 新增第一趟旅行</button>
   </div>`;
 }
 
@@ -276,7 +278,12 @@ function renderItinerary() {
     .sort((a,b) => (a.startTime||'').localeCompare(b.startTime||''));
 
   if (filtered.length === 0) {
-    container.innerHTML = `<div class="empty-state"><span class="empty-icon">🗺️</span><p>還沒有行程<br>點右上角新增吧</p></div>`;
+    container.innerHTML = `<div class="empty-state">
+      <div style="width:60px;height:60px;border-radius:50%;border:1.5px solid var(--border2);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;background:var(--surface)">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 0 1-2.827 0l-4.244-4.243a8 8 0 1 1 11.314 0z"/><path d="M15 11a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/></svg>
+      </div>
+      <p style="color:var(--text3);font-size:.85rem;line-height:1.6">還沒有行程<br>點右上角新增吧</p>
+    </div>`;
     return;
   }
 
@@ -660,7 +667,12 @@ function renderExpenseList() {
   });
 
   if (filtered.length === 0) {
-    container.innerHTML = `<div class="empty-state"><span class="empty-icon">💳</span><p>還沒有記帳<br>點 + 新增第一筆</p></div>`;
+    container.innerHTML = `<div class="empty-state">
+      <div style="width:60px;height:60px;border-radius:50%;border:1.5px solid var(--border2);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;background:var(--surface)">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v2m0 8v2M9.5 9.5a2.5 2.5 0 0 1 5 0c0 1.5-1 2-2.5 2.5S9.5 13 9.5 14.5a2.5 2.5 0 0 0 5 0"/></svg>
+      </div>
+      <p style="color:var(--text3);font-size:.85rem;line-height:1.6">還沒有記帳<br>點 + 新增第一筆</p>
+    </div>`;
     return;
   }
 
@@ -1401,7 +1413,12 @@ function renderJournal() {
   }
   const sorted = [...journalData].sort((a,b) => (b.createdAt||0) - (a.createdAt||0));
   if (sorted.length === 0) {
-    container.innerHTML = `<div class="empty-state"><span class="empty-icon">📖</span><p>記錄旅途中的美好瞬間</p></div>`;
+    container.innerHTML = `<div class="empty-state">
+      <div style="width:60px;height:60px;border-radius:50%;border:1.5px solid var(--border2);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;background:var(--surface)">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      </div>
+      <p style="color:var(--text3);font-size:.85rem;line-height:1.6">記錄旅途中的美好瞬間</p>
+    </div>`;
     return;
   }
   container.innerHTML = sorted.map(entry => {
@@ -1604,7 +1621,12 @@ function renderFlights() {
   const container = document.getElementById('flights-list');
   if (!container) return;
   if (flightsData.length === 0) {
-    container.innerHTML = `<div class="empty-state"><span class="empty-icon">✈️</span><p>還沒有航班<br>點右上角新增</p></div>`;
+    container.innerHTML = `<div class="empty-state">
+    <div style="width:60px;height:60px;border-radius:50%;border:1.5px solid var(--border2);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;background:var(--surface)">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="m16.3 3.45-1.4 1.4-7.98-1.33c-.32-.05-.64.05-.87.28L4.28 5.57c-.23.23-.33.56-.28.88s.26.59.56.73L10 9.76l-1.49 1.49-3.42-.31c-.29-.03-.59.08-.8.29l-1.41 1.41a.99.99 0 0 0-.27.9c.06.33.28.6.59.73l4.58 1.96 1.96 4.58c.13.31.4.53.73.59a1 1 0 0 0 .9-.27l1.41-1.41c.21-.21.32-.5.29-.8l-.31-3.42 1.49-1.49 2.57 5.44a.993.993 0 0 0 1.61.28l1.77-1.77c.23-.23.33-.55.28-.87l-1.33-7.98 1.4-1.4c.57-.57.88-1.32.88-2.12s-.31-1.55-.88-2.12a3 3 0 0 0-4.24 0Z"/></svg>
+    </div>
+    <p style="color:var(--text3);font-size:.85rem;line-height:1.6">還沒有航班<br>點右上角新增</p>
+  </div>`;
     return;
   }
   container.innerHTML = flightsData.sort((a,b)=>(a.flightDate||'').localeCompare(b.flightDate||'')).map(f => `
@@ -1698,7 +1720,12 @@ function renderHotels() {
   const container = document.getElementById('hotels-list');
   if (!container) return;
   if (hotelsData.length === 0) {
-    container.innerHTML = `<div class="empty-state"><span class="empty-icon">🏨</span><p>還沒有飯店<br>點右上角新增</p></div>`;
+    container.innerHTML = `<div class="empty-state">
+    <div style="width:60px;height:60px;border-radius:50%;border:1.5px solid var(--border2);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;background:var(--surface)">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    </div>
+    <p style="color:var(--text3);font-size:.85rem;line-height:1.6">還沒有飯店<br>點右上角新增</p>
+  </div>`;
     return;
   }
   container.innerHTML = hotelsData.sort((a,b)=>(a.checkinDate||'').localeCompare(b.checkinDate||'')).map(h => `
@@ -2832,14 +2859,11 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
      SPLASH SCREEN
 ══════════════════════════════════════ -->
 <div id="splash" class="splash-screen" style="background:#1E1810;position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity .5s ease;" onclick="this.classList.add('fade-out');setTimeout(()=>{this.style.display='none';if(!currentUser){document.getElementById('login-screen')?.classList.remove('hidden');document.getElementById('app-shell')?.classList.add('hidden')}},500)">
-  <!-- 固定高度容器，避免動畫造成版面跳動 -->
-  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:260px;position:relative">
-    <div style="text-align:center;animation:splashPop .6s cubic-bezier(.34,1.56,.64,1) both;position:absolute;top:0;left:50%;transform:translateX(-50%);width:280px">
-      <div style="font-family:'Noto Sans TC',sans-serif;font-size:2.4rem;font-weight:300;letter-spacing:.2em;text-transform:uppercase;color:#C8AA7C;margin-bottom:8px"><em style="font-style:normal;font-weight:700">Y</em>ALLABI</div>
-      <div style="font-family:'Noto Sans TC',sans-serif;font-size:.6rem;font-weight:300;letter-spacing:.24em;text-transform:uppercase;color:rgba(200,170,100,.4);animation:splashFade .8s ease .3s both;opacity:0">every trip, a story</div>
-    </div>
-    <div style="font-size:2.6rem;position:absolute;top:110px;animation:splashFade .6s ease .2s both;opacity:0">✈️</div>
-    <div style="display:flex;gap:7px;position:absolute;top:180px;animation:splashFade .8s ease .5s both;opacity:0">
+  <div style="text-align:center">
+    <div style="font-family:'Noto Sans TC',sans-serif;font-size:2.4rem;font-weight:300;letter-spacing:.2em;text-transform:uppercase;color:#C8AA7C;margin-bottom:8px;animation:sIn .5s ease both"><em style="font-style:normal;font-weight:700">Y</em>ALLABI</div>
+    <div style="font-family:'Noto Sans TC',sans-serif;font-size:.6rem;font-weight:300;letter-spacing:.24em;text-transform:uppercase;color:rgba(200,170,100,.4);animation:sIn .5s ease .15s both;opacity:0">every trip, a story</div>
+    <div style="font-size:2.6rem;margin:32px 0;animation:sIn .5s ease .25s both;opacity:0">✈️</div>
+    <div style="display:flex;gap:7px;justify-content:center;animation:sIn .5s ease .35s both;opacity:0">
       <div style="width:6px;height:6px;border-radius:50%;background:rgba(200,170,100,.8);animation:dotPulse 1.2s ease infinite"></div>
       <div style="width:6px;height:6px;border-radius:50%;background:rgba(200,170,100,.4);animation:dotPulse 1.2s ease .2s infinite"></div>
       <div style="width:6px;height:6px;border-radius:50%;background:rgba(200,170,100,.2);animation:dotPulse 1.2s ease .4s infinite"></div>
@@ -2886,7 +2910,7 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
       <div class="flex items-center gap-2">
         <button onclick="openModal('modal-trips')" style="font-family:'Noto Sans TC',sans-serif;font-size:1.1rem;font-weight:300;letter-spacing:.14em;text-transform:uppercase;color:var(--text)"><em style="font-style:normal;color:var(--accent);font-weight:700">Y</em>allabi</button>
         <button class="country-badge" onclick="openModal('modal-trips')">
-          <span class="flag" id="country-flag">🌍</span>
+          <span class="flag" id="country-flag" style="filter:grayscale(.4);opacity:.85">🌍</span>
           <span id="country-name">選擇旅行</span>
         </button>
       </div>
@@ -3801,8 +3825,7 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
 
 <!-- Splash + global styles -->
 <style>
-@keyframes splashPop{from{opacity:0;transform:translateX(-50%) scale(.9);}to{opacity:1;transform:translateX(-50%) scale(1);}}
-@keyframes splashFade{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+@keyframes sIn{from{opacity:0;}to{opacity:1;}}
 @keyframes dotPulse{0%,100%{transform:translateY(0);opacity:.35;}50%{transform:translateY(-5px);opacity:1;}}
 @keyframes loginFloat{0%,100%{transform:translateY(0) rotate(-2deg);}50%{transform:translateY(-10px) rotate(2deg);}}
 </style>
@@ -3979,98 +4002,95 @@ async function saveNickname() {
 
 // Fetch weather
 async function fetchWeather(trip) {
-  console.log('[Weather] fetchWeather called, trip:', trip?.country, 'cities:', trip?.cities);
-
-  // 用固定座標 map，跳過 geo API，直接查天氣 — 速度快且不需要 geo 二次請求
-  const CITY_COORDS = {
-    thailand:  { city:'Bangkok',     lat:13.7563,  lon:100.5018 },
-    japan:     { city:'Tokyo',       lat:35.6762,  lon:139.6503 },
-    france:    { city:'Paris',       lat:48.8566,  lon:2.3522   },
-    italy:     { city:'Rome',        lat:41.9028,  lon:12.4964  },
-    greece:    { city:'Santorini',   lat:36.3932,  lon:25.4615  },
-    morocco:   { city:'Marrakech',   lat:31.6295,  lon:-7.9811  },
-    maldives:  { city:'Malé',        lat:4.1755,   lon:73.5093  },
-    korea:     { city:'Seoul',       lat:37.5665,  lon:126.9780 },
-    singapore: { city:'Singapore',   lat:1.3521,   lon:103.8198 },
-    usa:       { city:'New York',    lat:40.7128,  lon:-74.0060 },
-    australia: { city:'Sydney',      lat:-33.8688, lon:151.2093 },
-  };
-
   const content = document.getElementById('weather-content');
-  if (!content) { console.warn('[Weather] weather-content element not found'); return; }
+  if (!content) return;
 
   if (!trip?.country || trip.country === 'default') {
-    content.innerHTML = `
-      <div style="font-size:.7rem;color:rgba(255,255,255,.55)">選擇旅行後顯示即時天氣</div>`;
+    content.innerHTML = `<div style="font-size:.75rem;color:rgba(255,255,255,.55)">選擇旅行後顯示天氣</div>`;
     return;
   }
 
-  // 決定查詢目標：優先用 trip.cities，否則查 CITY_COORDS
-  let targets = [];
+  // 所有支援國家直接硬編碼座標，完全不依賴 geo API
+  const COORDS = {
+    thailand:  [{ city:'Bangkok',     lat:13.7563,  lon:100.5018 }],
+    japan:     [{ city:'Tokyo',       lat:35.6762,  lon:139.6503 }],
+    france:    [{ city:'Paris',       lat:48.8566,  lon:2.3522   }],
+    italy:     [{ city:'Rome',        lat:41.9028,  lon:12.4964  }],
+    greece:    [{ city:'Santorini',   lat:36.3932,  lon:25.4615  }],
+    morocco:   [{ city:'Marrakech',   lat:31.6295,  lon:-7.9811  }],
+    maldives:  [{ city:'Malé',        lat:4.1755,   lon:73.5093  }],
+    korea:     [{ city:'Seoul',       lat:37.5665,  lon:126.9780 }],
+    singapore: [{ city:'Singapore',   lat:1.3521,   lon:103.8198 }],
+    usa:       [{ city:'New York',    lat:40.7128,  lon:-74.0060 }],
+    australia: [{ city:'Sydney',      lat:-33.8688, lon:151.2093 }],
+  };
 
-  if (trip.cities && trip.cities.length > 0) {
-    // 有設城市 → 用 geo API 查座標
-    targets = null; // 標記為需要 geo 查詢
-  } else {
-    const coord = CITY_COORDS[trip.country];
-    if (coord) targets = [coord];
-    else if (trip.countryName) targets = null; // 需要 geo 查詢
-  }
+  // 決定要查哪些城市的座標
+  let targets = COORDS[trip.country] || [];
 
-  // 顯示 loading
-  const loadingCity = trip.cities?.[0] || CITY_COORDS[trip.country]?.city || trip.countryName || '';
+  // 如果旅行有設城市且城市名能對應到座標，用城市名覆蓋（最多3個）
+  // 但只用 geo API 作為備用，不影響主流程
+  const displayCity = trip.cities?.[0] || targets[0]?.city || trip.countryName || '';
+
+  // 立即顯示 loading
   content.innerHTML = `
-    <div style="font-size:.58rem;opacity:.65;letter-spacing:.12em;text-transform:uppercase;color:white;margin-bottom:6px">${loadingCity.toUpperCase()}</div>
+    <div style="font-size:.58rem;opacity:.65;letter-spacing:.12em;text-transform:uppercase;color:white;margin-bottom:6px">${displayCity.toUpperCase()}</div>
     <div style="display:flex;align-items:center;gap:10px">
       <div style="font-family:var(--font-display);font-size:2.4rem;font-weight:300;color:rgba(255,255,255,.35);line-height:1">--°</div>
       <div style="font-size:.68rem;color:rgba(255,255,255,.45)">取得天氣中...</div>
     </div>`;
 
-  try {
-    // 如果 targets 是 null，需要先做 geo 查詢
-    if (targets === null) {
-      const cityNames = trip.cities?.slice(0,3) || [trip.countryName];
-      console.log('[Weather] geo lookup for:', cityNames);
-      const geoResults = await Promise.all(cityNames.map(async name => {
+  // 如果有自訂城市，嘗試 geo 查詢覆蓋（但若失敗就用預設座標）
+  if (trip.cities && trip.cities.length > 0 && COORDS[trip.country]) {
+    try {
+      const geoResults = await Promise.all(trip.cities.slice(0,3).map(async name => {
         const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=1&language=en`);
         const d = await r.json();
         const loc = d.results?.[0];
-        if (!loc) return null;
-        return { city: name, lat: loc.latitude, lon: loc.longitude };
+        return loc ? { city: name, lat: loc.latitude, lon: loc.longitude } : null;
+      }));
+      const valid = geoResults.filter(Boolean);
+      if (valid.length > 0) targets = valid;
+    } catch(e) {
+      // geo 失敗就繼續用預設座標
+    }
+  } else if (trip.cities && trip.cities.length > 0 && !COORDS[trip.country]) {
+    // 非內建國家 + 有城市 → 用 geo 查
+    try {
+      const geoResults = await Promise.all(trip.cities.slice(0,3).map(async name => {
+        const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=1&language=en`);
+        const d = await r.json();
+        const loc = d.results?.[0];
+        return loc ? { city: name, lat: loc.latitude, lon: loc.longitude } : null;
       }));
       targets = geoResults.filter(Boolean);
-      console.log('[Weather] geo results:', targets);
-    }
+    } catch(e) {}
+  }
 
-    if (!targets || targets.length === 0) {
-      content.innerHTML = `<div style="font-size:.75rem;color:rgba(255,255,255,.5)">找不到城市天氣</div>`;
-      return;
-    }
+  if (targets.length === 0) {
+    content.innerHTML = `
+      <div style="font-size:.58rem;opacity:.65;letter-spacing:.12em;text-transform:uppercase;color:white;margin-bottom:6px">${displayCity.toUpperCase()}</div>
+      <div style="font-size:.75rem;color:rgba(255,255,255,.5)">暫無天氣資料</div>`;
+    return;
+  }
 
-    // 查天氣（直接用座標，一次 fetch 搞定）
-    const weatherResults = await Promise.all(targets.map(async t => {
-      console.log('[Weather] fetching weather for', t.city, t.lat, t.lon);
+  try {
+    const results = await Promise.all(targets.map(async t => {
       const r = await fetch(
         `https://api.open-meteo.com/v1/forecast?latitude=${t.lat}&longitude=${t.lon}&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=1`
       );
       const d = await r.json();
-      console.log('[Weather] response for', t.city, ':', d.current);
       const temp = Math.round(d.current?.temperature_2m ?? 0);
       const tempMax = Math.round(d.daily?.temperature_2m_max?.[0] ?? temp);
       const tempMin = Math.round(d.daily?.temperature_2m_min?.[0] ?? temp);
       const code = d.current?.weather_code ?? 0;
-      const icon = code <= 1 ? '☀️' : code <= 3 ? '⛅' : code <= 48 ? '🌫️' : code <= 67 ? '🌧️' : code <= 77 ? '🌨️' : code <= 82 ? '🌦️' : '⛈️';
-      const desc = code <= 1 ? '晴天' : code <= 3 ? '多雲' : code <= 48 ? '霧' : code <= 67 ? '有雨' : code <= 77 ? '下雪' : '陣雨';
+      const icon = code <= 1 ? '☀️' : code <= 3 ? '⛅' : code <= 48 ? '🌫️' : code <= 67 ? '🌧️' : code <= 77 ? '🌨️' : '🌦️';
+      const desc = code <= 1 ? '晴天' : code <= 3 ? '多雲' : code <= 48 ? '有霧' : code <= 67 ? '有雨' : code <= 77 ? '下雪' : '陣雨';
       return { city: t.city, temp, tempMax, tempMin, icon, desc };
     }));
 
-    const valid = weatherResults.filter(w => w && w.temp !== undefined);
-    console.log('[Weather] valid results:', valid);
-
-    if (valid.length === 0) {
-      content.innerHTML = `<div style="font-size:.75rem;color:rgba(255,255,255,.5)">天氣資料載入失敗</div>`;
-      return;
-    }
+    const valid = results.filter(Boolean);
+    if (valid.length === 0) throw new Error('no valid results');
 
     const timeStr = new Date().toLocaleTimeString('zh-TW', { hour:'2-digit', minute:'2-digit' });
 
@@ -4106,12 +4126,10 @@ async function fetchWeather(trip) {
         <div style="display:flex">${cols}</div>
         <div style="font-size:.5rem;color:rgba(255,255,255,.35);text-align:center;margin-top:8px">SYNC · ${timeStr}</div>`;
     }
-
   } catch(e) {
-    console.error('[Weather] error:', e);
     content.innerHTML = `
-      <div style="font-size:.58rem;opacity:.6;letter-spacing:.12em;text-transform:uppercase;color:white;margin-bottom:6px">${loadingCity.toUpperCase()}</div>
-      <div style="font-size:.75rem;color:rgba(255,255,255,.45)">網路連線問題，無法取得天氣</div>`;
+      <div style="font-size:.58rem;opacity:.65;letter-spacing:.12em;text-transform:uppercase;color:white;margin-bottom:6px">${displayCity.toUpperCase()}</div>
+      <div style="font-size:.75rem;color:rgba(255,255,255,.45)">天氣載入失敗，請稍後再試</div>`;
   }
 }
 
