@@ -926,20 +926,37 @@ const TRANSLATE_LANGS = [
   { code:'el',  label:'希臘文',  flag:'🇬🇷' },
 ];
 
+async function saveBibiNickname() {
+  const input = document.getElementById('bibi-nickname-field');
+  const name = input?.value.trim();
+  if (!name) { showToast('請輸入暱稱'); return; }
+  userNickname = name;
+  try {
+    await setDoc(doc(db, 'users', currentUser.uid), { nickname: name }, { merge: true });
+    showToast('Bibi 記住你了：' + name + ' ✦');
+    // 重新打招呼
+    const chat = document.getElementById('bibi-chat');
+    if (chat) window.initBibiGreeting();
+  } catch(e) { showToast('儲存失敗'); }
+}
+
 function openBibiDrawer() {
   const overlay = document.getElementById('modal-bibi');
   const drawer = document.getElementById('bibi-drawer');
   overlay.classList.add('open');
   document.body.style.overflow = 'hidden';
-  requestAnimationFrame(() => {
-    drawer.style.transform = 'translateY(0)';
-  });
+  requestAnimationFrame(() => { drawer.style.transform = 'translateY(0)'; });
+
+  // 預填暱稱欄位
+  const nicknameField = document.getElementById('bibi-nickname-field');
+  if (nicknameField) nicknameField.value = userNickname || '';
+
   // 初始化
-  renderBibiQuickBtns();
   renderTranslateLangGrid();
   renderPhraseThemeBtns();
   const chat = document.getElementById('bibi-chat');
   if (chat && chat.children.length === 0) window.initBibiGreeting();
+
   // 自動設定語言
   const countryLangMap = { thailand:'th', japan:'ja', france:'fr', korea:'ko', germany:'de', spain:'es', morocco:'ar', indonesia:'id', vietnam:'vi', italy:'it', greece:'el', portugal:'pt', turkey:'tr', malaysia:'ms', usa:'en', australia:'en', singapore:'ms', default:'en' };
   const country = currentTrip?.country || 'default';
@@ -3282,6 +3299,7 @@ function toggleCustomCountry(val) {
 }
 
 window.openBibiDrawer = openBibiDrawer;
+window.saveBibiNickname = saveBibiNickname;
 window.closeBibiDrawer = closeBibiDrawer;
 window.switchBibiTab = switchBibiTab;
 window.selectTranslateLang = selectTranslateLang;
@@ -3400,7 +3418,7 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
     <div class="page-content pb-4">
 
       <!-- Hero -->
-      <div style="text-align:center;padding:14px 16px 12px;position:relative">
+      <div style="text-align:center;padding:20px 16px 16px;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:200px">
         <!-- 浮水印 -->
         <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-family:'Fraunces',serif;font-size:min(4.8rem,20vw);font-weight:300;font-style:italic;color:var(--accent);opacity:.055;white-space:nowrap;letter-spacing:-.02em;pointer-events:none;user-select:none;line-height:1">every trip</div>
 
@@ -4250,10 +4268,14 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
 
     <!-- ── TAB: 聊天 ── -->
     <div id="btab-content-chat" style="flex:1;display:flex;flex-direction:column;overflow:hidden">
-      <!-- 快捷按鈕 -->
-      <div id="bibi-quick-btns" class="quick-btns no-scrollbar" style="padding:10px 16px 6px;flex-shrink:0"></div>
+      <!-- 暱稱設定列 -->
+      <div id="bibi-nickname-bar" style="padding:8px 16px 6px;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;gap:10px;background:var(--bg2)">
+        <div style="font-size:.65rem;color:var(--text3);white-space:nowrap;letter-spacing:.02em">Bibi 叫我</div>
+        <input id="bibi-nickname-field" type="text" placeholder="輸入你的暱稱..." style="flex:1;background:var(--surface);border:1.5px solid var(--border);border-radius:999px;padding:5px 12px;font-size:.8rem;color:var(--text);outline:none;transition:border-color .2s;min-width:0" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" onkeydown="if(event.key==='Enter')saveBibiNickname()">
+        <button onclick="saveBibiNickname()" style="flex-shrink:0;font-size:.72rem;font-weight:600;color:var(--accent);background:none;border:none;padding:0 4px;white-space:nowrap">儲存</button>
+      </div>
       <!-- 對話區 -->
-      <div id="bibi-chat" style="flex:1;overflow-y:auto;padding:8px 16px 12px;-webkit-overflow-scrolling:touch"></div>
+      <div id="bibi-chat" style="flex:1;overflow-y:auto;padding:12px 16px;-webkit-overflow-scrolling:touch"></div>
       <!-- 輸入列 -->
       <div style="padding:10px 14px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:flex-end;flex-shrink:0;background:var(--bg)">
         <input id="bibi-input" type="text" placeholder="問問 Bibi..." style="flex:1;background:var(--bg2);border:1.5px solid var(--border);border-radius:22px;padding:10px 16px;font-size:.9rem;color:var(--text);outline:none;transition:border-color .2s" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" onkeydown="if(event.key==='Enter')sendBibiMessage()">
@@ -4452,32 +4474,32 @@ function initBibiGreeting() {
 
   const name = userNickname;
   const country = currentTrip?.country || 'default';
-  const countryName = COUNTRY_THEMES[country]?.name || '目的地';
-  const flag = COUNTRY_THEMES[country]?.flag || '✈️';
+  const countryName = COUNTRY_THEMES[country]?.name || '';
+  const flag = country !== 'default' ? (COUNTRY_THEMES[country]?.flag || '') : '';
 
-  if (name) {
-    // 已知道名字 → 熱情問候 + 當前旅行
-    const tripHint = currentTrip
-      ? `我看到你正在規劃 ${flag} ${countryName} 之旅，有什麼需要我幫你查的嗎？`
-      : '有什麼旅遊問題想問我嗎？';
-    chat.innerHTML = '<div class="flex mb-4" style="align-items:flex-start;gap:8px">'
-      + '<div style="width:28px;height:28px;border-radius:50%;background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;flex-shrink:0">B</div>'
-      + '<div class="chat-bubble-bibi">'
-      + name + '！✦ 我是 Bibi，你的隨身旅遊管家～<br><br>'
-      + tripHint
+  // Bibi 自我介紹泡泡
+  const intro = '<div class="flex mb-3" style="align-items:flex-start;gap:8px">'
+    + '<div style="width:32px;height:32px;border-radius:50%;background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:700;flex-shrink:0">B</div>'
+    + '<div class="chat-bubble-bibi" style="font-size:.88rem;line-height:1.65">'
+    + '嗨！我是 <strong>Bibi</strong>，你的隨身 AI 旅遊管家 ✦<br><br>'
+    + 'Bibi 源自阿拉伯語「Habibi」——親愛的。'
+    + (countryName ? '<br><br>我看到你正在規劃 <strong>' + flag + ' ' + countryName + '</strong> 之旅，隨時問我吧！' : '<br><br>選好旅行目的地後，我可以給你當地的旅遊建議、翻譯、攻略～')
+    + '</div></div>';
+
+  chat.innerHTML = intro;
+
+  if (!name) {
+    // 問暱稱
+    chat.innerHTML += '<div class="flex mb-3" style="align-items:flex-start;gap:8px">'
+      + '<div style="width:32px;height:32px;border-radius:50%;background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:700;flex-shrink:0">B</div>'
+      + '<div class="chat-bubble-bibi" style="font-size:.88rem;line-height:1.65">'
+      + '對了，我要怎麼叫你呢？在上面輸入你的暱稱，我就會記住你 😊'
       + '</div></div>';
   } else {
-    // 不知道名字 → 先問名字
-    chat.innerHTML = '<div class="flex mb-4" style="align-items:flex-start;gap:8px">'
-      + '<div style="width:28px;height:28px;border-radius:50%;background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;flex-shrink:0">B</div>'
-      + '<div class="chat-bubble-bibi">'
-      + 'Habibi ✦ 阿拉伯語「親愛的」，也是我名字的由來～<br><br>'
-      + '我是 Bibi，你的隨身旅遊管家！我要怎麼叫你呢？'
-      + '</div></div>'
-      + '<div class="flex justify-end mb-3">'
-      + '<div style="display:flex;gap:8px;align-items:center;background:var(--bg2);border-radius:var(--r-md);padding:10px 14px;max-width:84%">'
-      + '<input id="nickname-inline-input" type="text" placeholder="輸入你的暱稱..." style="border:none;background:transparent;outline:none;font-size:.9rem;color:var(--text);width:130px" onkeydown="if(event.key===\'Enter\')saveNicknameInline()">'
-      + '<button onclick="saveNicknameInline()" style="font-size:.78rem;font-weight:600;color:var(--accent);background:none;border:none;white-space:nowrap">確認 →</button>'
+    chat.innerHTML += '<div class="flex mb-3" style="align-items:flex-start;gap:8px">'
+      + '<div style="width:32px;height:32px;border-radius:50%;background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:700;flex-shrink:0">B</div>'
+      + '<div class="chat-bubble-bibi" style="font-size:.88rem;line-height:1.65">'
+      + name + '，有什麼想問的嗎？✦'
       + '</div></div>';
   }
 }
@@ -4587,25 +4609,25 @@ function renderWeatherCard(weatherList, activeIdx) {
   const timeStr = new Date().toLocaleTimeString('zh-TW', {hour:'2-digit',minute:'2-digit'});
 
   const tabsHTML = weatherList.length > 1
-    ? '<div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">'
+    ? '<div style="display:flex;gap:7px;margin-bottom:14px;flex-wrap:wrap">'
       + weatherList.map((city, i) =>
-        '<button onclick="switchWeatherCity('+i+')" style="padding:3px 11px;border-radius:999px;font-size:.62rem;font-weight:600;cursor:pointer;border:1px solid '+(i===activeIdx?'rgba(255,255,255,.7)':'rgba(255,255,255,.25)')+';background:'+(i===activeIdx?'rgba(255,255,255,.18)':'transparent')+';color:'+(i===activeIdx?'white':'rgba(255,255,255,.5)')+'">'+city.displayName+'</button>'
+        '<button onclick="switchWeatherCity('+i+')" style="padding:5px 14px;border-radius:999px;font-size:.72rem;font-weight:600;cursor:pointer;letter-spacing:.02em;border:1.5px solid '+(i===activeIdx?'rgba(255,255,255,.8)':'rgba(255,255,255,.25)')+';background:'+(i===activeIdx?'rgba(255,255,255,.18)':'transparent')+';color:'+(i===activeIdx?'white':'rgba(255,255,255,.5)')+'">'+city.displayName+'</button>'
       ).join('') + '</div>'
     : '';
 
   content.innerHTML = tabsHTML
-    + '<div style="display:flex;align-items:flex-end;gap:14px">'
+    + '<div style="display:flex;align-items:flex-end;gap:18px">'
     + '<div>'
-    + '<div style="font-size:.55rem;opacity:.65;letter-spacing:.14em;text-transform:uppercase;color:white;margin-bottom:6px">'+w.displayName.toUpperCase()+'</div>'
-    + '<div style="font-family:var(--font-display);font-size:2.6rem;font-weight:300;color:white;line-height:1">'+w.temp+'°</div>'
-    + '<div style="font-size:.62rem;color:rgba(255,255,255,.6);margin-top:3px">'+w.tempMin+'° – '+w.tempMax+'°</div>'
-    + '<div style="font-size:.7rem;color:rgba(255,255,255,.85);margin-top:2px">'+w.desc+'</div>'
+    + '<div style="font-size:.68rem;opacity:.7;letter-spacing:.12em;text-transform:uppercase;color:white;margin-bottom:8px">'+w.displayName.toUpperCase()+'</div>'
+    + '<div style="font-family:var(--font-display);font-size:3.2rem;font-weight:300;color:white;line-height:1">'+w.temp+'°</div>'
+    + '<div style="font-size:.75rem;color:rgba(255,255,255,.65);margin-top:5px">'+w.tempMin+'° – '+w.tempMax+'°</div>'
+    + '<div style="font-size:.82rem;color:rgba(255,255,255,.9);margin-top:3px;font-weight:500">'+w.desc+'</div>'
     + '</div>'
-    + '<div style="font-size:2.4rem;margin-bottom:6px;line-height:1">'+w.icon+'</div>'
+    + '<div style="font-size:3rem;margin-bottom:8px;line-height:1">'+w.icon+'</div>'
     + '</div>'
-    + '<div style="display:flex;align-items:center;gap:6px;margin-top:10px">'
-    + '<div style="width:5px;height:5px;border-radius:50%;background:#4ade80;animation:pulse 2s ease infinite"></div>'
-    + '<span style="font-size:.52rem;color:rgba(255,255,255,.45);letter-spacing:.06em">SYNC · '+timeStr+'</span>'
+    + '<div style="display:flex;align-items:center;gap:6px;margin-top:14px">'
+    + '<div style="width:6px;height:6px;border-radius:50%;background:#4ade80;animation:pulse 2s ease infinite"></div>'
+    + '<span style="font-size:.62rem;color:rgba(255,255,255,.5);letter-spacing:.06em">SYNC · '+timeStr+'</span>'
     + '</div>';
 }
 
