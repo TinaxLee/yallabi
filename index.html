@@ -389,7 +389,7 @@ function renderItinerary() {
       + '<div style="flex:1;min-width:0;margin-bottom:4px">'
       + '<div style="background:var(--surface);border-radius:14px;border:1px solid var(--border);box-shadow:0 1px 3px rgba(80,68,48,.05),0 4px 14px rgba(80,68,48,.08),0 10px 24px rgba(80,68,48,.05);overflow:hidden">'
       // 카드 헤더
-      + '<div style="display:flex;align-items:center;gap:0;cursor:pointer;user-select:none" onclick="toggleItCard(\'' + item.id + '\')">'
+      + '<div style="display:flex;align-items:center;gap:0;cursor:pointer;user-select:none" data-cid="' + item.id + '" onclick="toggleItCard(this.getAttribute('data-cid'))">'
       + '<div style="width:3px;background:' + barColor + ';align-self:stretch;flex-shrink:0;border-radius:0"></div>'
       + '<div style="flex:1;min-width:0;padding:12px 10px 12px 12px">'
       + '<div style="font-size:.9rem;font-weight:700;color:var(--text);line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + (item.name||'未命名') + '</div>'
@@ -3434,6 +3434,7 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
   <!-- HEADER -->
   <header class="main-header">
     <div class="header-inner">
+      <!-- 左：Logo + 旅行選擇 -->
       <div class="flex items-center gap-2">
         <button onclick="openModal('modal-trips')" style="font-family:'Noto Sans TC',sans-serif;font-size:1.1rem;font-weight:300;letter-spacing:.14em;text-transform:uppercase;color:var(--text)"><em style="font-style:normal;color:var(--accent);font-weight:700">Y</em>allabi</button>
         <button class="country-badge" onclick="openModal('modal-trips')">
@@ -3441,10 +3442,10 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
           <span id="country-name">選擇旅行</span>
         </button>
       </div>
-      <div class="flex items-center gap-2">
-        <div id="member-avatars" class="flex items-center"></div>
-        <button onclick="openSettings()" style="color:var(--text2);font-size:1.1rem;padding:4px">⚙️</button>
-        <button onclick="logout()" style="color:var(--text3);font-size:.75rem;padding:4px">登出</button>
+      <!-- 右：成員頭像 + 設定 -->
+      <div class="flex items-center gap-1">
+        <div id="member-avatars" class="flex items-center" style="margin-right:2px"></div>
+        <button onclick="openSettings()" style="width:34px;height:34px;border-radius:50%;background:var(--bg2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.95rem;color:var(--text2)">⚙️</button>
       </div>
     </div>
   </header>
@@ -4131,7 +4132,7 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
           </select>
         </div>
         <button class="btn btn-primary btn-full mb-3" onclick="saveSettings()">儲存設定</button>
-        <div class="card-dashed">
+        <div class="card-dashed mb-3">
           <label class="form-label">📅 天數名稱管理</label>
           <div id="settings-days-list" class="mt-2 mb-3"></div>
           <div style="display:flex;gap:8px">
@@ -4139,6 +4140,7 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
             <button class="btn btn-primary" onclick="addDay()">新增</button>
           </div>
         </div>
+        <button onclick="logout()" style="width:100%;padding:12px;border-radius:var(--r-xl);background:transparent;border:1.5px solid var(--border2);color:var(--text3);font-size:.85rem;font-weight:600;letter-spacing:.04em">登出帳號</button>
       </form>
     </div>
   </div>
