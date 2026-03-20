@@ -343,13 +343,25 @@ function renderItinerary() {
     // 類型標籤
     const typeLabel = getTypeLabel(item.type || '');
 
-    // 交通連接
-    const transport = next ? (item.transportText
-      ? '<div style="display:flex;align-items:center;gap:0;padding:3px 0 3px 50px;margin:2px 0">'
-        + '<div style="flex:1;height:1px;background:var(--border2)"></div>'
-        + '<span style="font-size:.8rem;padding:0 7px">' + (item.transportIcon||'🚕') + '</span>'
-        + '<span style="font-size:.6rem;color:var(--text3);margin-right:4px">' + item.transportText + '</span>'
-        + '<div style="flex:1;height:1px;background:var(--border2)"></div>'
+    // 交通連接（支援兩組）
+    let transportLines = [];
+    if (item.transportText) {
+      transportLines.push({ icon: item.transportIcon || '🚕', text: item.transportText });
+    }
+    if (item.transportText2) {
+      transportLines.push({ icon: item.transportIcon2 || '🚶', text: item.transportText2 });
+    }
+
+    const transport = next ? (transportLines.length > 0
+      ? '<div style="padding:4px 0 4px 50px;margin:2px 0">'
+        + transportLines.map(t =>
+          '<div style="display:flex;align-items:center;gap:0;margin-bottom:2px">'
+          + '<div style="flex:1;height:1px;background:var(--border2)"></div>'
+          + '<span style="font-size:.85rem;padding:0 7px">' + t.icon + '</span>'
+          + '<span style="font-size:.62rem;color:var(--text3);margin-right:4px">' + t.text + '</span>'
+          + '<div style="flex:1;height:1px;background:var(--border2)"></div>'
+          + '</div>'
+        ).join('')
         + '</div>'
       : '<div style="padding:2px 0 2px 50px"><div style="height:1px;background:var(--border2);margin:4px 0"></div></div>'
     ) : '';
@@ -481,6 +493,8 @@ function openAddItinerary(editId = null) {
     form.querySelector('#it-address').value = item.address || '';
     form.querySelector('#it-transport-icon').value = item.transportIcon || '';
     form.querySelector('#it-transport-text').value = item.transportText || '';
+    form.querySelector('#it-transport-icon2').value = item.transportIcon2 || '';
+    form.querySelector('#it-transport-text2').value = item.transportText2 || '';
     form.querySelector('#it-note').value = item.note || '';
     form.dataset.editId = editId;
   } else {
@@ -505,6 +519,8 @@ async function saveItinerary() {
     address: form.querySelector('#it-address').value.trim(),
     transportIcon: form.querySelector('#it-transport-icon').value,
     transportText: form.querySelector('#it-transport-text').value.trim(),
+    transportIcon2: form.querySelector('#it-transport-icon2').value,
+    transportText2: form.querySelector('#it-transport-text2').value.trim(),
     note: form.querySelector('#it-note').value.trim(),
     updatedAt: Date.now()
   };
@@ -934,6 +950,14 @@ const TRANSLATE_LANGS = [
   { code:'ar',  label:'阿拉伯',  flag:'🇸🇦' },
   { code:'el',  label:'希臘文',  flag:'🇬🇷' },
 ];
+
+function clearChat() {
+  bibiChatHistory = [];
+  const chat = document.getElementById('bibi-chat');
+  if (chat) chat.innerHTML = '';
+  window.initBibiGreeting();
+  showToast('Bibi 記憶已清除 ✦');
+}
 
 function renderBibiStyleChips() {
   const container = document.getElementById('bibi-style-chips');
@@ -3332,6 +3356,7 @@ function toggleCustomCountry(val) {
 window.openBibiDrawer = openBibiDrawer;
 window.saveBibiNickname = saveBibiNickname;
 window.translateText = translateText;
+window.clearChat = clearChat;
 window.setBibiStyle = setBibiStyle;
 window.renderBibiStyleChips = renderBibiStyleChips;
 window.analyzeBibiPhoto = analyzeBibiPhoto;
@@ -3457,7 +3482,7 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
     <div class="page-content pb-4">
 
       <!-- Hero -->
-      <div style="text-align:center;padding:20px 16px 16px;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:200px">
+      <div style="text-align:center;padding:4px 16px 16px;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:180px">
         <!-- 浮水印 -->
         <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-family:'Fraunces',serif;font-size:min(4.8rem,20vw);font-weight:300;font-style:italic;color:var(--accent);opacity:.055;white-space:nowrap;letter-spacing:-.02em;pointer-events:none;user-select:none;line-height:1">every trip</div>
 
@@ -3764,10 +3789,11 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
             <label class="form-label">地址或座標</label>
             <input id="it-address" type="text" class="form-input" placeholder="輸入地址或座標 (選填)">
           </div>
-          <div style="display:grid;grid-template-columns:auto 1fr;gap:8px;margin-bottom:14px;align-items:end">
-            <div>
-              <label class="form-label">交通</label>
-              <select id="it-transport-icon" class="form-select" style="width:80px">
+          <div style="margin-bottom:14px">
+            <label class="form-label">交通方式</label>
+            <!-- 第一組 -->
+            <div style="display:grid;grid-template-columns:88px 1fr;gap:8px;margin-bottom:8px">
+              <select id="it-transport-icon" class="form-select" style="padding-right:28px">
                 <option value="">—</option>
                 <option value="🚕">🚕 計程車</option>
                 <option value="🚇">🚇 地鐵</option>
@@ -3777,10 +3803,21 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
                 <option value="🛥️">🛥️ 船</option>
                 <option value="🏍️">🏍️ 摩托車</option>
               </select>
-            </div>
-            <div>
-              <label class="form-label">距離／時間說明</label>
               <input id="it-transport-text" type="text" class="form-input" placeholder="如：9.8km，約45分鐘">
+            </div>
+            <!-- 第二組（選填）-->
+            <div style="display:grid;grid-template-columns:88px 1fr;gap:8px">
+              <select id="it-transport-icon2" class="form-select" style="padding-right:28px">
+                <option value="">—</option>
+                <option value="🚕">🚕 計程車</option>
+                <option value="🚇">🚇 地鐵</option>
+                <option value="🚶">🚶 步行</option>
+                <option value="🚌">🚌 公車</option>
+                <option value="🚗">🚗 自駕</option>
+                <option value="🛥️">🛥️ 船</option>
+                <option value="🏍️">🏍️ 摩托車</option>
+              </select>
+              <input id="it-transport-text2" type="text" class="form-input" placeholder="第二交通方式（選填）">
             </div>
           </div>
           <div class="form-group">
@@ -4285,23 +4322,23 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
       <div style="display:flex;align-items:center;padding:14px 18px 10px;gap:12px">
         <!-- Bibi avatar -->
         <div style="width:38px;height:38px;border-radius:50%;background:var(--primary);display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative">
-          <span style="font-size:.85rem;font-weight:700;color:white;letter-spacing:-.02em">B</span>
+          <span style="font-size:.95rem;font-weight:700;color:white;letter-spacing:-.02em">B</span>
           <div style="position:absolute;bottom:0;right:0;width:10px;height:10px;border-radius:50%;background:#4ade80;border:2px solid var(--bg)"></div>
         </div>
         <div style="flex:1">
           <div style="font-size:1rem;font-weight:700;color:var(--text);letter-spacing:.01em">Bibi</div>
-          <div style="font-size:.62rem;color:var(--text3);letter-spacing:.04em">AI 旅遊管家 · 隨時在線</div>
+          <div style="font-size:.97rem;color:var(--text3);letter-spacing:.04em">AI 旅遊管家 · 隨時在線</div>
         </div>
-        <button onclick="clearChat()" style="font-size:.65rem;color:var(--text3);background:var(--bg2);border:1px solid var(--border);padding:5px 10px;border-radius:999px;margin-right:6px">清除</button>
-        <button onclick="closeBibiDrawer()" style="width:28px;height:28px;border-radius:50%;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:.85rem;color:var(--text2)">✕</button>
+        <button onclick="clearChat()" style="font-size:.78rem;color:var(--text3);background:var(--bg2);border:1px solid var(--border);padding:5px 10px;border-radius:999px;margin-right:6px">清除</button>
+        <button onclick="closeBibiDrawer()" style="width:28px;height:28px;border-radius:50%;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:.95rem;color:var(--text2)">✕</button>
       </div>
 
       <!-- Tab bar -->
       <div style="display:flex;gap:0;border-bottom:1px solid var(--border);padding:0 16px">
-        <button class="bibi-tab active" id="btab-chat" onclick="switchBibiTab('chat')" style="flex:1;padding:9px 4px;font-size:.75rem;font-weight:600;color:var(--accent);border-bottom:2px solid var(--accent);background:none;border-top:none;border-left:none;border-right:none;cursor:pointer;transition:all .2s">💬 聊天</button>
-        <button class="bibi-tab" id="btab-translate" onclick="switchBibiTab('translate')" style="flex:1;padding:9px 4px;font-size:.75rem;font-weight:600;color:var(--text3);border-bottom:2px solid transparent;background:none;border-top:none;border-left:none;border-right:none;cursor:pointer;transition:all .2s">🔤 翻譯</button>
-        <button class="bibi-tab" id="btab-cards" onclick="switchBibiTab('cards')" style="flex:1;padding:9px 4px;font-size:.75rem;font-weight:600;color:var(--text3);border-bottom:2px solid transparent;background:none;border-top:none;border-left:none;border-right:none;cursor:pointer;transition:all .2s">🃏 字卡</button>
-        <button class="bibi-tab" id="btab-photo" onclick="switchBibiTab('photo')" style="flex:1;padding:9px 4px;font-size:.75rem;font-weight:600;color:var(--text3);border-bottom:2px solid transparent;background:none;border-top:none;border-left:none;border-right:none;cursor:pointer;transition:all .2s">📷 拍照</button>
+        <button class="bibi-tab active" id="btab-chat" onclick="switchBibiTab('chat')" style="flex:1;padding:9px 4px;font-size:.97rem;font-weight:600;color:var(--accent);border-bottom:2px solid var(--accent);background:none;border-top:none;border-left:none;border-right:none;cursor:pointer;transition:all .2s">💬 聊天</button>
+        <button class="bibi-tab" id="btab-translate" onclick="switchBibiTab('translate')" style="flex:1;padding:9px 4px;font-size:.97rem;font-weight:600;color:var(--text3);border-bottom:2px solid transparent;background:none;border-top:none;border-left:none;border-right:none;cursor:pointer;transition:all .2s">🔤 翻譯</button>
+        <button class="bibi-tab" id="btab-cards" onclick="switchBibiTab('cards')" style="flex:1;padding:9px 4px;font-size:.97rem;font-weight:600;color:var(--text3);border-bottom:2px solid transparent;background:none;border-top:none;border-left:none;border-right:none;cursor:pointer;transition:all .2s">🃏 字卡</button>
+        <button class="bibi-tab" id="btab-photo" onclick="switchBibiTab('photo')" style="flex:1;padding:9px 4px;font-size:.97rem;font-weight:600;color:var(--text3);border-bottom:2px solid transparent;background:none;border-top:none;border-left:none;border-right:none;cursor:pointer;transition:all .2s">📷 拍照</button>
       </div>
     </div>
 
@@ -4310,12 +4347,12 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
       <!-- 暱稱 + 風格設定列 -->
       <div id="bibi-nickname-bar" style="padding:8px 14px 6px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--bg2)">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-          <div style="font-size:.65rem;color:var(--text3);white-space:nowrap">叫我</div>
-          <input id="bibi-nickname-field" type="text" placeholder="輸入暱稱..." style="flex:1;background:var(--surface);border:1.5px solid var(--border);border-radius:999px;padding:5px 12px;font-size:.82rem;color:var(--text);outline:none;transition:border-color .2s;min-width:0" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" onkeydown="if(event.key==='Enter')saveBibiNickname()">
-          <button onclick="saveBibiNickname()" style="flex-shrink:0;font-size:.72rem;font-weight:600;color:var(--accent);background:none;border:none;padding:0 2px;white-space:nowrap">儲存</button>
+          <div style="font-size:.78rem;color:var(--text3);white-space:nowrap">叫我</div>
+          <input id="bibi-nickname-field" type="text" placeholder="輸入暱稱..." style="flex:1;background:var(--surface);border:1.5px solid var(--border);border-radius:999px;padding:5px 12px;font-size:.92rem;color:var(--text);outline:none;transition:border-color .2s;min-width:0" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" onkeydown="if(event.key==='Enter')saveBibiNickname()">
+          <button onclick="saveBibiNickname()" style="flex-shrink:0;font-size:.84rem;font-weight:600;color:var(--accent);background:none;border:none;padding:0 2px;white-space:nowrap">儲存</button>
         </div>
         <div style="display:flex;align-items:center;gap:6px">
-          <div style="font-size:.62rem;color:var(--text3)">Bibi 風格</div>
+          <div style="font-size:.97rem;color:var(--text3)">Bibi 風格</div>
           <div id="bibi-style-chips" style="display:flex;gap:5px;overflow-x:auto;scrollbar-width:none;flex:1"></div>
         </div>
       </div>
@@ -4323,7 +4360,7 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
       <div id="bibi-chat" style="flex:1;overflow-y:auto;padding:12px 16px;-webkit-overflow-scrolling:touch"></div>
       <!-- 輸入列 -->
       <div style="padding:10px 14px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:flex-end;flex-shrink:0;background:var(--bg)">
-        <input id="bibi-input" type="text" placeholder="問問 Bibi..." style="flex:1;background:var(--bg2);border:1.5px solid var(--border);border-radius:22px;padding:10px 16px;font-size:.9rem;color:var(--text);outline:none;transition:border-color .2s" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" onkeydown="if(event.key==='Enter')sendBibiMessage()">
+        <input id="bibi-input" type="text" placeholder="問問 Bibi..." style="flex:1;background:var(--bg2);border:1.5px solid var(--border);border-radius:22px;padding:10px 16px;font-size:1rem;color:var(--text);outline:none;transition:border-color .2s" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" onkeydown="if(event.key==='Enter')sendBibiMessage()">
         <button onclick="sendBibiMessage()" style="width:42px;height:42px;border-radius:50%;background:var(--primary);color:white;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;border:none;transition:transform .15s" onmousedown="this.style.transform='scale(.88)'" onmouseup="this.style.transform=''">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
         </button>
@@ -4334,15 +4371,15 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
     <div id="btab-content-translate" style="flex:1;display:none;flex-direction:column;overflow-y:auto;padding:16px">
       <!-- 語言選擇 -->
       <div style="margin-bottom:16px">
-        <div style="font-size:.62rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:8px">翻譯成</div>
+        <div style="font-size:.97rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:8px">翻譯成</div>
         <div id="translate-lang-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px"></div>
       </div>
       <!-- 輸入框 -->
       <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r-md);padding:14px;margin-bottom:12px">
-        <div style="font-size:.62rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:8px">輸入中文</div>
+        <div style="font-size:.97rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:8px">輸入中文</div>
         <textarea id="translate-input" rows="3" placeholder="輸入要翻譯的文字..." style="width:100%;background:none;border:none;outline:none;font-size:1rem;color:var(--text);resize:none;font-family:var(--font-body);line-height:1.6"></textarea>
       </div>
-      <button onclick="translateText()" style="width:100%;padding:13px;background:var(--primary);color:white;border:none;border-radius:var(--r-xl);font-size:.9rem;font-weight:600;cursor:pointer;letter-spacing:.04em">翻 譯</button>
+      <button onclick="translateText()" style="width:100%;padding:13px;background:var(--primary);color:white;border:none;border-radius:var(--r-xl);font-size:1rem;font-weight:600;cursor:pointer;letter-spacing:.04em">翻 譯</button>
       <!-- 結果 -->
       <div id="translate-result" style="margin-top:16px"></div>
     </div>
@@ -4359,15 +4396,15 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
 
     <!-- ── TAB: 拍照 ── -->
     <div id="btab-content-photo" style="flex:1;display:none;flex-direction:column;overflow-y:auto;padding:16px">
-      <div style="font-size:.68rem;color:var(--text3);margin-bottom:14px;line-height:1.6">拍照後 Bibi 幫你辨識內容，帳單可直接記帳，菜單自動翻譯 ✦</div>
+      <div style="font-size:.8rem;color:var(--text3);margin-bottom:14px;line-height:1.6">拍照後 Bibi 幫你辨識內容，帳單可直接記帳，菜單自動翻譯 ✦</div>
       <!-- 上傳區 -->
       <label id="photo-upload-label" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:var(--bg2);border:1.5px dashed var(--border2);border-radius:var(--r-lg);padding:32px 20px;cursor:pointer;transition:all .2s;margin-bottom:14px">
         <div style="width:52px;height:52px;border-radius:50%;background:var(--surface);display:flex;align-items:center;justify-content:center;border:1.5px solid var(--border)">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
         </div>
         <div style="text-align:center">
-          <div style="font-size:.88rem;font-weight:600;color:var(--text)">拍照或選擇圖片</div>
-          <div style="font-size:.72rem;color:var(--text3);margin-top:3px">帳單 · 菜單 · 路牌 · 任何東西</div>
+          <div style="font-size:.97rem;font-weight:600;color:var(--text)">拍照或選擇圖片</div>
+          <div style="font-size:.84rem;color:var(--text3);margin-top:3px">帳單 · 菜單 · 路牌 · 任何東西</div>
         </div>
         <input id="bibi-photo-input" type="file" accept="image/*" capture="environment" style="display:none" onchange="handleBibiPhoto(this)">
       </label>
@@ -4524,8 +4561,8 @@ function initBibiGreeting() {
 
   // Bibi 自我介紹泡泡
   const intro = '<div class="flex mb-3" style="align-items:flex-start;gap:8px">'
-    + '<div style="width:32px;height:32px;border-radius:50%;background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:700;flex-shrink:0">B</div>'
-    + '<div class="chat-bubble-bibi" style="font-size:.88rem;line-height:1.65">'
+    + '<div style="width:36px;height:36px;border-radius:50%;background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;font-size:.82rem;font-weight:700;flex-shrink:0">B</div>'
+    + '<div class="chat-bubble-bibi" style="font-size:1rem;line-height:1.7">'
     + '嗨！我是 <strong>Bibi</strong>，你的隨身 AI 旅遊管家 ✦<br><br>'
     + 'Bibi 源自阿拉伯語「Habibi」——親愛的。'
     + (countryName ? '<br><br>我看到你正在規劃 <strong>' + flag + ' ' + countryName + '</strong> 之旅，隨時問我吧！' : '<br><br>選好旅行目的地後，我可以給你當地的旅遊建議、翻譯、攻略～')
@@ -4536,14 +4573,14 @@ function initBibiGreeting() {
   if (!name) {
     // 問暱稱
     chat.innerHTML += '<div class="flex mb-3" style="align-items:flex-start;gap:8px">'
-      + '<div style="width:32px;height:32px;border-radius:50%;background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:700;flex-shrink:0">B</div>'
-      + '<div class="chat-bubble-bibi" style="font-size:.88rem;line-height:1.65">'
+      + '<div style="width:36px;height:36px;border-radius:50%;background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;font-size:.82rem;font-weight:700;flex-shrink:0">B</div>'
+      + '<div class="chat-bubble-bibi" style="font-size:1rem;line-height:1.7">'
       + '對了，我要怎麼叫你呢？在上面輸入你的暱稱，我就會記住你 😊'
       + '</div></div>';
   } else {
     chat.innerHTML += '<div class="flex mb-3" style="align-items:flex-start;gap:8px">'
-      + '<div style="width:32px;height:32px;border-radius:50%;background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:700;flex-shrink:0">B</div>'
-      + '<div class="chat-bubble-bibi" style="font-size:.88rem;line-height:1.65">'
+      + '<div style="width:36px;height:36px;border-radius:50%;background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;font-size:.82rem;font-weight:700;flex-shrink:0">B</div>'
+      + '<div class="chat-bubble-bibi" style="font-size:1rem;line-height:1.7">'
       + name + '，有什麼想問的嗎？✦'
       + '</div></div>';
   }

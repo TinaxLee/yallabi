@@ -255,7 +255,7 @@ a{color:inherit;text-decoration:none;}
 
 /* LAYOUT */
 .app-shell{max-width:480px;margin:0 auto;min-height:100dvh;position:relative;overflow-x:hidden;background:var(--bg);transition:background-color var(--dur) var(--ease);}
-.page{display:none;padding:0 16px;padding-top:calc(env(safe-area-inset-top) + 12px);animation:pageIn var(--dur) var(--ease);overflow-x:hidden;}
+.page{display:none;padding:0 16px;padding-top:calc(env(safe-area-inset-top) + 4px);animation:pageIn var(--dur) var(--ease);overflow-x:hidden;}
 #page-bibi{padding:0;overflow:hidden;}
 .page.active{display:block;}
 @keyframes pageIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
@@ -461,8 +461,8 @@ textarea.form-input{resize:none;white-space:pre-wrap;line-height:1.6;}
 .hotel-note p{font-size:.78rem;color:var(--text2);line-height:1.5;}
 
 /* AI CHAT (BIBI) */
-.chat-bubble-bibi{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg) var(--r-lg) var(--r-lg) 4px;padding:11px 14px;max-width:86%;font-size:var(--fs-base);line-height:1.55;color:var(--text);box-shadow:0 2px 8px var(--shadow);}
-.chat-bubble-user{background:var(--primary);color:white;border-radius:var(--r-lg) var(--r-lg) 4px var(--r-lg);padding:11px 14px;max-width:86%;font-size:var(--fs-base);line-height:1.55;margin-left:auto;transition:background-color var(--dur) var(--ease);}
+.chat-bubble-bibi{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg) var(--r-lg) var(--r-lg) 4px;padding:14px 16px;max-width:88%;font-size:1rem;line-height:1.65;color:var(--text);box-shadow:0 2px 8px var(--shadow);}
+.chat-bubble-user{background:var(--primary);color:white;border-radius:var(--r-lg) var(--r-lg) 4px var(--r-lg);padding:14px 16px;max-width:88%;font-size:1rem;line-height:1.65;margin-left:auto;transition:background-color var(--dur) var(--ease);}
 .chat-quick-chip{padding:7px 14px;border-radius:999px;background:var(--primary);color:white;font-size:.72rem;font-weight:600;display:inline-flex;align-items:center;gap:5px;transition:all var(--dur-fast) var(--ease);white-space:nowrap;opacity:.88;}
 .chat-quick-chip:active{transform:scale(.93);opacity:1;}
 /* Bibi 快捷按鈕 */
