@@ -82,6 +82,7 @@ let expensesData = [];
 let flightsData = [];
 let hotelsData = [];
 let membersData = [];
+let journalData = [];
 let chatHistory = [];
 
 // Unsubscribe functions
@@ -885,30 +886,451 @@ function renderPassport() {
 function renderStamps() {
   const container = document.getElementById('stamp-grid');
   if (!container) return;
-  const earnedCountries = tripsData.filter(t => t.archived).map(t => t.country);
-  const allCountries = Object.entries(COUNTRY_THEMES).filter(([k]) => k !== 'default');
-  
-  container.innerHTML = allCountries.map(([key, info]) => {
-    const earned = earnedCountries.includes(key);
-    const tripCount = tripsData.filter(t => t.country === key && t.archived).length;
+
+  // 已封存的旅行
+  const archivedTrips = tripsData.filter(t => t.archived);
+
+  // 內建國家（固定順序）
+  const builtinCountries = Object.entries(COUNTRY_THEMES).filter(([k]) => k !== 'default');
+
+  // 自訂國家（從封存旅行中找出 other 或不在內建列表的）
+  const builtinKeys = new Set(builtinCountries.map(([k]) => k));
+  const customMap = {}; // key: countryName, value: { trips, flag }
+  archivedTrips.forEach(t => {
+    if (t.country === 'other' || !builtinKeys.has(t.country)) {
+      const name = t.countryName || t.country || '未知';
+      if (!customMap[name]) customMap[name] = { trips: 0, flag: '🌍', name };
+      customMap[name].trips++;
+    }
+  });
+
+  // 渲染內建國家
+  const builtinHTML = builtinCountries.map(([key, info]) => {
+    const earned = archivedTrips.some(t => t.country === key);
+    const tripCount = archivedTrips.filter(t => t.country === key).length;
     return `<div class="stamp ${earned ? 'earned' : 'locked'}" onclick="${earned ? `openMemory('${key}')` : ''}">
       <div class="stamp-flag">${info.flag}</div>
-      <div class="stamp-name">${info.name}</div>
-      ${tripCount > 1 ? `<div style="font-size:.5rem;color:var(--stamp);font-weight:700">×${tripCount}</div>` : ''}
+      <div class="stamp-name">${info.name.toUpperCase()}</div>
+      ${tripCount > 1 ? `<div style="font-size:.48rem;color:var(--stamp);font-weight:700;margin-top:1px">×${tripCount}</div>` : ''}
     </div>`;
   }).join('');
+
+  // 渲染自訂國家
+  const customHTML = Object.entries(customMap).map(([name, info]) => {
+    return `<div class="stamp earned" onclick="showToast('${name} ✦')">
+      <div class="stamp-flag">${info.flag}</div>
+      <div class="stamp-name" style="font-size:.42rem">${name.toUpperCase().slice(0,8)}</div>
+      ${info.trips > 1 ? `<div style="font-size:.48rem;color:var(--stamp);font-weight:700;margin-top:1px">×${info.trips}</div>` : ''}
+    </div>`;
+  }).join('');
+
+  container.innerHTML = builtinHTML + customHTML;
+
+  // 更新護照封面的國旗和計數
+  const totalTrips = archivedTrips.length;
+  const passportFlag = document.getElementById('passport-flag');
+  const passportCount = document.getElementById('passport-trips-count');
+  if (passportFlag) {
+    // 顯示最近一次封存旅行的國旗
+    const lastTrip = archivedTrips.sort((a,b) => (b.archivedAt||0)-(a.archivedAt||0))[0];
+    passportFlag.textContent = lastTrip ? (COUNTRY_THEMES[lastTrip.country]?.flag || '🌍') : '🌍';
+  }
+  if (passportCount) {
+    passportCount.textContent = totalTrips > 0 ? `${totalTrips} trip${totalTrips > 1 ? 's' : ''}` : '0 trips';
+  }
 }
+
+// ════════════════════════════════════════
+// 📖 MEMORY SYSTEM
+// ════════════════════════════════════════
 
 function openMemory(country) {
   const trips = tripsData.filter(t => t.country === country && t.archived);
   if (trips.length === 0) return;
-  // Switch to that trip's theme temporarily
-  applyTheme(country);
-  showToast(`${COUNTRY_THEMES[country]?.flag} 回到 ${COUNTRY_THEMES[country]?.name} 的回憶`);
+  const info = COUNTRY_THEMES[country] || { flag:'🌍', name: country };
+
+  // 只有一趟旅行 → 直接開詳細頁
+  if (trips.length === 1) {
+    openTripMemory(trips[0].id);
+    return;
+  }
+
+  // 多趟旅行 → 先顯示列表
+  const list = document.getElementById('memory-trip-list');
+  const title = document.getElementById('memory-country-title');
+  title.textContent = `${info.flag} ${info.name}`;
+
+  list.innerHTML = trips
+    .sort((a,b) => (b.archivedAt||0) - (a.archivedAt||0))
+    .map(t => {
+      const date = t.departureDate ? formatDateShort(t.departureDate) : '日期未設定';
+      const days = t.days?.length || 0;
+      const jCount = journalData.filter(j => j.tripId === t.id).length;
+      return `
+      <div onclick="openTripMemory('${t.id}')" style="background:var(--surface);border-radius:var(--r-md);border:1px solid var(--border);padding:14px 16px;margin-bottom:10px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:all .15s ease" onmousedown="this.style.opacity='.8'" onmouseup="this.style.opacity='1'" ontouchstart="this.style.opacity='.8'" ontouchend="this.style.opacity='1'">
+        <div>
+          <div style="font-size:.9rem;font-weight:600;color:var(--text);margin-bottom:3px">${t.name || info.name}</div>
+          <div style="font-size:.7rem;color:var(--text3)">${date}${days ? ` · ${days} 天` : ''}${jCount ? ` · ${jCount} 篇日記` : ''}</div>
+        </div>
+        <div style="font-size:.8rem;color:var(--text3)">→</div>
+      </div>`;
+    }).join('');
+
+  openModal('modal-memory-list');
 }
 
+async function openTripMemory(tripId) {
+  // 先關閉列表 modal（如果開著）
+  closeModal('modal-memory-list');
+
+  const trip = tripsData.find(t => t.id === tripId);
+  if (!trip) return;
+
+  const info = COUNTRY_THEMES[trip.country] || { flag:'🌍', name: trip.countryName || trip.country };
+  const modal = document.getElementById('modal-memory-detail');
+  const body = document.getElementById('memory-detail-body');
+
+  body.innerHTML = `<div style="text-align:center;padding:24px;color:var(--text3)">載入回憶中...</div>`;
+  openModal('modal-memory-detail');
+
+  // 讀取這趟旅行的資料
+  try {
+    const [itSnap, expSnap, journalSnap] = await Promise.all([
+      getDocs(collection(db,'trips',tripId,'itinerary')),
+      getDocs(collection(db,'trips',tripId,'expenses')),
+      getDocs(collection(db,'trips',tripId,'journal')),
+    ]);
+
+    const itItems = itSnap.docs.map(d => ({ id:d.id, ...d.data() }))
+      .sort((a,b) => (a.day||'').localeCompare(b.day||'') || (a.startTime||'').localeCompare(b.startTime||''));
+    const exItems = expSnap.docs.map(d => ({ id:d.id, ...d.data() }));
+    const jItems = journalSnap.docs.map(d => ({ id:d.id, ...d.data() }))
+      .sort((a,b) => (a.date||'').localeCompare(b.date||''));
+
+    // 花費統計
+    const totalTWD = exItems.reduce((sum, e) => sum + convertCurrency(parseFloat(e.amount)||0, e.currency||trip.currency||'TWD', 'TWD'), 0);
+    const totalTrip = exItems.reduce((sum, e) => sum + (parseFloat(e.amount)||0), 0);
+
+    // 封面照片（日記第一張）
+    const coverPhoto = jItems.find(j => j.photoURL)?.photoURL;
+
+    // 心情統計
+    const moodCounts = {};
+    jItems.forEach(j => { if(j.mood) moodCounts[j.mood] = (moodCounts[j.mood]||0)+1; });
+    const moodSummary = Object.entries(moodCounts)
+      .map(([id, count]) => {
+        const m = JOURNAL_MOODS.find(x => x.id === id);
+        return m ? `${m.emoji}×${count}` : '';
+      }).filter(Boolean).join('  ');
+
+    // 按天分組行程
+    const days = [...new Set(itItems.map(i => i.day).filter(Boolean))];
+
+    // 分享 ID
+    const shareId = tripId.slice(0,8);
+
+    body.innerHTML = `
+      <!-- 封面 -->
+      ${coverPhoto ? `<div style="margin:-18px -18px 0;border-radius:var(--r-xl) var(--r-xl) 0 0;overflow:hidden;height:200px"><img src="${coverPhoto}" style="width:100%;height:100%;object-fit:cover"></div>` : ''}
+
+      <!-- 基本資訊 -->
+      <div style="padding:${coverPhoto?'20px':'0'} 0 0">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <div style="font-size:1.4rem">${info.flag}</div>
+          <button onclick="shareTrip('${tripId}')" style="display:flex;align-items:center;gap:5px;font-size:.72rem;color:var(--accent);font-weight:600;background:var(--accent-soft);padding:6px 12px;border-radius:999px;border:none">
+            分享行程 ↗
+          </button>
+        </div>
+        <div style="font-size:1.1rem;font-weight:600;color:var(--text);margin-bottom:4px">${trip.name || info.name}</div>
+        <div style="font-size:.72rem;color:var(--text3);margin-bottom:${moodSummary?'10px':'0'}">
+          ${trip.departureDate ? formatDateShort(trip.departureDate) : ''}
+          ${trip.days?.length ? ` · ${trip.days.length} 天` : ''}
+          ${jItems.length ? ` · ${jItems.length} 篇日記` : ''}
+        </div>
+        ${moodSummary ? `<div style="font-size:.85rem;letter-spacing:.06em;margin-bottom:4px">${moodSummary}</div>` : ''}
+      </div>
+
+      <!-- 分隔 -->
+      <div style="height:1px;background:var(--border);margin:16px 0"></div>
+
+      <!-- 花費總覽 -->
+      ${exItems.length > 0 ? `
+      <div style="margin-bottom:20px">
+        <div style="font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:10px">💰 花費總覽</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div style="background:var(--bg2);border-radius:var(--r-sm);padding:12px 14px">
+            <div style="font-size:.62rem;color:var(--text3);margin-bottom:3px">${trip.currency||'TWD'} 總花費</div>
+            <div style="font-family:'Noto Serif TC',serif;font-size:1.1rem;font-weight:400;color:var(--text)">${(trip.currency||'TWD')==='TWD'?'NT$':trip.currency+' '}${Math.round(totalTrip).toLocaleString()}</div>
+          </div>
+          <div style="background:var(--bg2);border-radius:var(--r-sm);padding:12px 14px">
+            <div style="font-size:.62rem;color:var(--text3);margin-bottom:3px">換算台幣</div>
+            <div style="font-family:'Noto Serif TC',serif;font-size:1.1rem;font-weight:400;color:var(--text)">NT$ ${Math.round(totalTWD).toLocaleString()}</div>
+          </div>
+        </div>
+      </div>` : ''}
+
+      <!-- 行程列表 -->
+      ${itItems.length > 0 ? `
+      <div style="margin-bottom:20px">
+        <div style="font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:10px">🗺️ 旅行行程</div>
+        ${days.length > 0 ? days.map(day => {
+          const dayItems = itItems.filter(i => i.day === day);
+          return `
+          <div style="margin-bottom:14px">
+            <div style="font-size:.72rem;font-weight:700;color:var(--primary);margin-bottom:6px;padding:3px 10px;background:var(--bg2);border-radius:999px;display:inline-block">${day}</div>
+            ${dayItems.map(item => `
+            <div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
+              <div style="font-size:.78rem;color:var(--text3);white-space:nowrap;min-width:36px">${item.startTime||''}</div>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:.85rem;font-weight:500;color:var(--text);margin-bottom:1px">${escapeHtml(item.name||item.place||'')}</div>
+                ${item.note ? `<div style="font-size:.72rem;color:var(--text3);line-height:1.4">${escapeHtml(item.note)}</div>` : ''}
+              </div>
+            </div>`).join('')}
+          </div>`;
+        }).join('') : itItems.map(item => `
+          <div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
+            <div style="font-size:.78rem;color:var(--text3);white-space:nowrap;min-width:36px">${item.startTime||''}</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:.85rem;font-weight:500;color:var(--text)">${escapeHtml(item.name||item.place||'')}</div>
+              ${item.note ? `<div style="font-size:.72rem;color:var(--text3)">${escapeHtml(item.note)}</div>` : ''}
+            </div>
+          </div>`).join('')}
+      </div>` : ''}
+
+      <!-- 日記回憶 -->
+      ${jItems.length > 0 ? `
+      <div>
+        <div style="font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:10px">📖 旅行日記</div>
+        ${jItems.map(j => {
+          const mood = JOURNAL_MOODS.find(m => m.id === j.mood);
+          return `
+          <div style="margin-bottom:14px">
+            ${j.photoURL ? `<img src="${j.photoURL}" style="width:100%;max-height:180px;object-fit:cover;border-radius:var(--r-sm);margin-bottom:8px;display:block">` : ''}
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">
+              ${j.day ? `<span style="font-size:.62rem;font-weight:600;background:var(--primary);color:white;padding:2px 8px;border-radius:999px">${j.day}</span>` : ''}
+              ${j.date ? `<span style="font-size:.65rem;color:var(--text3)">${formatDateShort(j.date)}</span>` : ''}
+              ${mood ? `<span style="font-size:.82rem">${mood.emoji}</span>` : ''}
+            </div>
+            ${j.content ? `<div style="font-size:.85rem;color:var(--text);line-height:1.7;white-space:pre-wrap;word-break:break-word">${escapeHtml(j.content)}</div>` : ''}
+          </div>`;
+        }).join('')}
+      </div>` : ''}
+    `;
+  } catch(e) {
+    body.innerHTML = `<div style="text-align:center;padding:24px;color:var(--red)">載入失敗，請重試</div>`;
+  }
+}
+
+async function shareTrip(tripId) {
+  const trip = tripsData.find(t => t.id === tripId);
+  if (!trip) return;
+  const shareUrl = `${window.location.origin}${window.location.pathname}?share=${tripId}`;
+  if (navigator.share) {
+    try {
+      await navigator.share({
+        title: `${trip.name || '旅行回憶'} · Yallabi`,
+        text: `來看看我的旅行行程 ✦`,
+        url: shareUrl,
+      });
+    } catch(e) {}
+  } else {
+    await navigator.clipboard.writeText(shareUrl);
+    showToast('連結已複製 ✓');
+  }
+}
+
+const JOURNAL_MOODS = [
+  { id:'happy',    label:'開心',  emoji:'😊' },
+  { id:'touched',  label:'感動',  emoji:'🥹' },
+  { id:'yummy',    label:'好吃',  emoji:'😋' },
+  { id:'surprised',label:'驚喜',  emoji:'😲' },
+  { id:'tired',    label:'累了',  emoji:'😴' },
+  { id:'curious',  label:'疑惑',  emoji:'🤔' },
+  { id:'romantic', label:'浪漫',  emoji:'💕' },
+];
+
 function renderJournal() {
-  // Journal entries render
+  const container = document.getElementById('journal-list');
+  if (!container) return;
+  const sorted = [...journalData].sort((a,b) => (b.createdAt||0) - (a.createdAt||0));
+  if (sorted.length === 0) {
+    container.innerHTML = `<div class="empty-state"><span class="empty-icon">📖</span><p>記錄旅途中的美好瞬間</p></div>`;
+    return;
+  }
+  container.innerHTML = sorted.map(entry => {
+    const mood = JOURNAL_MOODS.find(m => m.id === entry.mood);
+    const day = entry.day || '';
+    const date = entry.date ? formatDateShort(entry.date) : '';
+    return `
+    <div style="background:var(--surface);border-radius:var(--r-md);border:1px solid var(--border);box-shadow:0 2px 8px var(--shadow);margin-bottom:12px;overflow:hidden">
+      ${entry.photoURL ? `<img src="${entry.photoURL}" style="width:100%;max-height:200px;object-fit:cover;display:block">` : ''}
+      <div style="padding:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div style="display:flex;align-items:center;gap:6px">
+            ${day ? `<span style="font-size:.65rem;font-weight:600;background:var(--primary);color:white;padding:2px 8px;border-radius:999px">${day}</span>` : ''}
+            ${date ? `<span style="font-size:.65rem;color:var(--text3)">${date}</span>` : ''}
+            ${mood ? `<span style="font-size:.82rem" title="${mood.label}">${mood.emoji}</span>` : ''}
+          </div>
+          <div style="display:flex;gap:6px">
+            <button onclick="editJournal('${entry.id}')" style="color:var(--text3);font-size:.85rem;padding:4px">✏️</button>
+            <button onclick="deleteJournal('${entry.id}')" style="color:var(--text3);font-size:.85rem;padding:4px">✕</button>
+          </div>
+        </div>
+        ${entry.content ? `<div style="font-size:.88rem;color:var(--text);line-height:1.7;white-space:pre-wrap;word-break:break-word">${escapeHtml(entry.content)}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openAddJournal(editId = null) {
+  const form = document.getElementById('form-journal');
+  const days = currentTrip?.days || [];
+  // 填入 Day 選項
+  const daySelect = form.querySelector('#jn-day');
+  daySelect.innerHTML = `<option value="">不指定</option>` + days.map(d => `<option value="${d}">${d}</option>`).join('');
+  // 填入心情選項
+  const moodContainer = form.querySelector('#jn-mood-options');
+  moodContainer.innerHTML = JOURNAL_MOODS.map(m =>
+    `<label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;padding:6px 12px;border-radius:999px;border:1.5px solid var(--border);font-size:.78rem;background:var(--surface);transition:all .15s ease">
+      <input type="radio" name="jn-mood" value="${m.id}" style="display:none">
+      <span>${m.emoji}</span><span style="color:var(--text2)">${m.label}</span>
+    </label>`
+  ).join('');
+
+  // 心情選中樣式
+  moodContainer.querySelectorAll('label').forEach(label => {
+    label.querySelector('input').addEventListener('change', () => {
+      moodContainer.querySelectorAll('label').forEach(l => {
+        l.style.background = 'var(--surface)';
+        l.style.borderColor = 'var(--border)';
+      });
+      label.style.background = 'var(--accent-soft)';
+      label.style.borderColor = 'var(--accent)';
+    });
+  });
+
+  if (editId) {
+    const entry = journalData.find(j => j.id === editId);
+    if (!entry) return;
+    form.querySelector('#jn-day').value = entry.day || '';
+    form.querySelector('#jn-date').value = entry.date || '';
+    form.querySelector('#jn-content').value = entry.content || '';
+    const moodInput = moodContainer.querySelector(`input[value="${entry.mood}"]`);
+    if (moodInput) {
+      moodInput.checked = true;
+      moodInput.closest('label').style.background = 'var(--accent-soft)';
+      moodInput.closest('label').style.borderColor = 'var(--accent)';
+    }
+    form.dataset.editId = editId;
+    form.dataset.existingPhoto = entry.photoURL || '';
+    document.getElementById('modal-journal-title').textContent = '編輯日記';
+  } else {
+    form.reset();
+    form.querySelector('#jn-date').valueAsDate = new Date();
+    delete form.dataset.editId;
+    form.dataset.existingPhoto = '';
+    document.getElementById('modal-journal-title').textContent = '新增日記';
+  }
+  // 照片預覽
+  const preview = document.getElementById('jn-photo-preview');
+  const existing = form.dataset.existingPhoto;
+  if (existing) {
+    preview.innerHTML = `<img src="${existing}" style="width:100%;max-height:160px;object-fit:cover;border-radius:var(--r-sm)">`;
+  } else {
+    preview.innerHTML = '';
+  }
+  openModal('modal-journal');
+}
+
+function editJournal(id) { openAddJournal(id); }
+
+async function saveJournal() {
+  const form = document.getElementById('form-journal');
+  const content = form.querySelector('#jn-content').value.trim();
+  const day = form.querySelector('#jn-day').value;
+  const date = form.querySelector('#jn-date').value;
+  const moodInput = form.querySelector('input[name="jn-mood"]:checked');
+  const mood = moodInput?.value || '';
+  const photoFile = form.querySelector('#jn-photo').files[0];
+
+  if (!content && !photoFile && !form.dataset.existingPhoto) {
+    showToast('請輸入內容或上傳照片');
+    return;
+  }
+
+  const saveBtn = document.getElementById('jn-save-btn');
+  saveBtn.textContent = '儲存中...';
+  saveBtn.disabled = true;
+
+  try {
+    let photoURL = form.dataset.existingPhoto || '';
+
+    // 上傳照片（壓縮到 200KB）
+    if (photoFile) {
+      photoURL = await compressAndUpload(photoFile);
+    }
+
+    const data = { content, day, date, mood, photoURL, updatedAt: Date.now() };
+    const editId = form.dataset.editId;
+    if (editId) {
+      await updateDoc(tripDoc('journal', editId), data);
+      showToast('已更新 ✓');
+    } else {
+      data.createdAt = Date.now();
+      data.authorUid = currentUser.uid;
+      await addDoc(tripCol('journal'), data);
+      showToast('日記已記下 ✦');
+    }
+    closeModal('modal-journal');
+  } catch(e) {
+    showToast('儲存失敗，請重試');
+  } finally {
+    saveBtn.textContent = '儲存日記';
+    saveBtn.disabled = false;
+  }
+}
+
+async function compressAndUpload(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const img = new Image();
+      img.onload = async () => {
+        const canvas = document.createElement('canvas');
+        const MAX = 1200;
+        let w = img.width, h = img.height;
+        if (w > MAX) { h = h * MAX / w; w = MAX; }
+        if (h > MAX) { w = w * MAX / h; h = MAX; }
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        canvas.toBlob(async (blob) => {
+          try {
+            const path = `journal/${currentUser.uid}/${currentTripId}/${Date.now()}.jpg`;
+            const storageRef = ref(storage, path);
+            await uploadBytes(storageRef, blob);
+            const url = await getDownloadURL(storageRef);
+            resolve(url);
+          } catch(err) { reject(err); }
+        }, 'image/jpeg', 0.75);
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+async function deleteJournal(id) {
+  if (!confirm('確定刪除這篇日記？')) return;
+  await deleteDoc(tripDoc('journal', id));
+  showToast('已刪除');
+}
+
+function previewJournalPhoto(input) {
+  const preview = document.getElementById('jn-photo-preview');
+  if (input.files[0]) {
+    const url = URL.createObjectURL(input.files[0]);
+    preview.innerHTML = `<img src="${url}" style="width:100%;max-height:160px;object-fit:cover;border-radius:var(--r-sm);margin-top:8px">`;
+  }
 }
 
 // ════════════════════════════════════════
@@ -1355,7 +1777,7 @@ async function selectTrip(tripId) {
   unsubscribers = [];
 
   // Subscribe to collections
-  const collections = ['itinerary','missions','packing','expenses','flights','hotels'];
+  const collections = ['itinerary','missions','packing','expenses','flights','hotels','journal'];
   collections.forEach(col => {
     const unsub = onSnapshot(tripCol(col), snap => {
       const data = snap.docs.map(d => ({ id:d.id, ...d.data() }));
@@ -1365,10 +1787,12 @@ async function selectTrip(tripId) {
       if (col==='expenses')  expensesData  = data;
       if (col==='flights')   flightsData   = data;
       if (col==='hotels')    hotelsData    = data;
+      if (col==='journal')   journalData   = data;
       // Re-render current tab
       if (currentNavTab==='itinerary') renderItinerary();
       if (currentNavTab==='expense')   renderExpenses();
       if (currentNavTab==='depart')    renderDepart();
+      if (currentNavTab==='passport')  renderJournal();
     });
     unsubscribers.push(unsub);
   });
@@ -1384,16 +1808,27 @@ async function selectTrip(tripId) {
   switchTab('itinerary');
 }
 
+function getMemberAvatar(m) {
+  // 三層優先順序：自訂照片 → emoji → Google 首字
+  if (m.avatarUrl) return `<img src="${m.avatarUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+  if (m.avatarEmoji) return `<span style="font-size:14px;line-height:1">${m.avatarEmoji}</span>`;
+  if (m.photoURL) return `<img src="${m.photoURL}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+  const initial = (m.nickname || m.displayName || m.name || '?')[0].toUpperCase();
+  return `<span style="font-size:.65rem;font-weight:700">${initial}</span>`;
+}
+
 function renderMemberAvatars() {
   const container = document.getElementById('member-avatars');
   if (!container) return;
-  const shown = membersData.slice(0,3);
+  const shown = membersData.slice(0, 3);
   const extra = membersData.length - 3;
-  container.innerHTML = shown.map((m,i) =>
-    `<div style="width:28px;height:28px;border-radius:50%;background:var(--accent);color:white;font-size:.65rem;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid var(--surface);margin-left:${i>0?'-8px':'0'};position:relative;z-index:${10-i};overflow:hidden">
-      ${m.photoURL ? `<img src="${m.photoURL}" style="width:100%;height:100%;object-fit:cover">` : (m.displayName||m.name||'?')[0].toUpperCase()}
+  container.innerHTML = shown.map((m, i) =>
+    `<div style="width:28px;height:28px;border-radius:50%;background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;border:2px solid var(--bg);margin-left:${i > 0 ? '-8px' : '0'};position:relative;z-index:${10-i};overflow:hidden;flex-shrink:0">
+      ${getMemberAvatar(m)}
     </div>`
-  ).join('') + (extra > 0 ? `<div style="width:28px;height:28px;border-radius:50%;background:var(--bg2);color:var(--text2);font-size:.6rem;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid var(--surface);margin-left:-8px">+${extra}</div>` : '');
+  ).join('') +
+  (extra > 0 ? `<div style="width:28px;height:28px;border-radius:50%;background:var(--bg2);color:var(--text2);font-size:.6rem;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid var(--bg);margin-left:-8px">+${extra}</div>` : '') +
+  `<button onclick="openInvite()" style="display:inline-flex;align-items:center;gap:3px;font-size:.68rem;font-weight:600;color:var(--accent);background:var(--accent-soft);padding:4px 9px;border-radius:999px;border:none;margin-left:6px;white-space:nowrap;flex-shrink:0">+ 邀請</button>`;
 }
 
 async function createNewTrip() {
@@ -1422,12 +1857,14 @@ async function createNewTrip() {
 
   try {
     const ref = await addDoc(collection(db,'trips'), tripData);
-    // Save to user's trips
     await setDoc(userDoc(), { lastTripId: ref.id }, { merge: true });
     tripsData.unshift({ id: ref.id, ...tripData });
     selectTrip(ref.id);
     closeModal('modal-new-trip');
-    showToast('旅行已建立 🎉');
+    // 建立後提示邀請
+    setTimeout(() => {
+      if (confirm('旅行建立成功！\n要邀請旅伴一起規劃嗎？')) openInvite();
+    }, 400);
   } catch(e) { showToast('建立失敗，請重試'); }
 }
 
@@ -1517,17 +1954,118 @@ async function editDayName(idx) {
 // 🔗 QR CODE INVITE
 // ════════════════════════════════════════
 function openInvite() {
-  if (!currentTripId) return;
+  if (!currentTripId) { showToast('請先選擇旅行'); return; }
   const inviteUrl = `${location.origin}${location.pathname}?join=${currentTripId}`;
   const container = document.getElementById('invite-qr');
-  if (container) {
-    container.innerHTML = `<div style="text-align:center">
-      <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(inviteUrl)}" style="border-radius:12px;width:180px;height:180px">
-      <div style="font-size:.75rem;color:var(--text3);margin-top:10px;word-break:break-all">${inviteUrl}</div>
-      <button class="btn btn-ghost btn-xs mt-3" onclick="navigator.clipboard.writeText('${inviteUrl}').then(()=>showToast('連結已複製 ✓'))">📋 複製邀請連結</button>
+  if (!container) return;
+
+  // 成員列表
+  const memberHTML = membersData.length > 0 ? `
+    <div style="margin-bottom:20px">
+      <div style="font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:10px">旅行成員</div>
+      ${membersData.map(m => {
+        const isMe = m.uid === currentUser?.uid;
+        return `
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
+          <div onclick="${isMe ? 'openAvatarEditor()' : ''}" style="width:38px;height:38px;border-radius:50%;background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;${isMe ? 'cursor:pointer;' : ''}position:relative">
+            ${getMemberAvatar(m)}
+            ${isMe ? `<div style="position:absolute;inset:0;background:rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;border-radius:50%;opacity:0;transition:.15s" class="avatar-edit-overlay"><span style="font-size:10px;color:white">編輯</span></div>` : ''}
+          </div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:.88rem;font-weight:500;color:var(--text)">${m.nickname || m.displayName || m.name || '旅伴'}${isMe ? ' <span style="font-size:.65rem;color:var(--text3)">(你)</span>' : ''}</div>
+            <div style="font-size:.68rem;color:var(--text3)">${m.email || ''}</div>
+          </div>
+          ${!isMe && currentTrip?.createdBy === currentUser?.uid ? `<button onclick="removeMember('${m.uid}')" style="font-size:.7rem;color:var(--text3);padding:4px 8px;background:var(--bg2);border-radius:6px">移除</button>` : ''}
+        </div>`;
+      }).join('')}
+    </div>` : '';
+
+  container.innerHTML = `
+    ${memberHTML}
+    <div style="font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:12px">邀請新旅伴</div>
+    <div style="text-align:center;margin-bottom:16px">
+      <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(inviteUrl)}" style="border-radius:12px;width:160px;height:160px">
+      <div style="font-size:.68rem;color:var(--text3);margin-top:8px;word-break:break-all;line-height:1.4">${inviteUrl}</div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary" style="flex:1" onclick="navigator.clipboard.writeText('${inviteUrl}').then(()=>showToast('連結已複製 ✓'))">複製連結</button>
+      <button class="btn btn-ghost" onclick="shareInvite('${inviteUrl}')">分享</button>
     </div>`;
-  }
+
   openModal('modal-invite');
+}
+
+async function shareInvite(url) {
+  if (navigator.share) {
+    await navigator.share({ title: 'Yallabi 旅行邀請', text: '加入我的旅行一起規劃！', url });
+  } else {
+    navigator.clipboard.writeText(url).then(() => showToast('連結已複製 ✓'));
+  }
+}
+
+async function removeMember(uid) {
+  if (!confirm('確定移除這位旅伴？')) return;
+  const members = (currentTrip?.members || []).filter(id => id !== uid);
+  await updateDoc(doc(db,'trips',currentTripId), { members });
+  showToast('已移除旅伴');
+  openInvite();
+}
+
+// 頭貼編輯器
+const AVATAR_EMOJIS = ['🌸','🦁','🐼','🦊','🐨','🐸','🌈','⭐','🎀','🍀','🦋','🌺','🐬','🦄','🎸','🍕'];
+
+function openAvatarEditor() {
+  const modal = document.getElementById('modal-avatar-editor');
+  const grid = document.getElementById('avatar-emoji-grid');
+
+  const currentEmoji = currentUser?.avatarEmoji || '';
+  grid.innerHTML = AVATAR_EMOJIS.map(e =>
+    `<button onclick="selectAvatarEmoji('${e}')" style="width:44px;height:44px;border-radius:50%;font-size:22px;border:2px solid ${e === currentEmoji ? 'var(--accent)' : 'transparent'};background:var(--bg2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s">${e}</button>`
+  ).join('');
+
+  closeModal('modal-invite');
+  openModal('modal-avatar-editor');
+}
+
+async function selectAvatarEmoji(emoji) {
+  try {
+    await setDoc(doc(db,'users',currentUser.uid), { avatarEmoji: emoji }, { merge: true });
+    // 更新本地 membersData
+    const me = membersData.find(m => m.uid === currentUser.uid);
+    if (me) me.avatarEmoji = emoji;
+    renderMemberAvatars();
+    showToast('頭貼已更新 ✓');
+    closeModal('modal-avatar-editor');
+  } catch(e) { showToast('更新失敗'); }
+}
+
+async function uploadAvatarPhoto(input) {
+  const file = input.files[0];
+  if (!file) return;
+  try {
+    showToast('上傳中...');
+    const path = `avatars/${currentUser.uid}.jpg`;
+    const storageRef = ref(storage, path);
+    // 壓縮
+    const url = await compressAndUpload(file);
+    await setDoc(doc(db,'users',currentUser.uid), { avatarUrl: url }, { merge: true });
+    const me = membersData.find(m => m.uid === currentUser.uid);
+    if (me) me.avatarUrl = url;
+    renderMemberAvatars();
+    showToast('頭貼已更新 ✓');
+    closeModal('modal-avatar-editor');
+  } catch(e) { showToast('上傳失敗'); }
+}
+
+// 讀取用戶頭貼資料到 membersData
+async function enrichMembersWithAvatars(uids) {
+  const enriched = await Promise.all(uids.map(async uid => {
+    try {
+      const snap = await getDoc(doc(db,'users',uid));
+      return { uid, ...(snap.data() || {}) };
+    } catch { return { uid }; }
+  }));
+  return enriched;
 }
 
 async function checkJoinTrip() {
@@ -1767,6 +2305,11 @@ window.addDay = addDay;
 window.deleteDay = deleteDay;
 window.editDayName = editDayName;
 window.openInvite = openInvite;
+window.shareInvite = shareInvite;
+window.removeMember = removeMember;
+window.openAvatarEditor = openAvatarEditor;
+window.selectAvatarEmoji = selectAvatarEmoji;
+window.uploadAvatarPhoto = uploadAvatarPhoto;
 window.createNewTrip = createNewTrip;
 window.toggleCustomCountry = toggleCustomCountry;
 function toggleCustomCountry(val) {
@@ -1785,7 +2328,14 @@ window.requestNotifications = requestNotifications;
 window.quickConvert = quickConvert;
 window.toggleConverter = toggleConverter;
 window.updateExpensePreview = updateExpensePreview;
-window.openTranslationCard = openTranslationCard;
+window.openAddJournal = openAddJournal;
+window.saveJournal = saveJournal;
+window.editJournal = editJournal;
+window.deleteJournal = deleteJournal;
+window.previewJournalPhoto = previewJournalPhoto;
+window.openMemory = openMemory;
+window.openTripMemory = openTripMemory;
+window.shareTrip = shareTrip;
 window.speakText = speakText;
 window.saveNickname = saveNickname;
 window.saveNicknameInline = saveNicknameInline;
@@ -1827,6 +2377,14 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
     </button>
   </div>
   <div class="login-privacy" style="margin-top:28px">登入即表示同意我們的服務條款與隱私政策<br>你的資料僅用於個人旅遊記錄</div>
+  <div style="margin-top:32px;text-align:center;padding:0 32px">
+    <div style="height:1px;background:rgba(80,65,45,.1);margin-bottom:20px"></div>
+    <div style="font-family:'Noto Sans TC',sans-serif;font-size:.7rem;font-weight:300;color:var(--text3);line-height:1.9;letter-spacing:.04em">
+      Yalla 是「走吧」，Habibi 是「親愛的」<br>
+      合在一起就是——<br>
+      <em style="font-style:italic;font-size:.78rem;color:var(--accent);letter-spacing:.06em">走吧，親愛的。✦</em>
+    </div>
+  </div>
 </div>
 
 <!-- ══════════════════════════════════════
@@ -1845,7 +2403,7 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
         </button>
       </div>
       <div class="flex items-center gap-2">
-        <div id="member-avatars" class="flex" style="cursor:pointer" onclick="openInvite()"></div>
+        <div id="member-avatars" class="flex items-center"></div>
         <button onclick="openSettings()" style="color:var(--text2);font-size:1.1rem;padding:4px">⚙️</button>
         <button onclick="logout()" style="color:var(--text3);font-size:.75rem;padding:4px">登出</button>
       </div>
@@ -2068,7 +2626,7 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
       <!-- Journal -->
       <div class="flex items-center justify-between mb-3">
         <div class="section-title">旅遊日記</div>
-        <button class="btn-add" onclick="openModal('modal-journal')">＋ 新增</button>
+        <button class="btn-add" onclick="openAddJournal()">＋ 新增</button>
       </div>
       <div id="journal-list">
         <div class="empty-state"><span class="empty-icon">📖</span><p>記錄旅途中的美好瞬間</p></div>
@@ -2564,6 +3122,33 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
   </div>
 </div>
 
+<!-- Modal: Avatar Editor -->
+<div id="modal-avatar-editor" class="modal-overlay">
+  <div class="modal-sheet" style="height:auto;max-height:80dvh">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <span class="modal-title">編輯頭貼</span>
+      <button class="modal-close" onclick="closeModal('modal-avatar-editor')">✕</button>
+    </div>
+    <div class="modal-body">
+      <!-- 上傳照片 -->
+      <div style="margin-bottom:20px">
+        <div style="font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:10px">上傳照片</div>
+        <label style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:var(--r-sm);border:1.5px dashed var(--border2);cursor:pointer;background:var(--bg2)">
+          <span style="font-size:1.2rem">📷</span>
+          <span style="font-size:.82rem;color:var(--text2)">點擊選擇照片（自動壓縮）</span>
+          <input type="file" accept="image/*" style="display:none" onchange="uploadAvatarPhoto(this)">
+        </label>
+      </div>
+      <!-- 選 emoji -->
+      <div>
+        <div style="font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:10px">或選一個 emoji</div>
+        <div id="avatar-emoji-grid" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Modal: Invite -->
 <div id="modal-invite" class="modal-overlay">
   <div class="modal-sheet" style="height:auto;max-height:70dvh;border-radius:var(--r-xl) var(--r-xl) 0 0">
@@ -2573,6 +3158,81 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
       <button class="modal-close" onclick="closeModal('modal-invite')">✕</button>
     </div>
     <div class="modal-body" id="invite-qr"></div>
+  </div>
+</div>
+
+<!-- Modal: Memory List (多趟旅行選擇) -->
+<div id="modal-memory-list" class="modal-overlay">
+  <div class="modal-sheet" style="height:auto;max-height:75dvh">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <span class="modal-title" id="memory-country-title"></span>
+      <button class="modal-close" onclick="closeModal('modal-memory-list')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="memory-trip-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Memory Detail (完整回憶頁) -->
+<div id="modal-memory-detail" class="modal-overlay">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <span class="modal-title">旅行回憶</span>
+      <button class="modal-close" onclick="closeModal('modal-memory-detail')">✕</button>
+    </div>
+    <div class="modal-body" id="memory-detail-body" style="padding:18px"></div>
+  </div>
+</div>
+
+<!-- Modal: Journal -->
+<div id="modal-journal" class="modal-overlay">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <span class="modal-title" id="modal-journal-title">新增日記</span>
+      <button class="modal-close" onclick="closeModal('modal-journal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <form id="form-journal" onsubmit="return false">
+        <div class="card-dashed mb-4">
+          <!-- 照片上傳 -->
+          <div class="form-group">
+            <label class="form-label">照片（選填）</label>
+            <label style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:var(--r-sm);border:1.5px dashed var(--border2);cursor:pointer;background:var(--bg2)">
+              <span style="font-size:1.2rem">📷</span>
+              <span style="font-size:.82rem;color:var(--text2)">點擊選擇照片</span>
+              <input id="jn-photo" type="file" accept="image/*" style="display:none" onchange="previewJournalPhoto(this)">
+            </label>
+            <div id="jn-photo-preview"></div>
+          </div>
+          <!-- 日期 + Day -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+            <div>
+              <label class="form-label">日期</label>
+              <input id="jn-date" type="date" class="form-input" style="min-height:46px">
+            </div>
+            <div>
+              <label class="form-label">天數</label>
+              <select id="jn-day" class="form-select" style="min-height:46px"></select>
+            </div>
+          </div>
+          <!-- 心情 -->
+          <div class="form-group">
+            <label class="form-label">今天的心情</label>
+            <div id="jn-mood-options" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px"></div>
+          </div>
+          <!-- 內容 -->
+          <div class="form-group">
+            <label class="form-label">記下這一刻</label>
+            <textarea id="jn-content" class="form-input" rows="5" placeholder="今天發生了什麼？有什麼讓你印象深刻的事…" style="resize:none;line-height:1.7"></textarea>
+          </div>
+        </div>
+        <button id="jn-save-btn" class="btn btn-primary btn-full" onclick="saveJournal()">儲存日記</button>
+      </form>
+    </div>
   </div>
 </div>
 
