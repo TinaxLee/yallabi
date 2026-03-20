@@ -131,41 +131,68 @@ function updateCountryBadge(trip) {
 // ════════════════════════════════════════
 // 📅 DATE & COUNTDOWN
 // ════════════════════════════════════════
-function updateCountdown(departureDate) {
+function renderHero(trip) {
   const pill = document.getElementById('countdown-pill');
-  const el = document.getElementById('countdown-display');
-  const tripLabel = document.getElementById('trip-label');
-  if (!pill || !el) return;
+  const tripLabelEl = document.getElementById('trip-label');
+  if (!pill || !tripLabelEl) return;
 
-  if (!currentTripId) {
+  if (!trip) {
     pill.style.display = 'none';
-    if (tripLabel) {
-      tripLabel.innerHTML = `<button onclick="openModal('modal-new-trip')" style="color:var(--accent);font-size:.78rem;font-weight:600;border:1.5px solid var(--accent);border-radius:999px;padding:6px 16px;background:var(--accent-soft)">＋ 新增第一趟旅行</button>`;
-    }
+    tripLabelEl.innerHTML = '<button onclick="openModal(\'modal-new-trip\')" style="color:var(--accent);font-size:.78rem;font-weight:600;border:1.5px solid var(--accent);border-radius:999px;padding:6px 16px;background:var(--accent-soft)">＋ 新增第一趟旅行</button>';
     return;
   }
 
-  if (!departureDate) { pill.style.display = 'none'; return; }
-  const dep = new Date(departureDate);
-  const now = new Date();
-  const diff = Math.ceil((dep - now) / (1000 * 60 * 60 * 24));
-  if (diff > 0) {
-    el.innerHTML = `距離出發還有 <strong>${diff}</strong> 天`;
-    pill.style.display = 'inline-flex';
-  } else if (diff === 0) {
-    el.innerHTML = `🎉 今天出發！`;
-    pill.style.display = 'inline-flex';
+  // 倒數
+  const departureDate = trip.departureDate;
+  if (departureDate) {
+    const dep = new Date(departureDate);
+    const now = new Date();
+    const diff = Math.ceil((dep - now) / (1000 * 60 * 60 * 24));
+    const countdownEl = document.getElementById('countdown-display');
+    if (diff > 0) {
+      if (countdownEl) countdownEl.innerHTML = `距離出發還有 <strong>${diff}</strong> 天`;
+      pill.style.display = 'inline-flex';
+    } else if (diff === 0) {
+      if (countdownEl) countdownEl.innerHTML = '🎉 今天出發！';
+      pill.style.display = 'inline-flex';
+    } else {
+      pill.style.display = 'none';
+    }
   } else {
     pill.style.display = 'none';
   }
+
+  // 旅行標籤（A+C 混合風格）
+  const info = COUNTRY_THEMES[trip.country] || { flag:'🌍', name: trip.countryName || '' };
+  const year = trip.departureDate ? new Date(trip.departureDate).getFullYear() : '';
+  const days = trip.days?.length ? `${trip.days.length} 天` : '';
+  const cities = trip.cities?.length ? trip.cities.slice(0,3).join('、') : '';
+
+  tripLabelEl.innerHTML = `
+    <div style="display:inline-flex;align-items:center;gap:0;background:var(--surface);border:1px solid var(--border2);border-radius:var(--r-md);overflow:hidden;margin-top:4px">
+      <div style="padding:8px 12px;border-right:1px solid var(--border2);display:flex;align-items:center;gap:6px">
+        <span style="font-size:.95rem;filter:grayscale(.3)">${info.flag}</span>
+        <div style="text-align:left">
+          <div style="font-size:.82rem;font-weight:700;color:var(--text);line-height:1.2">${info.name} ${year}</div>
+          ${cities ? `<div style="font-size:.65rem;color:var(--text3);margin-top:1px">${cities}</div>` : ''}
+        </div>
+      </div>
+      ${days ? `<div style="padding:8px 12px;font-size:.78rem;font-weight:600;color:var(--accent);letter-spacing:.04em">${days}</div>` : ''}
+    </div>`;
+}
+
+function updateCountdown(departureDate) {
+  // 向下相容，改為呼叫 renderHero
+  renderHero(currentTrip);
 }
 
 function formatTripLabel(trip) {
   if (!trip) return '';
   const info = COUNTRY_THEMES[trip.country] || { flag:'🌍', name: trip.countryName || '' };
   const year = trip.departureDate ? new Date(trip.departureDate).getFullYear() : '';
-  const days = trip.days && trip.days.length > 0 ? `· ${trip.days.length} 天` : '';
-  return `${info.flag} ${info.name} ${year} ${days}`;
+  const days = trip.days && trip.days.length > 0 ? `${trip.days.length} 天` : '';
+  const cities = trip.cities && trip.cities.length > 0 ? trip.cities.slice(0,3).join('、') : '';
+  return { flag: info.flag, name: info.name, year, days, cities };
 }
 
 // ════════════════════════════════════════
@@ -953,7 +980,7 @@ async function loadPhraseCards(themeKey) {
         return '<div style="background:var(--surface);border-radius:var(--r-md);border:1px solid var(--border);padding:16px;margin-bottom:10px;display:flex;align-items:center;gap:12px">'
           + '<div style="flex:1;min-width:0">'
           + '<div style="font-size:.65rem;color:var(--text3);margin-bottom:5px;letter-spacing:.02em">' + escapeHtml(p.chinese) + '</div>'
-          + '<div style="font-size:1.3rem;font-weight:700;color:var(--text);line-height:1.3;margin-bottom:4px">' + escapeHtml(p.translated) + '</div>'
+          + '<div style="font-size:1.65rem;font-weight:700;color:var(--text);line-height:1.25;margin-bottom:5px">' + escapeHtml(p.translated) + '</div>'
           + '<div style="font-size:.7rem;color:var(--text3);font-style:italic;letter-spacing:.03em">' + escapeHtml(p.phonetic || '') + '</div>'
           + '</div>'
           + '<button onclick="speakPhrase(\'' + encodedText + '\',\'' + langCode + '\')" style="width:42px;height:42px;border-radius:50%;background:var(--accent-soft);border:1.5px solid var(--border);font-size:1.1rem;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:transform .15s" onmousedown="this.style.transform=\'scale(.88)\'" onmouseup="this.style.transform=\'\'">🔊</button>'
@@ -2336,7 +2363,7 @@ async function loadTrips() {
     // 沒有旅行 → 觸發空狀態
     currentTripId = null;
     currentTrip = null;
-    updateCountdown(null);
+    renderHero(null);
     renderItinerary();
     renderExpenses();
     renderDepart();
@@ -2428,6 +2455,7 @@ async function selectTrip(tripId) {
 
   renderMemberAvatars();
   fetchWeather(currentTrip);
+  renderHero(currentTrip);
   switchTab('itinerary');
 }
 
@@ -3317,12 +3345,17 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
     <div class="page-content pb-4">
 
       <!-- Hero -->
-      <div style="text-align:center;padding:20px 0 16px">
-        <div style="font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--text3);margin-bottom:6px">✦ every trip, a story ✦</div>
-        <div id="countdown-pill" style="display:inline-flex;align-items:center;gap:6px;background:var(--primary);color:white;border-radius:999px;padding:8px 18px;font-size:.82rem;font-weight:600;margin-bottom:8px">
+      <div style="text-align:center;padding:22px 0 18px;position:relative;overflow:hidden">
+        <!-- 浮水印 -->
+        <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-family:'Fraunces',serif;font-size:min(5.5rem,22vw);font-weight:400;font-style:italic;color:var(--accent);opacity:.055;white-space:nowrap;letter-spacing:-.02em;pointer-events:none;user-select:none;line-height:1">every trip</div>
+        <!-- 小標 -->
+        <div style="font-size:clamp(.58rem,.16vw + .52rem,.68rem);letter-spacing:.18em;text-transform:uppercase;color:var(--text3);margin-bottom:14px;position:relative">✦ &nbsp; every trip, a story &nbsp; ✦</div>
+        <!-- 倒數 Pill -->
+        <div id="countdown-pill" style="display:inline-flex;align-items:center;gap:6px;background:var(--primary);color:white;border-radius:999px;padding:9px 22px;font-size:clamp(.82rem,.3vw + .72rem,.95rem);font-weight:600;margin-bottom:12px;letter-spacing:.02em;position:relative">
           <span id="countdown-display">距離出發還有 — 天</span>
         </div>
-        <div id="trip-label" style="font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:var(--text3)">選擇旅行開始規劃</div>
+        <!-- 旅行資訊標籤 -->
+        <div id="trip-label" style="position:relative">選擇旅行開始規劃</div>
       </div>
 
       <!-- Weather -->
@@ -4430,130 +4463,117 @@ async function saveNickname() {
 }
 
 // Fetch weather
+// 天氣資料快取
+let weatherCache = {};
+let weatherTargets = [];
+
 async function fetchWeather(trip) {
   const content = document.getElementById('weather-content');
   if (!content) return;
 
+  weatherCache = {};
+  weatherTargets = [];
+
   if (!trip?.country || trip.country === 'default') {
-    content.innerHTML = `<div style="font-size:.75rem;color:rgba(255,255,255,.55)">選擇旅行後顯示天氣</div>`;
+    content.innerHTML = '<div style="font-size:.75rem;color:rgba(255,255,255,.55)">選擇旅行後顯示天氣</div>';
     return;
   }
 
-  // 所有支援國家直接硬編碼座標，完全不依賴 geo API
   const COORDS = {
-    thailand:  [{ city:'Bangkok',     lat:13.7563,  lon:100.5018 }, { city:'Phuket',     lat:7.8804,   lon:98.3923  }, { city:'Chiang Mai', lat:18.7883,  lon:98.9853  }, { city:'Pattaya',    lat:12.9236,  lon:100.8825 }],
-    japan:     [{ city:'Tokyo',       lat:35.6762,  lon:139.6503 }, { city:'Osaka',      lat:34.6937,  lon:135.5023 }, { city:'Kyoto',      lat:35.0116,  lon:135.7681 }, { city:'Sapporo',    lat:43.0618,  lon:141.3545 }],
-    france:    [{ city:'Paris',       lat:48.8566,  lon:2.3522   }, { city:'Nice',       lat:43.7102,  lon:7.2620   }, { city:'Lyon',       lat:45.7640,  lon:4.8357   }],
-    italy:     [{ city:'Rome',        lat:41.9028,  lon:12.4964  }, { city:'Milan',      lat:45.4654,  lon:9.1859   }, { city:'Florence',   lat:43.7696,  lon:11.2558  }, { city:'Venice',     lat:45.4408,  lon:12.3155  }],
-    greece:    [{ city:'Athens',      lat:37.9838,  lon:23.7275  }, { city:'Santorini',  lat:36.3932,  lon:25.4615  }, { city:'Mykonos',    lat:37.4467,  lon:25.3289  }],
-    morocco:   [{ city:'Marrakech',   lat:31.6295,  lon:-7.9811  }, { city:'Casablanca', lat:33.5731,  lon:-7.5898  }],
-    maldives:  [{ city:'Malé',        lat:4.1755,   lon:73.5093  }],
-    korea:     [{ city:'Seoul',       lat:37.5665,  lon:126.9780 }, { city:'Busan',      lat:35.1796,  lon:129.0756 }, { city:'Jeju',       lat:33.4996,  lon:126.5312 }],
-    singapore: [{ city:'Singapore',   lat:1.3521,   lon:103.8198 }],
-    usa:       [{ city:'New York',    lat:40.7128,  lon:-74.0060 }, { city:'Los Angeles',lat:34.0522,  lon:-118.2437}, { city:'Las Vegas',  lat:36.1699,  lon:-115.1398}],
-    australia: [{ city:'Sydney',      lat:-33.8688, lon:151.2093 }, { city:'Melbourne',  lat:-37.8136, lon:144.9631 }, { city:'Gold Coast', lat:-28.0167, lon:153.4000 }],
+    thailand:  [{city:'Bangkok',zh:'曼谷',lat:13.7563,lon:100.5018},{city:'Phuket',zh:'普吉島',lat:7.8804,lon:98.3923},{city:'Chiang Mai',zh:'清邁',lat:18.7883,lon:98.9853},{city:'Pattaya',zh:'芭達雅',lat:12.9236,lon:100.8825}],
+    japan:     [{city:'Tokyo',zh:'東京',lat:35.6762,lon:139.6503},{city:'Osaka',zh:'大阪',lat:34.6937,lon:135.5023},{city:'Kyoto',zh:'京都',lat:35.0116,lon:135.7681},{city:'Sapporo',zh:'札幌',lat:43.0618,lon:141.3545}],
+    france:    [{city:'Paris',zh:'巴黎',lat:48.8566,lon:2.3522},{city:'Nice',zh:'尼斯',lat:43.7102,lon:7.2620},{city:'Lyon',zh:'里昂',lat:45.7640,lon:4.8357}],
+    italy:     [{city:'Rome',zh:'羅馬',lat:41.9028,lon:12.4964},{city:'Milan',zh:'米蘭',lat:45.4654,lon:9.1859},{city:'Florence',zh:'佛羅倫斯',lat:43.7696,lon:11.2558},{city:'Venice',zh:'威尼斯',lat:45.4408,lon:12.3155}],
+    greece:    [{city:'Athens',zh:'雅典',lat:37.9838,lon:23.7275},{city:'Santorini',zh:'聖托里尼',lat:36.3932,lon:25.4615},{city:'Mykonos',zh:'米克諾斯',lat:37.4467,lon:25.3289}],
+    morocco:   [{city:'Marrakech',zh:'馬拉喀什',lat:31.6295,lon:-7.9811},{city:'Casablanca',zh:'卡薩布蘭卡',lat:33.5731,lon:-7.5898}],
+    maldives:  [{city:'Malé',zh:'馬列',lat:4.1755,lon:73.5093}],
+    korea:     [{city:'Seoul',zh:'首爾',lat:37.5665,lon:126.9780},{city:'Busan',zh:'釜山',lat:35.1796,lon:129.0756},{city:'Jeju',zh:'濟州',lat:33.4996,lon:126.5312}],
+    singapore: [{city:'Singapore',zh:'新加坡',lat:1.3521,lon:103.8198}],
+    usa:       [{city:'New York',zh:'紐約',lat:40.7128,lon:-74.0060},{city:'Los Angeles',zh:'洛杉磯',lat:34.0522,lon:-118.2437},{city:'Las Vegas',zh:'拉斯維加斯',lat:36.1699,lon:-115.1398}],
+    australia: [{city:'Sydney',zh:'雪梨',lat:-33.8688,lon:151.2093},{city:'Melbourne',zh:'墨爾本',lat:-37.8136,lon:144.9631},{city:'Gold Coast',zh:'黃金海岸',lat:-28.0167,lon:153.4000}],
   };
 
-  // 決定要查哪些城市的座標
   const allCoords = COORDS[trip.country] || [];
   let targets = [];
 
   if (trip.cities && trip.cities.length > 0 && allCoords.length > 0) {
-    // 中文→英文城市對應表
     const zhMap = {'曼谷':'bangkok','普吉':'phuket','普吉島':'phuket','清邁':'chiang mai','芭達雅':'pattaya','芭提雅':'pattaya','東京':'tokyo','大阪':'osaka','京都':'kyoto','札幌':'sapporo','首爾':'seoul','釜山':'busan','濟州':'jeju','濟州島':'jeju','巴黎':'paris','尼斯':'nice','里昂':'lyon','羅馬':'rome','米蘭':'milan','翡冷翠':'florence','佛羅倫斯':'florence','威尼斯':'venice','雅典':'athens','聖托里尼':'santorini','米克諾斯':'mykonos','馬拉喀什':'marrakech','卡薩布蘭卡':'casablanca','新加坡':'singapore','紐約':'new york','洛杉磯':'los angeles','拉斯維加斯':'las vegas','雪梨':'sydney','墨爾本':'melbourne','黃金海岸':'gold coast'};
     trip.cities.forEach(cityName => {
       const mapped = zhMap[cityName] || cityName.toLowerCase();
-      const found = allCoords.find(c =>
-        c.city.toLowerCase() === mapped ||
-        c.city.toLowerCase().includes(mapped) ||
-        mapped.includes(c.city.toLowerCase())
-      );
-      if (found && !targets.find(t => t.city === found.city)) targets.push(found);
+      const found = allCoords.find(c => c.city.toLowerCase() === mapped || c.city.toLowerCase().includes(mapped) || mapped.includes(c.city.toLowerCase()));
+      if (found && !targets.find(t => t.city === found.city)) targets.push({...found, displayName: cityName});
     });
-    // 一個都沒對應到 → 用預設第一個
-    if (targets.length === 0) targets = [allCoords[0]];
+    if (targets.length === 0) targets = [{...allCoords[0], displayName: allCoords[0].zh}];
   } else {
-    // 沒設城市 → 用國家預設
-    targets = allCoords.length > 0 ? [allCoords[0]] : [];
+    targets = allCoords.length > 0 ? [{...allCoords[0], displayName: allCoords[0].zh}] : [];
   }
 
-  // 最多顯示 2 個
-  targets = targets.slice(0, 2);
+  weatherTargets = targets;
 
-  const displayCity = targets[0]?.city || trip.countryName || '';
+  const firstName = targets[0]?.displayName || targets[0]?.city || '';
+  content.innerHTML = '<div style="font-size:.58rem;opacity:.65;letter-spacing:.12em;text-transform:uppercase;color:white;margin-bottom:6px">' + firstName.toUpperCase() + '</div><div style="display:flex;align-items:center;gap:10px"><div style="font-family:var(--font-display);font-size:2.4rem;font-weight:300;color:rgba(255,255,255,.35);line-height:1">--°</div><div style="font-size:.68rem;color:rgba(255,255,255,.45)">取得天氣中...</div></div>';
 
-  // 立即顯示 loading
-  content.innerHTML = `
-    <div style="font-size:.58rem;opacity:.65;letter-spacing:.12em;text-transform:uppercase;color:white;margin-bottom:6px">${displayCity.toUpperCase()}</div>
-    <div style="display:flex;align-items:center;gap:10px">
-      <div style="font-family:var(--font-display);font-size:2.4rem;font-weight:300;color:rgba(255,255,255,.35);line-height:1">--°</div>
-      <div style="font-size:.68rem;color:rgba(255,255,255,.45)">取得天氣中...</div>
-    </div>`;
-
-  if (targets.length === 0) {
-    content.innerHTML = `<div style="font-size:.75rem;color:rgba(255,255,255,.5)">暫無天氣資料</div>`;
-    return;
-  }
+  if (targets.length === 0) { content.innerHTML = '<div style="font-size:.75rem;color:rgba(255,255,255,.5)">暫無天氣資料</div>'; return; }
 
   try {
     const results = await Promise.all(targets.map(async t => {
-      const r = await fetch(
-        `https://api.open-meteo.com/v1/forecast?latitude=${t.lat}&longitude=${t.lon}&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=1`
-      );
+      const r = await fetch('https://api.open-meteo.com/v1/forecast?latitude='+t.lat+'&longitude='+t.lon+'&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=1');
       const d = await r.json();
       const temp = Math.round(d.current?.temperature_2m ?? 0);
       const tempMax = Math.round(d.daily?.temperature_2m_max?.[0] ?? temp);
       const tempMin = Math.round(d.daily?.temperature_2m_min?.[0] ?? temp);
       const code = d.current?.weather_code ?? 0;
-      const icon = code <= 1 ? '☀️' : code <= 3 ? '⛅' : code <= 48 ? '🌫️' : code <= 67 ? '🌧️' : code <= 77 ? '🌨️' : '🌦️';
-      const desc = code <= 1 ? '晴天' : code <= 3 ? '多雲' : code <= 48 ? '有霧' : code <= 67 ? '有雨' : code <= 77 ? '下雪' : '陣雨';
-      return { city: t.city, temp, tempMax, tempMin, icon, desc };
+      const icon = code<=1?'☀️':code<=3?'⛅':code<=48?'🌫️':code<=67?'🌧️':code<=77?'🌨️':'🌦️';
+      const desc = code<=1?'晴天':code<=3?'多雲':code<=48?'有霧':code<=67?'有雨':code<=77?'下雪':'陣雨';
+      return {city:t.city, displayName:t.displayName||t.city, temp, tempMax, tempMin, icon, desc};
     }));
-
     const valid = results.filter(Boolean);
-    if (valid.length === 0) throw new Error('no valid results');
-
-    const timeStr = new Date().toLocaleTimeString('zh-TW', { hour:'2-digit', minute:'2-digit' });
-
-    if (valid.length === 1) {
-      const w = valid[0];
-      content.innerHTML = `
-        <div style="font-size:.58rem;opacity:.72;letter-spacing:.12em;text-transform:uppercase;color:white;margin-bottom:4px">${w.city.toUpperCase()}</div>
-        <div style="display:flex;align-items:flex-end;gap:12px">
-          <div>
-            <div style="font-family:var(--font-display);font-size:2.4rem;font-weight:300;color:white;line-height:1">${w.temp}°</div>
-            <div style="font-size:.62rem;color:rgba(255,255,255,.65);margin-top:2px">${w.tempMin}° – ${w.tempMax}°</div>
-            <div style="font-size:.68rem;color:rgba(255,255,255,.8);margin-top:2px">${w.desc}</div>
-          </div>
-          <div style="font-size:2rem;margin-bottom:4px">${w.icon}</div>
-        </div>
-        <div style="font-size:.58rem;color:rgba(255,255,255,.55);margin-top:8px">SYNC · ${timeStr}</div>`;
-    } else {
-      const cols = valid.map((w, i) => `
-        <div style="flex:1;text-align:center;${i > 0 ? 'border-left:1px solid rgba(255,255,255,.2);' : ''}padding:0 10px">
-          <div style="font-size:.5rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.6);margin-bottom:6px">${w.city.toUpperCase()}</div>
-          <div style="font-family:var(--font-display);font-size:2rem;font-weight:300;color:white;line-height:1">${w.temp}°</div>
-          <div style="font-size:.55rem;color:rgba(255,255,255,.5);margin:3px 0">${w.tempMin}°–${w.tempMax}°</div>
-          <div style="font-size:1.5rem;margin:4px 0">${w.icon}</div>
-        </div>`).join('');
-      content.innerHTML = `
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-          <div style="font-size:.52rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.5)">即時天氣</div>
-          <div style="display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.12);padding:2px 8px;border-radius:999px">
-            <div style="width:5px;height:5px;border-radius:50%;background:#4ade80;animation:pulse 2s ease infinite"></div>
-            <span style="font-size:.5rem;color:rgba(255,255,255,.8)">LIVE</span>
-          </div>
-        </div>
-        <div style="display:flex">${cols}</div>
-        <div style="font-size:.5rem;color:rgba(255,255,255,.35);text-align:center;margin-top:8px">SYNC · ${timeStr}</div>`;
-    }
+    if (valid.length === 0) throw new Error('no results');
+    valid.forEach(w => { weatherCache[w.city] = w; });
+    renderWeatherCard(valid, 0);
   } catch(e) {
-    content.innerHTML = `
-      <div style="font-size:.58rem;opacity:.65;letter-spacing:.12em;text-transform:uppercase;color:white;margin-bottom:6px">${displayCity.toUpperCase()}</div>
-      <div style="font-size:.75rem;color:rgba(255,255,255,.45)">天氣載入失敗，請稍後再試</div>`;
+    content.innerHTML = '<div style="font-size:.58rem;opacity:.65;letter-spacing:.12em;text-transform:uppercase;color:white;margin-bottom:6px">'+firstName.toUpperCase()+'</div><div style="font-size:.75rem;color:rgba(255,255,255,.45)">天氣載入失敗，請稍後再試</div>';
   }
 }
 
+function renderWeatherCard(weatherList, activeIdx) {
+  const content = document.getElementById('weather-content');
+  if (!content) return;
+  const w = weatherList[activeIdx];
+  const timeStr = new Date().toLocaleTimeString('zh-TW', {hour:'2-digit',minute:'2-digit'});
+
+  const tabsHTML = weatherList.length > 1
+    ? '<div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">'
+      + weatherList.map((city, i) =>
+        '<button onclick="switchWeatherCity('+i+')" style="padding:3px 11px;border-radius:999px;font-size:.62rem;font-weight:600;cursor:pointer;border:1px solid '+(i===activeIdx?'rgba(255,255,255,.7)':'rgba(255,255,255,.25)')+';background:'+(i===activeIdx?'rgba(255,255,255,.18)':'transparent')+';color:'+(i===activeIdx?'white':'rgba(255,255,255,.5)')+'">'+city.displayName+'</button>'
+      ).join('') + '</div>'
+    : '';
+
+  content.innerHTML = tabsHTML
+    + '<div style="display:flex;align-items:flex-end;gap:14px">'
+    + '<div>'
+    + '<div style="font-size:.55rem;opacity:.65;letter-spacing:.14em;text-transform:uppercase;color:white;margin-bottom:6px">'+w.displayName.toUpperCase()+'</div>'
+    + '<div style="font-family:var(--font-display);font-size:2.6rem;font-weight:300;color:white;line-height:1">'+w.temp+'°</div>'
+    + '<div style="font-size:.62rem;color:rgba(255,255,255,.6);margin-top:3px">'+w.tempMin+'° – '+w.tempMax+'°</div>'
+    + '<div style="font-size:.7rem;color:rgba(255,255,255,.85);margin-top:2px">'+w.desc+'</div>'
+    + '</div>'
+    + '<div style="font-size:2.4rem;margin-bottom:6px;line-height:1">'+w.icon+'</div>'
+    + '</div>'
+    + '<div style="display:flex;align-items:center;gap:6px;margin-top:10px">'
+    + '<div style="width:5px;height:5px;border-radius:50%;background:#4ade80;animation:pulse 2s ease infinite"></div>'
+    + '<span style="font-size:.52rem;color:rgba(255,255,255,.45);letter-spacing:.06em">SYNC · '+timeStr+'</span>'
+    + '</div>';
+}
+
+function switchWeatherCity(idx) {
+  const list = weatherTargets.map(t => weatherCache[t.city]).filter(Boolean);
+  if (list.length > idx) renderWeatherCard(list, idx);
+}
+
+
+window.renderHero = renderHero;
+window.switchWeatherCity = switchWeatherCity;
+window.renderWeatherCard = renderWeatherCard;
 // Expose globals
 window.exchangeRates = {};
 window.tripCurrency = 'TWD';
