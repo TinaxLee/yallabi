@@ -16,23 +16,26 @@
 <link rel="stylesheet" href="style.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-// 全域錯誤捕捉（過濾跨來源假警報）
+// 全域錯誤捕捉 — 顯示完整資訊幫助偵錯
 window.onerror = function(msg, src, line, col, err) {
-  // 跨來源 script 的 "Script error." 是瀏覽器安全機制，非真實錯誤，忽略
   if (msg === 'Script error.' || msg === 'Script error') return true;
-  const el = document.getElementById('splash-debug');
-  if (el) el.textContent = '錯誤: ' + msg + ' (行' + line + ')';
-  console.error('[Yallabi Error]', msg, src, line);
+  var el = document.getElementById('splash-debug');
+  var info = msg + '\nline:' + line + ' col:' + col;
+  if (err && err.stack) info += '\n' + err.stack.slice(0, 200);
+  if (el) {
+    el.style.fontSize = '.55rem';
+    el.style.whiteSpace = 'pre';
+    el.textContent = info;
+  }
+  console.error('[Yallabi Error]', msg, src, line, col, err);
 };
 window.addEventListener('unhandledrejection', function(e) {
-  const reason = e.reason;
-  // 忽略跨來源遮蔽錯誤和 Firebase 內部錯誤
+  var reason = e.reason;
   if (!reason) return;
-  if (reason?.name === 'AbortError') return;
-  if (reason?.message === 'Script error.' || reason?.message === 'Script error') return;
-  if (reason?.code === 'ERR_NETWORK_CHANGED') return;
-  // 只在 dev 模式顯示，不影響 splash
-  console.warn('[Yallabi Promise]', reason?.message || reason);
+  if ((reason && reason.name) === 'AbortError') return;
+  if ((reason && reason.message) === 'Script error.' || (reason && reason.message) === 'Script error') return;
+  if ((reason && reason.code) === 'ERR_NETWORK_CHANGED') return;
+  console.warn('[Yallabi Promise]', (reason && reason.message) || reason);
 });
 </script>
 <!-- Firebase -->
@@ -172,20 +175,22 @@ function renderHero(trip) {
   // 旅行標籤（A+C 混合風格）
   const info = COUNTRY_THEMES[trip.country] || { flag:'🌍', name: trip.countryName || '' };
   const year = trip.departureDate ? new Date(trip.departureDate).getFullYear() : '';
-  const days = trip.days?.length ? `${trip.days.length} 天` : '';
-  const cities = trip.cities?.length ? trip.cities.slice(0,3).join('、') : '';
+  const days = (trip.days && trip.days.length) ? trip.days.length + ' 天' : '';
+  const cities = (trip.cities && trip.cities.length) ? trip.cities.slice(0,3).join('、') : '';
 
-  tripLabelEl.innerHTML = `
-    <div style="display:inline-flex;align-items:center;gap:0;background:var(--surface);border:1px solid var(--border2);border-radius:10px;overflow:hidden;margin-top:2px">
-      <div style="padding:6px 10px;border-right:1px solid var(--border2);display:flex;align-items:center;gap:6px">
-        <span style="font-size:.85rem;filter:grayscale(.3)">${info.flag}</span>
-        <div style="text-align:left">
-          <div style="font-size:.78rem;font-weight:700;color:var(--text);line-height:1.2">${info.name} ${year}</div>
-          ${cities ? `<div style="font-size:.6rem;color:var(--text3);margin-top:1px">${cities}</div>` : ''}
-        </div>
-      </div>
-      ${days ? `<div style="padding:6px 10px;font-size:.72rem;font-weight:700;color:var(--accent);letter-spacing:.04em">${days}</div>` : ''}
-    </div>`;
+  var citiesHTML = cities ? '<div style="font-size:.6rem;color:var(--text3);margin-top:1px">' + cities + '</div>' : '';
+  var daysHTML = days ? '<div style="padding:6px 10px;font-size:.72rem;font-weight:700;color:var(--accent);letter-spacing:.04em">' + days + '</div>' : '';
+
+  tripLabelEl.innerHTML = '<div style="display:inline-flex;align-items:center;gap:0;background:var(--surface);border:1px solid var(--border2);border-radius:10px;overflow:hidden;margin-top:2px">'
+    + '<div style="padding:6px 10px;border-right:1px solid var(--border2);display:flex;align-items:center;gap:6px">'
+    + '<span style="font-size:.85rem;filter:grayscale(.3)">' + info.flag + '</span>'
+    + '<div style="text-align:left">'
+    + '<div style="font-size:.78rem;font-weight:700;color:var(--text);line-height:1.2">' + info.name + ' ' + year + '</div>'
+    + citiesHTML
+    + '</div>'
+    + '</div>'
+    + daysHTML
+    + '</div>';
 }
 
 function updateCountdown(departureDate) {
@@ -209,8 +214,8 @@ function switchTab(tab) {
   currentNavTab = tab;
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById(`page-${tab}`)?.classList.add('active');
-  document.getElementById(`nav-${tab}`)?.classList.add('active');
+  document.getElementById(`page-${tab}`) && document.getElementById(`page-${tab}`).classList.add('active');
+  document.getElementById(`nav-${tab}`) && document.getElementById(`nav-${tab}`).classList.add('active');
   // render content
   if (tab === 'itinerary') renderItinerary();
   if (tab === 'expense')   renderExpenses();
@@ -226,7 +231,7 @@ function switchTab(tab) {
       turkey:'tr', malaysia:'ms', usa:'en', australia:'en',
       singapore:'ms', default:'en'
     };
-    const country = currentTrip?.country || 'default';
+    const country = (currentTrip && currentTrip.country) || 'default';
     const lang = countryLangMap[country] || 'en';
     const langSel = document.getElementById('translate-lang');
     if (langSel) langSel.value = lang;
@@ -301,7 +306,7 @@ function renderItinerary() {
   if (!currentTripId) {
     const container = document.getElementById('itinerary-list');
     if (container) container.innerHTML = noTripHTML('🗺️', '建立你的第一趟旅行<br>開始規劃行程吧');
-    document.getElementById('day-tabs')?.replaceChildren();
+    document.getElementById('day-tabs') && document.getElementById('day-tabs').replaceChildren();
     return;
   }
   renderDayTabs();
@@ -378,31 +383,27 @@ function renderItinerary() {
       : '';
 
     return '<div class="it-new-wrap" id="itcard-' + item.id + '">'
-      // 時間軸列
       + '<div style="display:flex;gap:12px">'
-      // 左側：時間 + 節點
       + '<div style="width:38px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;padding-top:13px">'
       + '<div class="it-timeline-dot" style="width:10px;height:10px;border-radius:50%;background:' + (isOpen ? barColor : 'var(--border2)') + ';border:2px solid var(--surface);box-shadow:0 0 0 2px ' + (isOpen ? barColor : 'var(--border2)') + ';z-index:1;flex-shrink:0;transition:all .2s"></div>'
       + (item.startTime ? '<div style="font-size:.58rem;font-weight:600;color:var(--text3);margin-top:5px;white-space:nowrap">' + item.startTime + '</div>' : '')
       + '</div>'
-      // 右側：卡片
       + '<div style="flex:1;min-width:0;margin-bottom:4px">'
       + '<div style="background:var(--surface);border-radius:14px;border:1px solid var(--border);box-shadow:0 1px 3px rgba(80,68,48,.05),0 4px 14px rgba(80,68,48,.08),0 10px 24px rgba(80,68,48,.05);overflow:hidden">'
-      // 카드 헤더
-      + '<div style="display:flex;align-items:center;gap:0;cursor:pointer;user-select:none" data-cid="' + item.id + '" onclick="toggleItCard(this.getAttribute('data-cid'))">'
+      + '<div style="display:flex;align-items:center;gap:0;cursor:pointer;user-select:none" data-cid="' + item.id + '" onclick="toggleItCard(this.dataset.cid)">'
       + '<div style="width:3px;background:' + barColor + ';align-self:stretch;flex-shrink:0;border-radius:0"></div>'
       + '<div style="flex:1;min-width:0;padding:12px 10px 12px 12px">'
       + '<div style="font-size:.9rem;font-weight:700;color:var(--text);line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + (item.name||'未命名') + '</div>'
       + (item.endTime ? '<div style="font-size:.62rem;color:var(--text3);margin-top:2px">' + (item.startTime||'') + ' – ' + item.endTime + '</div>' : '')
       + '</div>'
-      // 右側：類型 chip + 按鈕
+
       + '<div style="display:flex;align-items:center;gap:4px;padding-right:10px;flex-shrink:0">'
       + '<span style="font-size:.58rem;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--bg2);color:var(--text3);white-space:nowrap">' + typeLabel + '</span>'
       + '<button onclick="event.stopPropagation();editItinerary(\'' + item.id + '\')" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:transparent;color:var(--text3);font-size:.78rem;flex-shrink:0;transition:background .15s" onmouseenter="this.style.background=\'var(--bg2)\'" onmouseleave="this.style.background=\'transparent\'">✏️</button>'
       + '<button onclick="event.stopPropagation();deleteItinerary(\'' + item.id + '\')" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:transparent;color:var(--text3);font-size:.78rem;flex-shrink:0;transition:background .15s" onmouseenter="this.style.background=\'var(--bg2)\'" onmouseleave="this.style.background=\'transparent\'">✕</button>'
       + '</div>'
       + '</div>'
-      // 展開內容
+
       + (isOpen ? detailHTML : '<div class="it-new-detail-hidden" data-id="' + item.id + '" data-address="' + encodeURIComponent(item.address||'') + '" data-note="' + encodeURIComponent(item.note||'') + '" data-name="' + encodeURIComponent(item.name||'') + '"></div>')
       + '</div>'
       + '</div>'
@@ -478,7 +479,7 @@ function openAddItinerary(editId = null) {
 
   // 動態填入 Day 選項
   const daySelect = form.querySelector('#it-day');
-  const days = currentTrip?.days || ['Day 1'];
+  const days = (currentTrip && currentTrip.days) || ['Day 1'];
   daySelect.innerHTML = days.map(d => `<option value="${d}">${d}</option>`).join('');
 
   if (editId) {
@@ -636,8 +637,16 @@ function getDisplayRate() {
 }
 
 function getCurrencySymbol(cur) {
-  const syms = { TWD:'NT$', THB:'฿', JPY:'¥', EUR:'€', USD:'$', KRW:'₩', SGD:'S$', AUD:'A$', GBP:'£' };
-  return syms[cur] || cur + ' ';
+  if (cur === 'TWD') return 'NT$';
+  if (cur === 'THB') return 'THB ';
+  if (cur === 'JPY') return 'JPY ';
+  if (cur === 'EUR') return 'EUR ';
+  if (cur === 'USD') return '$';
+  if (cur === 'KRW') return 'KRW ';
+  if (cur === 'SGD') return 'S$';
+  if (cur === 'AUD') return 'A$';
+  if (cur === 'GBP') return 'GBP ';
+  return cur + ' ';
 }
 
 function convertCurrency(amount, from, to) {
@@ -667,7 +676,8 @@ function renderExpenses() {
 }
 
 function renderExpenseSummary() {
-  const members = membersData.length > 0 ? membersData : [{ uid: currentUser?.uid, name: '我' }];
+  var defaultMember = { uid: (currentUser && currentUser.uid), name: '我' };
+  var members = membersData.length > 0 ? membersData : [defaultMember];
   
   // Calculate totals
   const totals = {};
@@ -691,10 +701,13 @@ function renderExpenseSummary() {
   });
 
   // Minimum transfers algorithm
-  const balances = members.map(m => ({
-    uid: m.uid, name: m.name || m.displayName || '旅伴',
-    balance: (totals[m.uid]?.paid || 0) - (totals[m.uid]?.owed || 0)
-  }));
+  const balances = [];
+  for (var bi = 0; bi < members.length; bi++) {
+    var m = members[bi];
+    var paid = (totals[m.uid] && totals[m.uid].paid) || 0;
+    var owed = (totals[m.uid] && totals[m.uid].owed) || 0;
+    balances.push({ uid: m.uid, name: m.name || m.displayName || '旅伴', balance: paid - owed });
+  }
 
   const transfers = calculateMinTransfers(balances);
   const totalTWD = expensesData.reduce((sum, e) => sum + convertCurrency(parseFloat(e.amount)||0, e.currency||tripCurrency, baseCurrency), 0);
@@ -702,33 +715,23 @@ function renderExpenseSummary() {
 
   const el = document.getElementById('expense-summary');
   if (!el) return;
-  el.innerHTML = `
-    <div class="settle-card">
-      <div class="settle-total-row">
-        <div class="settle-total-col">
-          <div class="settle-total-label">${tripCurrency} 總計</div>
-          <div class="settle-total-num">${tripCurrency === 'TWD' ? 'NT$' : tripCurrency} ${totalTrip.toLocaleString()}</div>
-        </div>
-        <div class="settle-total-col" style="text-align:right">
-          <div class="settle-total-label">TWD 換算</div>
-          <div class="settle-total-num">NT$ ${Math.round(totalTWD).toLocaleString()}</div>
-        </div>
-      </div>
-      ${transfers.length > 0 ? `
-        <div class="settle-hr"></div>
-        <div class="settle-section-label">共同結算（已扣除個人/請客）</div>
-        ${transfers.map(t => `
-          <div class="settle-row">
-            <span class="settle-from-to">${t.from} 需給 ${t.to}</span>
-            <span class="settle-amount">${baseCurrency === 'TWD' ? 'NT$' : baseCurrency} ${Math.round(t.amount).toLocaleString()}</span>
-          </div>`).join('')}
-      ` : `
-        <div class="settle-hr"></div>
-        <div class="settle-row" style="justify-content:center">
-          <span style="font-size:.82rem;color:rgba(255,255,255,.7)">✓ 帳目平衡，無需結算</span>
-        </div>
-      `}
-    </div>`;
+  // 避免巢狀 template literal（Safari 相容性問題）
+  const currLabel = tripCurrency === 'TWD' ? 'NT$' : tripCurrency;
+  const baseLabel = baseCurrency === 'TWD' ? 'NT$' : baseCurrency;
+
+  let transfersHTML = '';
+  if (transfers.length > 0) {
+    var rows = '';
+    for (var ti = 0; ti < transfers.length; ti++) {
+      var t = transfers[ti];
+      rows += '<div class="settle-row"><span class="settle-from-to">' + t.from + ' 需給 ' + t.to + '</span><span class="settle-amount">' + baseLabel + ' ' + Math.round(t.amount).toLocaleString() + '</span></div>';
+    }
+    transfersHTML = '<div class="settle-hr"></div><div class="settle-section-label">共同結算（已扣除個人/請客）</div>' + rows;
+  } else {
+    transfersHTML = '<div class="settle-hr"></div><div class="settle-row" style="justify-content:center"><span style="font-size:.82rem;color:rgba(255,255,255,.7)">✓ 帳目平衡，無需結算</span></div>';
+  }
+
+  el.innerHTML = '<div class="settle-card"><div class="settle-total-row"><div class="settle-total-col"><div class="settle-total-label">' + tripCurrency + ' 總計</div><div class="settle-total-num">' + currLabel + ' ' + totalTrip.toLocaleString() + '</div></div><div class="settle-total-col" style="text-align:right"><div class="settle-total-label">TWD 換算</div><div class="settle-total-num">NT$ ' + Math.round(totalTWD).toLocaleString() + '</div></div></div>' + transfersHTML + '</div>';
 }
 
 function calculateMinTransfers(balances) {
@@ -793,7 +796,7 @@ function renderExpenseList() {
           <div class="expense-icon">${cat.icon}</div>
           <div style="flex:1">
             <div style="font-size:.88rem;font-weight:500;color:var(--text)">${e.name||''}</div>
-            <div style="font-size:.7rem;color:var(--text3)">${cat.label} · ${payer?.name||'我'} 支付 · ${getSplitLabel(e.splitType)}</div>
+            <div style="font-size:.7rem;color:var(--text3)">${cat.label} · ${(payer && payer.name)||'我'} 支付 · ${getSplitLabel(e.splitType)}</div>
           </div>
           <div style="text-align:right">
             <div style="font-family:'Noto Serif TC',serif;font-size:1rem;font-weight:400;color:var(--text)">${e.currency||tripCurrency} ${parseFloat(e.amount||0).toLocaleString()}</div>
@@ -856,7 +859,7 @@ function openAddExpense(editId = null) {
     form.reset();
     form.querySelector('#exp-currency').value = tripCurrency;
     form.querySelector('#exp-date').valueAsDate = new Date();
-    form.querySelector('#exp-payer').value = currentUser?.uid || '';
+    form.querySelector('#exp-payer').value = (currentUser && currentUser.uid) || '';
     delete form.dataset.editId;
     document.getElementById('modal-expense-title').textContent = '記下一筆花費';
   }
@@ -869,7 +872,7 @@ function editExpense(id) { openAddExpense(id); }
 function renderPayerOptions() {
   const sel = document.getElementById('exp-payer');
   if (!sel) return;
-  const options = membersData.length > 0 ? membersData : [{ uid: currentUser?.uid, name:'我' }];
+  const options = membersData.length > 0 ? membersData : [{ uid: (currentUser && currentUser.uid), name:'我' }];
   sel.innerHTML = options.map(m => `<option value="${m.uid}">${m.name || m.displayName || '我'}</option>`).join('');
 }
 
@@ -982,7 +985,7 @@ async function setBibiStyle(style) {
 
 async function saveBibiNickname() {
   const input = document.getElementById('bibi-nickname-field');
-  const name = input?.value.trim();
+  const name = (input && input.value).trim();
   if (!name) { showToast('請輸入暱稱'); return; }
   userNickname = name;
   try {
@@ -1013,7 +1016,7 @@ function openBibiDrawer() {
 
   // 自動設定語言
   const countryLangMap = { thailand:'th', japan:'ja', france:'fr', korea:'ko', germany:'de', spain:'es', morocco:'ar', indonesia:'id', vietnam:'vi', italy:'it', greece:'el', portugal:'pt', turkey:'tr', malaysia:'ms', usa:'en', australia:'en', singapore:'ms', default:'en' };
-  const country = currentTrip?.country || 'default';
+  const country = (currentTrip && currentTrip.country) || 'default';
   selectedTranslateLang = countryLangMap[country] || 'en';
   renderTranslateLangGrid();
 }
@@ -1081,8 +1084,8 @@ async function loadPhraseCards(themeKey) {
     b.style.borderColor = isActive ? 'var(--primary)' : 'var(--border)';
   });
 
-  const country = currentTrip?.country || 'default';
-  const countryName = COUNTRY_THEMES[country]?.name || '目的地';
+  const country = (currentTrip && currentTrip.country) || 'default';
+  const countryName = (COUNTRY_THEMES[country] && COUNTRY_THEMES[country].name) || '目的地';
   const langMap = { thailand:'th-TH', japan:'ja-JP', france:'fr-FR', korea:'ko-KR', germany:'de-DE', spain:'es-ES', morocco:'ar-SA', indonesia:'id-ID', vietnam:'vi-VN', italy:'it-IT', greece:'el-GR', portugal:'pt-PT', turkey:'tr-TR', malaysia:'ms-MY', singapore:'ms-MY', usa:'en-US', australia:'en-AU', default:'en-US' };
   const langCode = langMap[country] || 'en-US';
 
@@ -1097,7 +1100,7 @@ async function loadPhraseCards(themeKey) {
       body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: theme.prompts.join('\n') }], temperature: 0.3, max_tokens: 1000 })
     });
     const data = await response.json();
-    let text = data.choices?.[0]?.message?.content || '[]';
+    let text = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '[]';
     text = text.replace(/```json|```/g, '').trim();
     const phrases = JSON.parse(text);
 
@@ -1120,10 +1123,10 @@ async function loadPhraseCards(themeKey) {
 
 // ── 翻譯 tab ──
 async function translateText() {
-  const text = document.getElementById('translate-input')?.value.trim();
+  const text = (function(){var _e=document.getElementById('translate-input');return _e?_e.value.trim():''})().trim();
   if (!text) return;
   const langObj = TRANSLATE_LANGS.find(l => l.code === selectedTranslateLang);
-  const langName = langObj?.label || '英文';
+  const langName = (langObj && langObj.label) || '英文';
   const resultEl = document.getElementById('translate-result');
   if (!resultEl) return;
 
@@ -1143,7 +1146,7 @@ async function translateText() {
       })
     });
     const data = await response.json();
-    let raw = data.choices?.[0]?.message?.content || '{}';
+    let raw = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '{}';
     raw = raw.replace(/```json|```/g, '').trim();
     const result = JSON.parse(raw);
     const langCode = { th:'th-TH', ja:'ja-JP', ko:'ko-KR', fr:'fr-FR', it:'it-IT', de:'de-DE', es:'es-ES', vi:'vi-VN', id:'id-ID', ar:'ar-SA', el:'el-GR', en:'en-US' }[selectedTranslateLang] || 'en-US';
@@ -1186,8 +1189,8 @@ async function analyzeBibiPhoto(mode) {
   const resultEl = document.getElementById('bibi-photo-result');
   resultEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text3);font-size:.85rem">Bibi 辨識中...</div>';
 
-  const country = currentTrip?.country || 'default';
-  const countryName = COUNTRY_THEMES[country]?.name || '目的地';
+  const country = (currentTrip && currentTrip.country) || 'default';
+  const countryName = (COUNTRY_THEMES[country] && COUNTRY_THEMES[country].name) || '目的地';
 
   const prompt = mode === 'bill'
     ? '這是一張帳單或收據。請辨識所有項目和金額，以 JSON 格式回傳：{"items":[{"name":"項目名稱","amount":金額,"currency":"幣別"}],"total":總金額,"currency":"幣別","summary":"簡短說明"}。如果不是帳單請說明。'
@@ -1210,7 +1213,7 @@ async function analyzeBibiPhoto(mode) {
       })
     });
     const data = await response.json();
-    const text = data.content?.[0]?.text || '';
+    const text = (data.content && data.content[0] && data.content[0].text) || '';
 
     if (mode === 'bill') {
       try {
@@ -1356,7 +1359,7 @@ const PHRASE_THEMES = {
 };
 
 function getBibiQuickBtns() {
-  const country = currentTrip?.country || 'default';
+  const country = (currentTrip && currentTrip.country) || 'default';
   return BIBI_QUICK_BTNS[country] || BIBI_QUICK_BTNS.default;
 }
 
@@ -1364,11 +1367,12 @@ function renderBibiQuickBtns() {
   const container = document.getElementById('bibi-quick-btns');
   if (!container) return;
   const btns = getBibiQuickBtns();
-  container.innerHTML = btns.map(b =>
-    `<button class="quick-btn press" onclick="${b.type === 'phrases' ? `openPhraseCards('${b.q}')` : `quickAsk('${b.q.replace(/'/g, "\\'")}')`}">
-      ${b.label}
-    </button>`
-  ).join('');
+  container.innerHTML = btns.map(function(b) {
+    var fn = b.type === 'phrases'
+      ? 'openPhraseCards(\'' + b.q + '\')'
+      : 'quickAsk(\'' + b.q.replace(/'/g, "\\'") + '\')';
+    return '<button class="quick-btn press" onclick="' + fn + '">' + b.label + '</button>';
+  }).join('');
 }
 
 function quickAsk(q) {
@@ -1406,8 +1410,8 @@ async function sendBibiMessage() {
   input.value = '';
 
   const chat = document.getElementById('bibi-chat');
-  const country = currentTrip?.country || 'default';
-  const countryName = COUNTRY_THEMES[country]?.name || '目的地';
+  const country = (currentTrip && currentTrip.country) || 'default';
+  const countryName = (COUNTRY_THEMES[country] && COUNTRY_THEMES[country].name) || '目的地';
   const name = userNickname || '旅人';
 
   // User bubble
@@ -1429,7 +1433,7 @@ async function sendBibiMessage() {
 用戶暱稱：「${name}」。自然地偶爾叫對方名字（不要每句都叫，大概3-4句叫一次）。
 絕對不要自己編造旅伴名字、家人名字或任何其他人的名字。
 
-當前旅行目的地：「${countryName}」${currentTrip?.cities?.length ? `，城市：${currentTrip.cities.join('、')}` : ''}。
+當前旅行目的地：「${countryName}」${(currentTrip && currentTrip.cities && currentTrip.cities.length) ? `，城市：${currentTrip.cities.join('、')}` : ''}。
 
 【說話風格】${styleInfo.prompt}
 
@@ -1438,7 +1442,7 @@ async function sendBibiMessage() {
 - 像朋友聊天，用自然段落不要條列式
 - 回答長度適中（3-5句），重點突出
 - 介紹具體地點時附上：MAP_SEARCH: {"name": "地點名稱"}
-- 翻譯單字或短句時用：TRANSLATION_CARD: {"original": "中文", "translated": "翻譯", "phonetic": "拼音", "lang": "${currentTrip?.country || 'default'}"}`;
+- 翻譯單字或短句時用：TRANSLATION_CARD: {"original": "中文", "translated": "翻譯", "phonetic": "拼音", "lang": "${(currentTrip && currentTrip.country) || 'default'}"}`;
 
   try {
     const response = await fetch('https://yallabi-ai.hello-yallabi.workers.dev', {
@@ -1452,10 +1456,10 @@ async function sendBibiMessage() {
       })
     });
     const data = await response.json();
-    let text = data.choices?.[0]?.message?.content || 'Bibi 眼花了，再試一次？';
+    let text = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || 'Bibi 眼花了，再試一次？';
 
     bibiChatHistory.push({ role: 'assistant', content: text });
-    document.getElementById(thinkId)?.remove();
+    (function(){var _e=document.getElementById(thinkId);if(_e)_e.remove();})();
 
     text = processMapSearch(text);
     text = processTranslationCard(text);
@@ -1467,7 +1471,7 @@ async function sendBibiMessage() {
     chat.scrollTop = chat.scrollHeight;
 
   } catch(e) {
-    document.getElementById(thinkId)?.remove();
+    (function(){var _e=document.getElementById(thinkId);if(_e)_e.remove();})();
     chat.innerHTML += `<div class="flex mb-3" style="align-items:flex-start;gap:8px">
       <div style="width:28px;height:28px;border-radius:50%;background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;flex-shrink:0">B</div>
       <div class="chat-bubble-bibi" style="color:var(--red)">網路不穩，再試一次？</div>
@@ -1564,11 +1568,13 @@ function renderStamps() {
   const builtinHTML = builtinCountries.map(([key, info]) => {
     const earned = archivedTrips.some(t => t.country === key);
     const tripCount = archivedTrips.filter(t => t.country === key).length;
-    return `<div class="stamp ${earned ? 'earned' : 'locked'}" onclick="${earned ? `openMemory('${key}')` : ''}">
-      <div class="stamp-flag">${info.flag}</div>
-      <div class="stamp-name">${info.name.toUpperCase()}</div>
-      ${tripCount > 1 ? `<div style="font-size:.48rem;color:var(--stamp);font-weight:700;margin-top:1px">×${tripCount}</div>` : ''}
-    </div>`;
+    var stampOnclick = earned ? "openMemory('" + key + "')" : '';
+    var tripCountHTML = tripCount > 1 ? '<div style="font-size:.48rem;color:var(--stamp);font-weight:700;margin-top:1px">×' + tripCount + '</div>' : '';
+    return '<div class="stamp ' + (earned ? 'earned' : 'locked') + '" onclick="' + stampOnclick + '">'
+      + '<div class="stamp-flag">' + info.flag + '</div>'
+      + '<div class="stamp-name">' + info.name.toUpperCase() + '</div>'
+      + tripCountHTML
+      + '</div>';
   }).join('');
 
   // 渲染自訂國家
@@ -1589,7 +1595,7 @@ function renderStamps() {
   if (passportFlag) {
     // 顯示最近一次封存旅行的國旗
     const lastTrip = archivedTrips.sort((a,b) => (b.archivedAt||0)-(a.archivedAt||0))[0];
-    passportFlag.textContent = lastTrip ? (COUNTRY_THEMES[lastTrip.country]?.flag || '🌍') : '🌍';
+    passportFlag.textContent = lastTrip ? ((COUNTRY_THEMES[lastTrip.country] && COUNTRY_THEMES[lastTrip.country].flag) || '🌍') : '🌍';
   }
   if (passportCount) {
     passportCount.textContent = totalTrips > 0 ? `${totalTrips} trip${totalTrips > 1 ? 's' : ''}` : '0 trips';
@@ -1620,13 +1626,13 @@ function openMemory(country) {
     .sort((a,b) => (b.archivedAt||0) - (a.archivedAt||0))
     .map(t => {
       const date = t.departureDate ? formatDateShort(t.departureDate) : '日期未設定';
-      const days = t.days?.length || 0;
+      const days = (t.days && t.days.length) || 0;
       const jCount = journalData.filter(j => j.tripId === t.id).length;
       return `
       <div onclick="openTripMemory('${t.id}')" style="background:var(--surface);border-radius:var(--r-md);border:1px solid var(--border);padding:14px 16px;margin-bottom:10px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:all .15s ease" onmousedown="this.style.opacity='.8'" onmouseup="this.style.opacity='1'" ontouchstart="this.style.opacity='.8'" ontouchend="this.style.opacity='1'">
         <div>
           <div style="font-size:.9rem;font-weight:600;color:var(--text);margin-bottom:3px">${t.name || info.name}</div>
-          <div style="font-size:.7rem;color:var(--text3)">${date}${days ? ` · ${days} 天` : ''}${jCount ? ` · ${jCount} 篇日記` : ''}</div>
+          <div style="font-size:.7rem;color:var(--text3)">${date + (days ? ' · ' + days + ' 天' : '') + (jCount ? ' · ' + jCount + ' 篇日記' : '')}</div>
         </div>
         <div style="font-size:.8rem;color:var(--text3)">→</div>
       </div>`;
@@ -1657,18 +1663,16 @@ async function openTripMemory(tripId) {
       getDocs(collection(db,'trips',tripId,'journal')),
     ]);
 
-    const itItems = itSnap.docs.map(d => ({ id:d.id, ...d.data() }))
-      .sort((a,b) => (a.day||'').localeCompare(b.day||'') || (a.startTime||'').localeCompare(b.startTime||''));
+    const itItems = itSnap.docs.map(d => ({ id:d.id, ...d.data() })).sort((a,b) => (a.day||'').localeCompare(b.day||'') || (a.startTime||'').localeCompare(b.startTime||''));
     const exItems = expSnap.docs.map(d => ({ id:d.id, ...d.data() }));
-    const jItems = journalSnap.docs.map(d => ({ id:d.id, ...d.data() }))
-      .sort((a,b) => (a.date||'').localeCompare(b.date||''));
+    const jItems = journalSnap.docs.map(d => ({ id:d.id, ...d.data() })).sort((a,b) => (a.date||'').localeCompare(b.date||''));
 
     // 花費統計
     const totalTWD = exItems.reduce((sum, e) => sum + convertCurrency(parseFloat(e.amount)||0, e.currency||trip.currency||'TWD', 'TWD'), 0);
     const totalTrip = exItems.reduce((sum, e) => sum + (parseFloat(e.amount)||0), 0);
 
     // 封面照片（日記第一張）
-    const coverPhoto = jItems.find(j => j.photoURL)?.photoURL;
+    const coverPhoto = (function(){var _j=jItems.find(function(j){return j.photoURL;});return _j?_j.photoURL:null;})();
 
     // 心情統計
     const moodCounts = {};
@@ -1698,10 +1702,10 @@ async function openTripMemory(tripId) {
           </button>
         </div>
         <div style="font-size:1.1rem;font-weight:600;color:var(--text);margin-bottom:4px">${trip.name || info.name}</div>
-        ${trip.cities?.length ? `<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px">${trip.cities.map(c => `<span style="font-size:.68rem;background:var(--bg2);color:var(--text2);padding:3px 9px;border-radius:999px;border:1px solid var(--border)">${c}</span>`).join('')}</div>` : ''}
+        ${(trip.cities && trip.cities.length ? '<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px">' + trip.cities.map(function(c){return '<span style="font-size:.68rem;background:var(--bg2);color:var(--text2);padding:3px 9px;border-radius:999px;border:1px solid var(--border)">' + c + '</span>';}).join('') + '</div>' : '')}
         <div style="font-size:.72rem;color:var(--text3);margin-bottom:${moodSummary?'10px':'0'}">
           ${trip.departureDate ? formatDateShort(trip.departureDate) : ''}
-          ${trip.days?.length ? ` · ${trip.days.length} 天` : ''}
+          ${(trip.days && trip.days.length) ? ` · ${trip.days.length} 天` : ''}
           ${jItems.length ? ` · ${jItems.length} 篇日記` : ''}
         </div>
         ${moodSummary ? `<div style="font-size:.85rem;letter-spacing:.06em;margin-bottom:4px">${moodSummary}</div>` : ''}
@@ -1850,10 +1854,10 @@ function renderJournal() {
 
 function openAddJournal(editId = null) {
   const form = document.getElementById('form-journal');
-  const days = currentTrip?.days || [];
+  const days = (currentTrip && currentTrip.days) || [];
   // 填入 Day 選項
   const daySelect = form.querySelector('#jn-day');
-  daySelect.innerHTML = `<option value="">不指定</option>` + days.map(d => `<option value="${d}">${d}</option>`).join('');
+  daySelect.innerHTML = '<option value="">不指定</option>' + days.map(function(d){ return '<option value="' + d + '">' + d + '</option>'; }).join('');
   // 填入心情選項
   const moodContainer = form.querySelector('#jn-mood-options');
   moodContainer.innerHTML = JOURNAL_MOODS.map(m =>
@@ -1916,7 +1920,7 @@ async function saveJournal() {
   const day = form.querySelector('#jn-day').value;
   const date = form.querySelector('#jn-date').value;
   const moodInput = form.querySelector('input[name="jn-mood"]:checked');
-  const mood = moodInput?.value || '';
+  const mood = (moodInput && moodInput.value) || '';
   const photoFile = form.querySelector('#jn-photo').files[0];
 
   if (!content && !photoFile && !form.dataset.existingPhoto) {
@@ -2208,9 +2212,9 @@ const MISSION_CATEGORIES = [
 ];
 
 function getMissionCategories() {
-  const country = currentTrip?.country;
+  const country = (currentTrip && currentTrip.country);
   const flag = country && country !== 'default'
-    ? (COUNTRY_THEMES[country]?.flag || '🚩')
+    ? ((COUNTRY_THEMES[country] && COUNTRY_THEMES[country].flag) || '🚩')
     : '🚩';
   return MISSION_CATEGORIES.map(c => c.dynamic ? { ...c, icon: flag } : c);
 }
@@ -2319,7 +2323,7 @@ function renderPacking() {
   const container = document.getElementById('packing-list');
   if (!container) return;
   const filtered = packingData.filter(p => p.category === packCategoryFilter);
-  const members = membersData.length > 0 ? membersData : [{ uid: currentUser?.uid, name:'我' }];
+  const members = membersData.length > 0 ? membersData : [{ uid: (currentUser && currentUser.uid), name:'我' }];
 
   if (filtered.length === 0) {
     container.innerHTML = `<div style="text-align:center;padding:20px;color:var(--text3);font-size:.82rem">ALL CLEAR ✨</div>`;
@@ -2330,7 +2334,7 @@ function renderPacking() {
   const grouped = {};
   members.forEach(m => { grouped[m.uid] = []; });
   filtered.forEach(p => {
-    const uid = p.memberUid || currentUser?.uid;
+    const uid = p.memberUid || (currentUser && currentUser.uid);
     if (!grouped[uid]) grouped[uid] = [];
     grouped[uid].push(p);
   });
@@ -2378,7 +2382,7 @@ function editPackItem(id) {
   const form = document.getElementById('form-pack');
   form.querySelector('#pk-name').value = item.name || '';
   form.querySelector('#pk-category').value = item.category || 'clothes';
-  form.querySelector('#pk-member').value = item.memberUid || currentUser?.uid || '';
+  form.querySelector('#pk-member').value = item.memberUid || (currentUser && currentUser.uid) || '';
   form.dataset.editId = id;
   renderPackMemberOptions();
   openModal('modal-pack');
@@ -2387,7 +2391,7 @@ function editPackItem(id) {
 function renderPackMemberOptions() {
   const sel = document.getElementById('pk-member');
   if (!sel) return;
-  const members = membersData.length > 0 ? membersData : [{ uid: currentUser?.uid, name:'我' }];
+  const members = membersData.length > 0 ? membersData : [{ uid: (currentUser && currentUser.uid), name:'我' }];
   sel.innerHTML = members.map(m => `<option value="${m.uid}">${m.name || m.displayName || '我'}</option>`).join('');
 }
 
@@ -2418,10 +2422,13 @@ async function deletePackItem(id) {
 async function loadTrips() {
   const q = query(collection(db, 'trips'), orderBy('createdAt','desc'));
   const snap = await getDocs(q);
-  tripsData = snap.docs.filter(d => d.data().members?.includes(currentUser.uid)).map(d => ({ id:d.id, ...d.data() }));
+  tripsData = snap.docs.filter(d => {
+    var data = d.data();
+    return data && data.members && data.members.includes(currentUser.uid);
+  }).map(d => ({ id:d.id, ...d.data() }));
   renderTripSelector();
   if (tripsData.length > 0 && !currentTripId) {
-    selectTrip(tripsData.find(t => !t.archived)?.id || tripsData[0].id);
+    selectTrip((function(){var _t=tripsData.find(t => !t.archived);return _t?_t.id:null;})() || tripsData[0].id);
   } else if (tripsData.length === 0) {
     // 沒有旅行 → 觸發空狀態
     currentTripId = null;
@@ -2548,26 +2555,26 @@ async function createNewTrip() {
   const form = document.getElementById('form-new-trip');
   const country = form.querySelector('#nt-country').value;
   const countryName = country === 'other'
-    ? (form.querySelector('#nt-country-name')?.value.trim() || '')
-    : (COUNTRY_THEMES[country]?.name || '');
+    ? ((function(){var _e=form.querySelector('#nt-country-name');return _e?_e.value:''})() .trim() || '')
+    : ((COUNTRY_THEMES[country] && COUNTRY_THEMES[country].name) || '');
   const departure = form.querySelector('#nt-departure').value;
   const name = getAutoName();
 
   if (!departure) { showToast('請設定出發日期'); return; }
 
   // 加入輸入框裡還沒按 Enter 的城市
-  const cityInputVal = document.getElementById('nt-city-input')?.value.trim();
+  const cityInputVal = (document.getElementById('nt-city-input')||{value:''}).value.trim();
   if (cityInputVal && !ntCities.includes(cityInputVal)) {
     ntCities.push(cityInputVal);
   }
 
-  const daysCount = parseInt(form.querySelector('#nt-days')?.value) || 3;
+  const daysCount = parseInt((function(){var _e=form.querySelector('#nt-days');return _e?_e.value:''})() ) || 3;
   const days = Array.from({ length: Math.min(daysCount, 60) }, (_, i) => `Day ${i + 1}`);
 
   const tripData = {
     name,
     country: country || 'default',
-    countryName: countryName || COUNTRY_THEMES[country]?.name || '',
+    countryName: countryName || (COUNTRY_THEMES[country] && COUNTRY_THEMES[country].name) || '',
     cities: [...ntCities],
     departureDate: departure,
     members: [currentUser.uid],
@@ -2661,9 +2668,9 @@ function openSettings() {
 }
 
 function renderSettingsDays() {
-  const days = currentTrip?.days || [];
-  const dates = currentTrip?.dates || {};
-  const departure = currentTrip?.departureDate;
+  const days = (currentTrip && currentTrip.days) || [];
+  const dates = (currentTrip && currentTrip.dates) || {};
+  const departure = (currentTrip && currentTrip.departureDate);
   const container = document.getElementById('settings-days-list');
   if (!container) return;
   container.innerHTML = days.map((day, i) => {
@@ -2690,7 +2697,7 @@ function renderSettingsDays() {
 
 async function updateDayDate(day, dateVal) {
   if (!currentTripId) return;
-  const dates = { ...(currentTrip?.dates || {}), [day]: dateVal };
+  const dates = { ...((currentTrip && currentTrip.dates) || {}), [day]: dateVal };
   await updateDoc(doc(db,'trips',currentTripId), { dates });
   currentTrip.dates = dates;
   renderDayTabs();
@@ -2718,8 +2725,8 @@ async function saveSettings() {
 
 async function addDay() {
   const input = document.getElementById('new-day-input');
-  const name = input.value.trim() || `Day ${(currentTrip?.days?.length||0)+1}`;
-  const days = [...(currentTrip?.days || []), name];
+  const name = input.value.trim() || `Day ${((currentTrip && currentTrip.days && currentTrip.days.length)||0)+1}`;
+  const days = [...((currentTrip && currentTrip.days) || []), name];
   await updateDoc(doc(db,'trips',currentTripId), { days });
   currentTrip.days = days;
   input.value = '';
@@ -2730,7 +2737,7 @@ async function addDay() {
 
 async function deleteDay(idx) {
   if (!confirm('確定刪除這天？')) return;
-  const days = [...(currentTrip?.days || [])];
+  const days = [...((currentTrip && currentTrip.days) || [])];
   const removed = days.splice(idx, 1)[0];
   await updateDoc(doc(db,'trips',currentTripId), { days });
   currentTrip.days = days;
@@ -2740,7 +2747,7 @@ async function deleteDay(idx) {
 }
 
 async function editDayName(idx) {
-  const days = [...(currentTrip?.days || [])];
+  const days = [...((currentTrip && currentTrip.days) || [])];
   const newName = prompt('天數名稱', days[idx]);
   if (!newName) return;
   days[idx] = newName;
@@ -2764,7 +2771,7 @@ function openInvite() {
     <div style="margin-bottom:20px">
       <div style="font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:10px">旅行成員</div>
       ${membersData.map(m => {
-        const isMe = m.uid === currentUser?.uid;
+        const isMe = m.uid === (currentUser && currentUser.uid);
         return `
         <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
           <div onclick="${isMe ? 'openAvatarEditor()' : ''}" style="width:38px;height:38px;border-radius:50%;background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;${isMe ? 'cursor:pointer;' : ''}position:relative">
@@ -2775,7 +2782,7 @@ function openInvite() {
             <div style="font-size:.88rem;font-weight:500;color:var(--text)">${m.nickname || m.displayName || m.name || '旅伴'}${isMe ? ' <span style="font-size:.65rem;color:var(--text3)">(你)</span>' : ''}</div>
             <div style="font-size:.68rem;color:var(--text3)">${m.email || ''}</div>
           </div>
-          ${!isMe && currentTrip?.createdBy === currentUser?.uid ? `<button onclick="removeMember('${m.uid}')" style="font-size:.7rem;color:var(--text3);padding:4px 8px;background:var(--bg2);border-radius:6px">移除</button>` : ''}
+          ${!isMe && (currentTrip && currentTrip.createdBy) === (currentUser && currentUser.uid) ? `<button onclick="removeMember('${m.uid}')" style="font-size:.7rem;color:var(--text3);padding:4px 8px;background:var(--bg2);border-radius:6px">移除</button>` : ''}
         </div>`;
       }).join('')}
     </div>` : '';
@@ -2805,7 +2812,7 @@ async function shareInvite(url) {
 
 async function removeMember(uid) {
   if (!confirm('確定移除這位旅伴？')) return;
-  const members = (currentTrip?.members || []).filter(id => id !== uid);
+  const members = ((currentTrip && currentTrip.members) || []).filter(id => id !== uid);
   await updateDoc(doc(db,'trips',currentTripId), { members });
   showToast('已移除旅伴');
   openInvite();
@@ -2826,8 +2833,8 @@ function openAvatarEditor() {
   // 填入現有暱稱
   if (nicknameInput) nicknameInput.value = userNickname || '';
 
-  const me = membersData.find(m => m.uid === currentUser?.uid);
-  const currentEmoji = me?.avatarEmoji || '';
+  const me = membersData.find(m => m.uid === (currentUser && currentUser.uid));
+  const currentEmoji = (me && me.avatarEmoji) || '';
   grid.innerHTML = AVATAR_EMOJIS.map(e =>
     `<button onclick="selectTempEmoji(this, '${e}')" style="width:44px;height:44px;border-radius:50%;font-size:22px;border:2px solid ${e === currentEmoji ? 'var(--accent)' : 'transparent'};background:var(--bg2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s">${e}</button>`
   ).join('');
@@ -2844,9 +2851,9 @@ function selectTempEmoji(btn, emoji) {
 
 async function saveAvatarProfile() {
   const nicknameInput = document.getElementById('avatar-nickname-input');
-  const nickname = nicknameInput?.value.trim();
+  const nickname = (nicknameInput && nicknameInput.value).trim();
   const selectedBtn = document.querySelector('#avatar-emoji-grid button[data-selected="true"]');
-  const emoji = selectedBtn?.textContent.trim() || '';
+  const emoji = (selectedBtn && selectedBtn.textContent).trim() || '';
 
   const updates = {};
   if (nickname) updates.nickname = nickname;
@@ -2939,7 +2946,7 @@ async function requestNotifications() {
 }
 
 function scheduleDepartureReminder() {
-  if (!currentTrip?.departureDate) return;
+  if (!(currentTrip && currentTrip.departureDate)) return;
   const dep = new Date(currentTrip.departureDate);
   const dayBefore = new Date(dep.getTime() - 24*60*60*1000);
   const now = new Date();
@@ -2955,17 +2962,17 @@ function scheduleDepartureReminder() {
 // 🎨 MODAL HELPERS
 // ════════════════════════════════════════
 function openModal(id) {
-  document.getElementById(id)?.classList.add('open');
+  (function(){var _e=document.getElementById(id);if(_e)_e.classList.add('open');})();
   document.body.style.overflow = 'hidden';
 }
 
 function closeModal(id) {
-  document.getElementById(id)?.classList.remove('open');
+  (function(){var _e=document.getElementById(id);if(_e)_e.classList.remove('open');})();
   document.body.style.overflow = '';
 }
 
 // Close bibi on overlay click
-document.getElementById('modal-bibi')?.addEventListener('click', function(e) {
+var _mbibi=document.getElementById('modal-bibi');if(_mbibi)_mbibi.addEventListener('click', function(e) {
   if (e.target === this) closeBibiDrawer();
 });
 
@@ -3060,8 +3067,8 @@ const splashTimeout = setTimeout(() => {
     setTimeout(() => {
       if (splash) splash.style.display = 'none';
       if (!currentUser) {
-        loginScreen?.classList.remove('hidden');
-        appShell?.classList.add('hidden');
+        (loginScreen && loginScreen.classList).remove('hidden');
+        (appShell && appShell.classList).add('hidden');
       }
     }, 500);
   }
@@ -3088,12 +3095,12 @@ onAuthStateChanged(auth, async user => {
 
     // Fade out splash
     setTimeout(() => {
-      splash?.classList.add('fade-out');
+      (splash && splash.classList).add('fade-out');
       setTimeout(() => { if(splash) splash.style.display='none'; }, 500);
     }, 800);
 
-    loginScreen?.classList.add('hidden');
-    appShell?.classList.remove('hidden');
+    (loginScreen && loginScreen.classList).add('hidden');
+    (appShell && appShell.classList).remove('hidden');
 
     splashDebug('載入旅行資料...');
     await loadTrips();
@@ -3104,8 +3111,8 @@ onAuthStateChanged(auth, async user => {
     // 讀取暱稱
     try {
       const userSnap = await getDoc(doc(db,'users',user.uid));
-      userNickname = userSnap.data()?.nickname || '';
-      bibiStyle = userSnap.data()?.bibiStyle || 'warm';
+      userNickname = (userSnap.data() && userSnap.data().nickname) || '';
+      bibiStyle = (userSnap.data() && userSnap.data().bibiStyle) || 'warm';
     } catch(e) {}
 
     // Show notification prompt after 3s if not asked
@@ -3116,11 +3123,11 @@ onAuthStateChanged(auth, async user => {
   } else {
     currentUser = null;
     setTimeout(() => {
-      splash?.classList.add('fade-out');
+      (splash && splash.classList).add('fade-out');
       setTimeout(() => {
         if(splash) splash.style.display='none';
-        loginScreen?.classList.remove('hidden');
-        appShell?.classList.add('hidden');
+        (loginScreen && loginScreen.classList).remove('hidden');
+        (appShell && appShell.classList).add('hidden');
       }, 500);
     }, 600);
   }
@@ -3274,12 +3281,12 @@ function updateAutoName() {
   if (!autoEl || !autoText) return;
 
   // 如果用戶自己填了名字就不顯示自動
-  if (nameInput?.value.trim()) { autoEl.style.display = 'none'; return; }
+  if ((nameInput && nameInput.value).trim()) { autoEl.style.display = 'none'; return; }
 
-  const country = document.getElementById('nt-country')?.value || 'default';
-  const customName = document.getElementById('nt-country-name')?.value.trim();
-  const countryName = country === 'other' ? customName : (COUNTRY_THEMES[country]?.name || customName || '');
-  const departure = document.getElementById('nt-departure')?.value;
+  const country = (document.getElementById('nt-country')||{value:''}).value || 'default';
+  const customName = (document.getElementById('nt-country-name')||{value:''}).value.trim();
+  const countryName = country === 'other' ? customName : ((COUNTRY_THEMES[country] && COUNTRY_THEMES[country].name) || customName || '');
+  const departure = (document.getElementById('nt-departure')||{value:''}).value;
   const year = departure ? new Date(departure).getFullYear() : new Date().getFullYear();
 
   let suggested = '';
@@ -3299,13 +3306,13 @@ function updateAutoName() {
 
 function getAutoName() {
   const nameInput = document.getElementById('nt-name');
-  if (nameInput?.value.trim()) return nameInput.value.trim();
+  if ((nameInput && nameInput.value).trim()) return nameInput.value.trim();
 
-  const country = document.getElementById('nt-country')?.value || 'default';
-  const customName = document.getElementById('nt-country-name')?.value.trim();
+  const country = (document.getElementById('nt-country')||{value:''}).value || 'default';
+  const customName = (document.getElementById('nt-country-name')||{value:''}).value.trim();
   // 內建國家用中文名，自訂國家用用戶輸入
-  const countryName = country === 'other' ? customName : (COUNTRY_THEMES[country]?.name || customName || '');
-  const departure = document.getElementById('nt-departure')?.value;
+  const countryName = country === 'other' ? customName : ((COUNTRY_THEMES[country] && COUNTRY_THEMES[country].name) || customName || '');
+  const departure = (document.getElementById('nt-departure')||{value:''}).value;
   const year = departure ? new Date(departure).getFullYear() : new Date().getFullYear();
 
   if (!countryName || country === 'default') return `旅行 ${year}`;
@@ -3396,7 +3403,7 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
       <div style="width:6px;height:6px;border-radius:50%;background:rgba(200,170,100,.8);animation:splashDot 1.4s ease .5s infinite"></div>
     </div>
   </div>
-  <div id="splash-debug" style="position:absolute;bottom:40px;left:0;right:0;font-size:.62rem;color:rgba(200,170,100,.4);letter-spacing:.06em;text-align:center;padding:0 32px">連線中...</div>
+  <div id="splash-debug" style="position:absolute;bottom:40px;left:0;right:0;font-size:.58rem;color:rgba(255,180,80,.85);letter-spacing:.04em;text-align:center;padding:0 24px;white-space:pre-wrap;line-height:1.6">連線中...</div>
   <div style="position:absolute;bottom:16px;left:0;right:0;font-size:.6rem;color:rgba(200,170,100,.25);text-align:center">點擊畫面可跳過</div>
 </div>
 
@@ -4406,13 +4413,28 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
 <style>
 @keyframes sIn{0%{opacity:0;}100%{opacity:1;}}
 @keyframes dotPulse{0%,100%{opacity:.25;}50%{opacity:1;}}
-@keyframes loginFloat{0%,100%{transform:translateY(0) rotate(-2deg);}50%{transform:translateY(-10px) rotate(2deg);}}
-</style>
-
-<!-- PWA Service Worker -->
-<script>
+@keyframes loginFloat{0%,100%{transform:translateY(0) rotate(-2deg);}50%{transform:translateY(-10px) rotate(
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js').catch(() => {});
+  navigator.serviceWorker.register('sw.js').then(reg => {
+    // 監聽 SW 更新
+    reg.addEventListener('updatefound', () => {
+      const newSW = reg.installing;
+      if (!newSW) return;
+      newSW.addEventListener('statechange', () => {
+        // 新 SW 安裝完成且舊 SW 存在 → 自動重載取最新版
+        if (newSW.state === 'activated' && navigator.serviceWorker.controller) {
+          window.location.reload();
+        }
+      });
+    });
+  }).catch(() => {});
+
+  // 收到 SW 的更新訊息也重載
+  navigator.serviceWorker.addEventListener('message', function(e) {
+    if (e.data && e.data.type === 'SW_UPDATED') {
+      window.location.reload();
+    }
+  });
 }
 
 // Quick convert function
@@ -4518,9 +4540,9 @@ function initBibiGreeting() {
   chat.innerHTML = '';
 
   const name = userNickname;
-  const country = currentTrip?.country || 'default';
-  const countryName = COUNTRY_THEMES[country]?.name || '';
-  const flag = country !== 'default' ? (COUNTRY_THEMES[country]?.flag || '') : '';
+  const country = (currentTrip && currentTrip.country) || 'default';
+  const countryName = (COUNTRY_THEMES[country] && COUNTRY_THEMES[country].name) || '';
+  const flag = country !== 'default' ? ((COUNTRY_THEMES[country] && COUNTRY_THEMES[country].flag) || '') : '';
 
   // Bibi 自我介紹泡泡
   const intro = '<div class="flex mb-3" style="align-items:flex-start;gap:8px">'
@@ -4551,7 +4573,7 @@ function initBibiGreeting() {
 
 async function saveNicknameInline() {
   const input = document.getElementById('nickname-inline-input');
-  const name = input?.value.trim();
+  const name = (input && input.value).trim();
   if (!name) return;
   userNickname = name;
   try {
@@ -4562,7 +4584,7 @@ async function saveNicknameInline() {
 
 async function saveNickname() {
   const input = document.getElementById('nickname-modal-input');
-  const name = input?.value.trim();
+  const name = (input && input.value).trim();
   if (!name) { showToast('請輸入你的暱稱'); return; }
   userNickname = name;
   try {
@@ -4585,7 +4607,7 @@ async function fetchWeather(trip) {
   weatherCache = {};
   weatherTargets = [];
 
-  if (!trip?.country || trip.country === 'default') {
+  if (!(trip && trip.country) || trip.country === 'default') {
     content.innerHTML = '<div style="font-size:.75rem;color:rgba(255,255,255,.55)">選擇旅行後顯示天氣</div>';
     return;
   }
@@ -4621,7 +4643,7 @@ async function fetchWeather(trip) {
 
   weatherTargets = targets;
 
-  const firstName = targets[0]?.displayName || targets[0]?.city || '';
+  const firstName = (targets[0] && targets[0].displayName) || (targets[0] && targets[0].city) || '';
   content.innerHTML = '<div style="font-size:.58rem;opacity:.65;letter-spacing:.12em;text-transform:uppercase;color:white;margin-bottom:6px">' + firstName.toUpperCase() + '</div><div style="display:flex;align-items:center;gap:10px"><div style="font-family:var(--font-display);font-size:2.4rem;font-weight:300;color:rgba(255,255,255,.35);line-height:1">--°</div><div style="font-size:.68rem;color:rgba(255,255,255,.45)">取得天氣中...</div></div>';
 
   if (targets.length === 0) { content.innerHTML = '<div style="font-size:.75rem;color:rgba(255,255,255,.5)">暫無天氣資料</div>'; return; }
@@ -4630,10 +4652,10 @@ async function fetchWeather(trip) {
     const results = await Promise.all(targets.map(async t => {
       const r = await fetch('https://api.open-meteo.com/v1/forecast?latitude='+t.lat+'&longitude='+t.lon+'&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=1');
       const d = await r.json();
-      const temp = Math.round(d.current?.temperature_2m ?? 0);
-      const tempMax = Math.round(d.daily?.temperature_2m_max?.[0] ?? temp);
-      const tempMin = Math.round(d.daily?.temperature_2m_min?.[0] ?? temp);
-      const code = d.current?.weather_code ?? 0;
+      const temp = Math.round((d.current && d.current.temperature_2m) ?? 0);
+      const tempMax = Math.round((d.daily && d.daily.temperature_2m_max && d.daily.temperature_2m_max[0]) ?? temp);
+      const tempMin = Math.round((d.daily && d.daily.temperature_2m_min && d.daily.temperature_2m_min[0]) ?? temp);
+      const code = (d.current && d.current.weather_code) ?? 0;
       const icon = code<=1?'☀️':code<=3?'⛅':code<=48?'🌫️':code<=67?'🌧️':code<=77?'🌨️':'🌦️';
       const desc = code<=1?'晴天':code<=3?'多雲':code<=48?'有霧':code<=67?'有雨':code<=77?'下雪':'陣雨';
       return {city:t.city, displayName:t.displayName||t.city, temp, tempMax, tempMin, icon, desc};
@@ -4697,9 +4719,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
 window.initBibiGreeting = typeof initBibiGreeting !== "undefined" ? initBibiGreeting : null;
 window.toggleConverter = typeof toggleConverter !== "undefined" ? toggleConverter : null;
- translateText !== "undefined" ? translateText : null;
- clearChat !== "undefined" ? clearChat : null;
+window.translateText = typeof translateText !== "undefined" ? translateText : null;
+window.clearChat = typeof clearChat !== "undefined" ? clearChat : null;
 window.saveNickname = typeof saveNickname !== "undefined" ? saveNickname : null;
+window.saveNicknameInline = typeof saveNicknameInline !== "undefined" ? saveNicknameInline : null;
 </script>
 </body>
 </html>
