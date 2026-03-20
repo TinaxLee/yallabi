@@ -178,18 +178,18 @@ function renderHero(trip) {
   const days = (trip.days && trip.days.length) ? trip.days.length + ' 天' : '';
   const cities = (trip.cities && trip.cities.length) ? trip.cities.slice(0,3).join('、') : '';
 
-  var citiesHTML = cities ? '<div style="font-size:.6rem;color:var(--text3);margin-top:1px">' + cities + '</div>' : '';
-  var daysHTML = days ? '<div style="padding:6px 10px;font-size:.72rem;font-weight:700;color:var(--accent);letter-spacing:.04em">' + days + '</div>' : '';
+  // 精簡標籤：國旗 + 國家 · 城市（不重複顯示天數）
+  var cityStr = cities ? cities : '';
+  var labelParts = [info.name];
+  if (year) labelParts.push(year);
+  var mainLabel = labelParts.join(' ');
 
-  tripLabelEl.innerHTML = '<div style="display:inline-flex;align-items:center;gap:0;background:var(--surface);border:1px solid var(--border2);border-radius:10px;overflow:hidden;margin-top:2px">'
-    + '<div style="padding:6px 10px;border-right:1px solid var(--border2);display:flex;align-items:center;gap:6px">'
-    + '<span style="font-size:.85rem;filter:grayscale(.3)">' + info.flag + '</span>'
-    + '<div style="text-align:left">'
-    + '<div style="font-size:.78rem;font-weight:700;color:var(--text);line-height:1.2">' + info.name + ' ' + year + '</div>'
-    + citiesHTML
+  tripLabelEl.innerHTML = '<div style="display:inline-flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:7px 14px;margin-top:2px">'
+    + '<span style="font-size:1rem;filter:grayscale(.2)">' + info.flag + '</span>'
+    + '<div style="text-align:left;line-height:1.25">'
+    + '<div style="font-size:.8rem;font-weight:700;color:var(--text);letter-spacing:.02em">' + mainLabel + '</div>'
+    + (cityStr ? '<div style="font-size:.65rem;color:var(--text3);margin-top:1px">' + cityStr + '</div>' : '')
     + '</div>'
-    + '</div>'
-    + daysHTML
     + '</div>';
 }
 
@@ -3450,9 +3450,9 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
         </button>
       </div>
       <!-- 右：成員頭像 + 設定 -->
-      <div class="flex items-center gap-1">
-        <div id="member-avatars" class="flex items-center" style="margin-right:2px"></div>
-        <button onclick="openSettings()" style="width:34px;height:34px;border-radius:50%;background:var(--bg2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.95rem;color:var(--text2)">⚙️</button>
+      <div class="flex items-center" style="gap:6px">
+        <div id="member-avatars" class="flex items-center" style="gap:4px"></div>
+        <button onclick="openSettings()" style="width:32px;height:32px;border-radius:50%;background:transparent;border:1.5px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:.82rem;color:var(--text3);transition:all .15s" onmouseenter="this.style.background='var(--bg2)'" onmouseleave="this.style.background='transparent'">⚙️</button>
       </div>
     </div>
   </header>
@@ -4652,10 +4652,10 @@ async function fetchWeather(trip) {
     const results = await Promise.all(targets.map(async t => {
       const r = await fetch('https://api.open-meteo.com/v1/forecast?latitude='+t.lat+'&longitude='+t.lon+'&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=1');
       const d = await r.json();
-      const temp = Math.round((d.current && d.current.temperature_2m) ?? 0);
-      const tempMax = Math.round((d.daily && d.daily.temperature_2m_max && d.daily.temperature_2m_max[0]) ?? temp);
-      const tempMin = Math.round((d.daily && d.daily.temperature_2m_min && d.daily.temperature_2m_min[0]) ?? temp);
-      const code = (d.current && d.current.weather_code) ?? 0;
+      const temp = Math.round((d.current && d.current.temperature_2m) || 0);
+      const tempMax = Math.round((d.daily && d.daily.temperature_2m_max && d.daily.temperature_2m_max[0]) || temp);
+      const tempMin = Math.round((d.daily && d.daily.temperature_2m_min && d.daily.temperature_2m_min[0]) || temp);
+      const code = (d.current && d.current.weather_code) || 0;
       const icon = code<=1?'☀️':code<=3?'⛅':code<=48?'🌫️':code<=67?'🌧️':code<=77?'🌨️':'🌦️';
       const desc = code<=1?'晴天':code<=3?'多雲':code<=48?'有霧':code<=67?'有雨':code<=77?'下雪':'陣雨';
       return {city:t.city, displayName:t.displayName||t.city, temp, tempMax, tempMin, icon, desc};
@@ -4704,6 +4704,7 @@ function switchWeatherCity(idx) {
 }
 
 
+window.toggleItCard = toggleItCard;
 window.renderHero = renderHero;
 window.switchWeatherCity = switchWeatherCity;
 window.renderWeatherCard = renderWeatherCard;
