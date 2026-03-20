@@ -2499,26 +2499,46 @@ async function logout() {
 // ════════════════════════════════════════
 // 🚀 AUTH STATE
 // ════════════════════════════════════════
+
+// Splash 超時保護 — 8秒後強制顯示登入頁
+const splashTimeout = setTimeout(() => {
+  const splash = document.getElementById('splash');
+  const loginScreen = document.getElementById('login-screen');
+  const appShell = document.getElementById('app-shell');
+  if (splash && splash.style.display !== 'none') {
+    splash.classList.add('fade-out');
+    setTimeout(() => {
+      if (splash) splash.style.display = 'none';
+      if (!currentUser) {
+        loginScreen?.classList.remove('hidden');
+        appShell?.classList.add('hidden');
+      }
+    }, 500);
+  }
+}, 8000);
+
 onAuthStateChanged(auth, async user => {
+  clearTimeout(splashTimeout); // 有回應就取消超時
   const splash = document.getElementById('splash');
   const loginScreen = document.getElementById('login-screen');
   const appShell = document.getElementById('app-shell');
 
   if (user) {
     currentUser = user;
-    // Save user profile
-    await setDoc(doc(db,'users',user.uid), {
-      displayName: user.displayName,
-      photoURL: user.photoURL,
-      email: user.email,
-      lastSeen: Date.now()
-    }, { merge: true });
+    try {
+      await setDoc(doc(db,'users',user.uid), {
+        displayName: user.displayName,
+        photoURL: user.photoURL,
+        email: user.email,
+        lastSeen: Date.now()
+      }, { merge: true });
+    } catch(e) {}
 
     // Fade out splash
     setTimeout(() => {
       splash?.classList.add('fade-out');
       setTimeout(() => { if(splash) splash.style.display='none'; }, 500);
-    }, 1200);
+    }, 800);
 
     loginScreen?.classList.add('hidden');
     appShell?.classList.remove('hidden');
@@ -2547,7 +2567,7 @@ onAuthStateChanged(auth, async user => {
         loginScreen?.classList.remove('hidden');
         appShell?.classList.add('hidden');
       }, 500);
-    }, 1000);
+    }, 600);
   }
 });
 
@@ -2743,7 +2763,7 @@ window.speakPhrase = speakPhrase;
 window.renderBibiQuickBtns = renderBibiQuickBtns;
 </script>
 </head>
-<body>
+<body style="background:#1E1810">
 
 <!-- ══════════════════════════════════════
      SPLASH SCREEN
