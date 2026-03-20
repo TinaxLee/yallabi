@@ -2122,6 +2122,8 @@ async function createNewTrip() {
 
   const daysCount = parseInt(form.querySelector('#nt-days')?.value) || 3;
   const days = Array.from({ length: Math.min(daysCount, 60) }, (_, i) => `Day ${i + 1}`);
+
+  const tripData = {
     name,
     country: country || 'default',
     countryName: countryName || COUNTRY_THEMES[country]?.name || '',
