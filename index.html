@@ -16,16 +16,23 @@
 <link rel="stylesheet" href="style.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-// 全域錯誤捕捉
+// 全域錯誤捕捉（過濾跨來源假警報）
 window.onerror = function(msg, src, line, col, err) {
+  // 跨來源 script 的 "Script error." 是瀏覽器安全機制，非真實錯誤，忽略
+  if (msg === 'Script error.' || msg === 'Script error') return true;
   const el = document.getElementById('splash-debug');
   if (el) el.textContent = '錯誤: ' + msg + ' (行' + line + ')';
   console.error('[Yallabi Error]', msg, src, line);
 };
 window.addEventListener('unhandledrejection', function(e) {
-  const el = document.getElementById('splash-debug');
-  if (el) el.textContent = 'Promise 錯誤: ' + (e.reason?.message || e.reason || '未知');
-  console.error('[Yallabi Promise]', e.reason);
+  const reason = e.reason;
+  // 忽略跨來源遮蔽錯誤和 Firebase 內部錯誤
+  if (!reason) return;
+  if (reason?.name === 'AbortError') return;
+  if (reason?.message === 'Script error.' || reason?.message === 'Script error') return;
+  if (reason?.code === 'ERR_NETWORK_CHANGED') return;
+  // 只在 dev 模式顯示，不影響 splash
+  console.warn('[Yallabi Promise]', reason?.message || reason);
 });
 </script>
 <!-- Firebase -->
@@ -169,15 +176,15 @@ function renderHero(trip) {
   const cities = trip.cities?.length ? trip.cities.slice(0,3).join('、') : '';
 
   tripLabelEl.innerHTML = `
-    <div style="display:inline-flex;align-items:center;gap:0;background:var(--surface);border:1px solid var(--border2);border-radius:var(--r-md);overflow:hidden;margin-top:4px">
-      <div style="padding:8px 12px;border-right:1px solid var(--border2);display:flex;align-items:center;gap:6px">
-        <span style="font-size:.95rem;filter:grayscale(.3)">${info.flag}</span>
+    <div style="display:inline-flex;align-items:center;gap:0;background:var(--surface);border:1px solid var(--border2);border-radius:10px;overflow:hidden;margin-top:2px">
+      <div style="padding:6px 10px;border-right:1px solid var(--border2);display:flex;align-items:center;gap:6px">
+        <span style="font-size:.85rem;filter:grayscale(.3)">${info.flag}</span>
         <div style="text-align:left">
-          <div style="font-size:.82rem;font-weight:700;color:var(--text);line-height:1.2">${info.name} ${year}</div>
-          ${cities ? `<div style="font-size:.65rem;color:var(--text3);margin-top:1px">${cities}</div>` : ''}
+          <div style="font-size:.78rem;font-weight:700;color:var(--text);line-height:1.2">${info.name} ${year}</div>
+          ${cities ? `<div style="font-size:.6rem;color:var(--text3);margin-top:1px">${cities}</div>` : ''}
         </div>
       </div>
-      ${days ? `<div style="padding:8px 12px;font-size:.78rem;font-weight:600;color:var(--accent);letter-spacing:.04em">${days}</div>` : ''}
+      ${days ? `<div style="padding:6px 10px;font-size:.72rem;font-weight:700;color:var(--accent);letter-spacing:.04em">${days}</div>` : ''}
     </div>`;
 }
 
@@ -225,7 +232,7 @@ function switchTab(tab) {
     if (langSel) langSel.value = lang;
 
     const chat = document.getElementById('bibi-chat');
-    if (chat && chat.children.length === 0) initBibiGreeting();
+    if (chat && chat.children.length === 0) window.initBibiGreeting();
   }
 }
 
@@ -321,62 +328,111 @@ function renderItinerary() {
     if ((item.startTime || '00:00') >= nowTime) { autoExpandId = item.id; break; }
   }
 
-  container.innerHTML = filtered.map((item, idx) => {
+  container.innerHTML = '<div class="it-timeline">'
+    + filtered.map((item, idx) => {
     const next = filtered[idx + 1];
     const isOpen = item.id === autoExpandId;
-    const transport = item.transportText ? `
-      <div class="transport-divider">
-        <div class="transport-row">
-          <div class="transport-line"></div>
-          <span class="transport-icon">${item.transportIcon || '🚕'}</span>
-          <div class="transport-line"></div>
-        </div>
-        <div class="transport-text">${item.transportText}</div>
-      </div>` : (next ? `<div class="transport-divider"><div class="transport-row"><div class="transport-line"></div></div></div>` : '');
 
     const safeAddress = (item.address||'').replace(/'/g, "\\'");
     const safeName = (item.name||'').replace(/'/g, "\\'");
 
-    return `
-    <div class="it-col-card" id="itcard-${item.id}">
-      <!-- 收合標題列 -->
-      <div class="it-col-hd" onclick="toggleItCard('${item.id}')">
-        <div class="it-col-dot ${isOpen ? 'open' : ''}"></div>
-        <div class="it-col-info">
-          <div class="it-col-name">${item.name||'未命名'}</div>
-          <div class="it-col-meta">${item.startTime||''}${item.endTime?' – '+item.endTime:''} ${item.type ? '· '+getTypeLabel(item.type) : ''}</div>
-        </div>
-        <div class="flex items-center gap-1">
-          <button onclick="event.stopPropagation();editItinerary('${item.id}')" style="color:var(--text3);font-size:.85rem;padding:4px 6px">✏️</button>
-          <button onclick="event.stopPropagation();deleteItinerary('${item.id}')" style="color:var(--text3);font-size:.85rem;padding:4px 6px">✕</button>
-          <span class="it-col-arrow ${isOpen ? 'open' : ''}">▾</span>
-        </div>
-      </div>
-      <!-- 展開內容 -->
-      <div class="it-col-body ${isOpen ? '' : 'hidden'}">
-        ${item.address ? `<div class="it-col-addr"><span>📍</span><span>${item.address}</span></div>` : ''}
-        ${item.note ? `<div class="it-col-note"><span>📝</span><span style="white-space:pre-wrap">${escapeHtml(item.note)}</span></div>` : ''}
-        <div class="it-col-btns">
-          ${item.address ? `<button class="it-col-btn" onclick="openMaps('${encodeURIComponent(safeAddress)}')">📍 導航</button>` : ''}
-          ${item.address ? `<button class="it-col-btn" onclick="copyAddress('${safeAddress}')">📋 複製地址</button>` : ''}
-          ${item.name ? `<button class="it-col-btn" onclick="openBibiStrategy('${safeName}','${safeAddress}')">💡 攻略</button>` : ''}
-        </div>
-      </div>
-    </div>
-    ${next ? transport : ''}`;
-  }).join('');
+    // 類型色條
+    const typeColors = { hotel:'#A8895A', food:'#7A9A6A', attraction:'#5A7898', transport:'#9A6A8A', shopping:'#BC7A4A', activity:'#6A8A9A', memo:'#8A8A8A' };
+    const barColor = typeColors[item.type] || '#ADA090';
+
+    // 類型標籤
+    const typeLabel = getTypeLabel(item.type || '');
+
+    // 交通連接
+    const transport = next ? (item.transportText
+      ? '<div style="display:flex;align-items:center;gap:0;padding:3px 0 3px 50px;margin:2px 0">'
+        + '<div style="flex:1;height:1px;background:var(--border2)"></div>'
+        + '<span style="font-size:.8rem;padding:0 7px">' + (item.transportIcon||'🚕') + '</span>'
+        + '<span style="font-size:.6rem;color:var(--text3);margin-right:4px">' + item.transportText + '</span>'
+        + '<div style="flex:1;height:1px;background:var(--border2)"></div>'
+        + '</div>'
+      : '<div style="padding:2px 0 2px 50px"><div style="height:1px;background:var(--border2);margin:4px 0"></div></div>'
+    ) : '';
+
+    const detailHTML = (item.address || item.note)
+      ? '<div class="it-new-detail-shown" style="border-top:1px solid var(--border);padding:10px 14px 12px;background:var(--bg2);border-radius:0 0 13px 13px">'
+        + (item.address ? '<div style="display:flex;align-items:flex-start;gap:6px;font-size:.72rem;color:var(--text2);line-height:1.55;margin-bottom:8px"><span style="flex-shrink:0;margin-top:1px">📍</span><span>' + item.address + '</span></div>' : '')
+        + (item.note ? '<div style="display:flex;align-items:flex-start;gap:6px;font-size:.72rem;color:var(--text2);line-height:1.55;margin-bottom:8px"><span style="flex-shrink:0;margin-top:1px">📝</span><span style="white-space:pre-wrap">' + escapeHtml(item.note) + '</span></div>' : '')
+        + '<div style="display:flex;gap:6px;flex-wrap:wrap">'
+        + (item.address ? '<button class="it-col-btn" onclick="openMaps(\'' + encodeURIComponent(safeAddress) + '\')">📍 導航</button>' : '')
+        + (item.address ? '<button class="it-col-btn" onclick="copyAddress(\'' + safeAddress + '\')">📋 複製</button>' : '')
+        + (item.name ? '<button class="it-col-btn" onclick="openBibiStrategy(\'' + safeName + '\',\'' + safeAddress + '\')">💡 攻略</button>' : '')
+        + '</div></div>'
+      : '';
+
+    return '<div class="it-new-wrap" id="itcard-' + item.id + '">'
+      // 時間軸列
+      + '<div style="display:flex;gap:12px">'
+      // 左側：時間 + 節點
+      + '<div style="width:38px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;padding-top:13px">'
+      + '<div class="it-timeline-dot" style="width:10px;height:10px;border-radius:50%;background:' + (isOpen ? barColor : 'var(--border2)') + ';border:2px solid var(--surface);box-shadow:0 0 0 2px ' + (isOpen ? barColor : 'var(--border2)') + ';z-index:1;flex-shrink:0;transition:all .2s"></div>'
+      + (item.startTime ? '<div style="font-size:.58rem;font-weight:600;color:var(--text3);margin-top:5px;white-space:nowrap">' + item.startTime + '</div>' : '')
+      + '</div>'
+      // 右側：卡片
+      + '<div style="flex:1;min-width:0;margin-bottom:4px">'
+      + '<div style="background:var(--surface);border-radius:14px;border:1px solid var(--border);box-shadow:0 1px 3px rgba(80,68,48,.05),0 4px 14px rgba(80,68,48,.08),0 10px 24px rgba(80,68,48,.05);overflow:hidden">'
+      // 카드 헤더
+      + '<div style="display:flex;align-items:center;gap:0;cursor:pointer;user-select:none" onclick="toggleItCard(\'' + item.id + '\')">'
+      + '<div style="width:3px;background:' + barColor + ';align-self:stretch;flex-shrink:0;border-radius:0"></div>'
+      + '<div style="flex:1;min-width:0;padding:12px 10px 12px 12px">'
+      + '<div style="font-size:.9rem;font-weight:700;color:var(--text);line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + (item.name||'未命名') + '</div>'
+      + (item.endTime ? '<div style="font-size:.62rem;color:var(--text3);margin-top:2px">' + (item.startTime||'') + ' – ' + item.endTime + '</div>' : '')
+      + '</div>'
+      // 右側：類型 chip + 按鈕
+      + '<div style="display:flex;align-items:center;gap:4px;padding-right:10px;flex-shrink:0">'
+      + '<span style="font-size:.58rem;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--bg2);color:var(--text3);white-space:nowrap">' + typeLabel + '</span>'
+      + '<button onclick="event.stopPropagation();editItinerary(\'' + item.id + '\')" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:transparent;color:var(--text3);font-size:.78rem;flex-shrink:0;transition:background .15s" onmouseenter="this.style.background=\'var(--bg2)\'" onmouseleave="this.style.background=\'transparent\'">✏️</button>'
+      + '<button onclick="event.stopPropagation();deleteItinerary(\'' + item.id + '\')" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:transparent;color:var(--text3);font-size:.78rem;flex-shrink:0;transition:background .15s" onmouseenter="this.style.background=\'var(--bg2)\'" onmouseleave="this.style.background=\'transparent\'">✕</button>'
+      + '</div>'
+      + '</div>'
+      // 展開內容
+      + (isOpen ? detailHTML : '<div class="it-new-detail-hidden" data-id="' + item.id + '" data-address="' + encodeURIComponent(item.address||'') + '" data-note="' + encodeURIComponent(item.note||'') + '" data-name="' + encodeURIComponent(item.name||'') + '"></div>')
+      + '</div>'
+      + '</div>'
+      + '</div>'
+      + transport
+      + '</div>';
+  }).join('')
+  + '</div>';
 }
 
 function toggleItCard(id) {
-  const card = document.getElementById('itcard-' + id);
-  if (!card) return;
-  const body = card.querySelector('.it-col-body');
-  const arrow = card.querySelector('.it-col-arrow');
-  const dot = card.querySelector('.it-col-dot');
-  const isHidden = body.classList.contains('hidden');
-  body.classList.toggle('hidden');
-  arrow.classList.toggle('open', isHidden);
-  dot.classList.toggle('open', isHidden);
+  const wrap = document.getElementById('itcard-' + id);
+  if (!wrap) return;
+  const item = itineraryData.find(i => i.id === id);
+  if (!item) return;
+
+  const typeColors = { hotel:'#A8895A', food:'#7A9A6A', attraction:'#5A7898', transport:'#9A6A8A', shopping:'#BC7A4A', activity:'#6A8A9A', memo:'#8A8A8A' };
+  const barColor = typeColors[item.type] || '#ADA090';
+  const safeAddress = (item.address||'').replace(/'/g, "\'");
+  const safeName = (item.name||'').replace(/'/g, "\'");
+
+  const hiddenEl = wrap.querySelector('.it-new-detail-hidden');
+  const shownEl = wrap.querySelector('.it-new-detail-shown');
+  const dot = wrap.querySelector('.it-timeline-dot');
+
+  if (hiddenEl) {
+    const detailHTML = (item.address || item.note)
+      ? '<div class="it-new-detail-shown" style="border-top:1px solid var(--border);padding:10px 14px 12px;background:var(--bg2);border-radius:0 0 13px 13px">'
+        + (item.address ? '<div style="display:flex;align-items:flex-start;gap:6px;font-size:.72rem;color:var(--text2);line-height:1.55;margin-bottom:8px"><span>📍</span><span>' + item.address + '</span></div>' : '')
+        + (item.note ? '<div style="display:flex;align-items:flex-start;gap:6px;font-size:.72rem;color:var(--text2);line-height:1.55;margin-bottom:8px"><span>📝</span><span style="white-space:pre-wrap">' + escapeHtml(item.note) + '</span></div>' : '')
+        + '<div style="display:flex;gap:6px;flex-wrap:wrap">'
+        + (item.address ? '<button class="it-col-btn" onclick="openMaps(\'' + encodeURIComponent(safeAddress) + '\')">📍 導航</button>' : '')
+        + (item.address ? '<button class="it-col-btn" onclick="copyAddress(\'' + safeAddress + '\')">📋 複製</button>' : '')
+        + (item.name ? '<button class="it-col-btn" onclick="openBibiStrategy(\'' + safeName + '\',\'' + safeAddress + '\')">💡 攻略</button>' : '')
+        + '</div></div>'
+      : '<div class="it-new-detail-shown"></div>';
+    hiddenEl.outerHTML = detailHTML;
+    if (dot) { dot.style.background = barColor; dot.style.boxShadow = '0 0 0 2px ' + barColor; }
+  } else if (shownEl) {
+    shownEl.outerHTML = '<div class="it-new-detail-hidden"></div>';
+    if (dot) { dot.style.background = 'var(--border2)'; dot.style.boxShadow = '0 0 0 2px var(--border2)'; }
+  }
 }
 
 function getTypeLabel(type) {
@@ -555,7 +611,7 @@ function updateConverterRates() {
     const sym = getCurrencySymbol(tripCurrency);
     rateEl.textContent = `1 TWD ≈ ${sym}${rate.toFixed(4)}`;
   }
-  quickConvert();
+  window.quickConvert();
 }
 
 function getDisplayRate() {
@@ -883,7 +939,7 @@ function openBibiDrawer() {
   renderTranslateLangGrid();
   renderPhraseThemeBtns();
   const chat = document.getElementById('bibi-chat');
-  if (chat && chat.children.length === 0) initBibiGreeting();
+  if (chat && chat.children.length === 0) window.initBibiGreeting();
   // 自動設定語言
   const countryLangMap = { thailand:'th', japan:'ja', france:'fr', korea:'ko', germany:'de', spain:'es', morocco:'ar', indonesia:'id', vietnam:'vi', italy:'it', greece:'el', portugal:'pt', turkey:'tr', malaysia:'ms', usa:'en', australia:'en', singapore:'ms', default:'en' };
   const country = currentTrip?.country || 'default';
@@ -2414,9 +2470,8 @@ async function selectTrip(tripId) {
 
   // Update UI
   updateCountryBadge(currentTrip);
-  updateCountdown(currentTrip.departureDate);
-  document.getElementById('trip-label').textContent = formatTripLabel(currentTrip);
-  
+  renderHero(currentTrip);
+
   // Reset day filter
   const days = currentTrip.days || ['Day 1'];
   currentDayFilter = days[0];
@@ -2454,7 +2509,7 @@ async function selectTrip(tripId) {
   }));
 
   renderMemberAvatars();
-  fetchWeather(currentTrip);
+  window.fetchWeather(currentTrip);
   renderHero(currentTrip);
   switchTab('itinerary');
 }
@@ -3345,16 +3400,23 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
     <div class="page-content pb-4">
 
       <!-- Hero -->
-      <div style="text-align:center;padding:22px 0 18px;position:relative;overflow:hidden">
+      <div style="text-align:center;padding:14px 16px 12px;position:relative">
         <!-- 浮水印 -->
-        <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-family:'Fraunces',serif;font-size:min(5.5rem,22vw);font-weight:400;font-style:italic;color:var(--accent);opacity:.055;white-space:nowrap;letter-spacing:-.02em;pointer-events:none;user-select:none;line-height:1">every trip</div>
-        <!-- 小標 -->
-        <div style="font-size:clamp(.58rem,.16vw + .52rem,.68rem);letter-spacing:.18em;text-transform:uppercase;color:var(--text3);margin-bottom:14px;position:relative">✦ &nbsp; every trip, a story &nbsp; ✦</div>
+        <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-family:'Fraunces',serif;font-size:min(4.8rem,20vw);font-weight:300;font-style:italic;color:var(--accent);opacity:.055;white-space:nowrap;letter-spacing:-.02em;pointer-events:none;user-select:none;line-height:1">every trip</div>
+
+        <!-- 小標 — 換符號，更精緻 -->
+        <div style="font-size:clamp(.54rem,.14vw + .48rem,.62rem);letter-spacing:.16em;text-transform:uppercase;color:var(--text3);margin-bottom:10px;position:relative;display:flex;align-items:center;justify-content:center;gap:8px">
+          <span style="display:inline-block;width:18px;height:1px;background:var(--accent);opacity:.4"></span>
+          every trip, a story
+          <span style="display:inline-block;width:18px;height:1px;background:var(--accent);opacity:.4"></span>
+        </div>
+
         <!-- 倒數 Pill -->
-        <div id="countdown-pill" style="display:inline-flex;align-items:center;gap:6px;background:var(--primary);color:white;border-radius:999px;padding:9px 22px;font-size:clamp(.82rem,.3vw + .72rem,.95rem);font-weight:600;margin-bottom:12px;letter-spacing:.02em;position:relative">
+        <div id="countdown-pill" style="display:inline-flex;align-items:center;gap:6px;background:var(--primary);color:white;border-radius:999px;padding:8px 20px;font-size:clamp(.8rem,.28vw + .7rem,.9rem);font-weight:600;margin-bottom:10px;letter-spacing:.02em;position:relative">
           <span id="countdown-display">距離出發還有 — 天</span>
         </div>
-        <!-- 旅行資訊標籤 -->
+
+        <!-- 旅行標籤 -->
         <div id="trip-label" style="position:relative">選擇旅行開始規劃</div>
       </div>
 
@@ -4383,24 +4445,6 @@ function updateExpensePreview() {
   previewEl.textContent = `≈ NT$${Math.round(converted).toLocaleString()} 台幣`;
 }
 
-async function translateText() {
-  const text = document.getElementById('translate-input').value.trim();
-  const lang = document.getElementById('translate-lang').value;
-  if (!text) return;
-  const langNames = { th:'泰文', ja:'日文', fr:'法文', ko:'韓文', de:'德文', es:'西班牙文', ar:'阿拉伯文', id:'印尼文', vi:'越南文', en:'英文', it:'義大利文', pt:'葡萄牙文', tr:'土耳其文', el:'希臘文', ms:'馬來文', yue:'廣東話' };
-  document.getElementById('bibi-input').value = `請翻譯成${langNames[lang] || '英文'}，並以 TRANSLATION_CARD 格式回應：「${text}」`;
-  document.getElementById('translate-input').value = '';
-  sendBibiMessage();
-}
-
-function clearChat() {
-  bibiChatHistory = [];
-  const chat = document.getElementById('bibi-chat');
-  if (chat) chat.innerHTML = '';
-  initBibiGreeting();
-  showToast('Bibi 記憶已清除 ✦');
-}
-
 function initBibiGreeting() {
   const chat = document.getElementById('bibi-chat');
   if (!chat) return;
@@ -4583,6 +4627,16 @@ window.chatHistory = [];
 document.addEventListener('DOMContentLoaded', () => {
   if (window.speechSynthesis) window.speechSynthesis.getVoices();
 });
+
+window.fetchWeather = typeof fetchWeather !== "undefined" ? fetchWeather : null;
+window.initBibiGreeting = typeof initBibiGreeting !== "undefined" ? initBibiGreeting : null;
+window.quickConvert = typeof quickConvert !== "undefined" ? quickConvert : null;
+window.toggleConverter = typeof toggleConverter !== "undefined" ? toggleConverter : null;
+ translateText !== "undefined" ? translateText : null;
+window.updateExpensePreview = typeof updateExpensePreview !== "undefined" ? updateExpensePreview : null;
+ clearChat !== "undefined" ? clearChat : null;
+window.saveNicknameInline = typeof saveNicknameInline !== "undefined" ? saveNicknameInline : null;
+window.saveNickname = typeof saveNickname !== "undefined" ? saveNickname : null;
 </script>
 </body>
 </html>
