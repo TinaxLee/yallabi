@@ -311,6 +311,7 @@ a{color:inherit;text-decoration:none;}
 .it-col-arrow{font-size:.72rem;color:var(--text3);transition:transform var(--fast) var(--ease);flex-shrink:0;}
 .it-col-arrow.open{transform:rotate(180deg);}
 .it-col-body{padding:0 14px 13px 33px;border-top:1px solid var(--border);}
+.hidden{display:none !important;}
 .it-col-body.hidden{display:none;}
 .it-col-addr{font-size:.74rem;color:var(--text2);display:flex;gap:5px;align-items:flex-start;line-height:1.55;margin:9px 0 8px;word-break:break-word;}
 .it-col-note{font-size:.74rem;color:var(--text2);display:flex;gap:5px;align-items:flex-start;line-height:1.55;margin-bottom:8px;word-break:break-word;}

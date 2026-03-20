@@ -1,5 +1,5 @@
 // 每次更新這個數字就好，用時間戳記確保唯一
-const BUILD = '1773983602';
+const BUILD = '1773983838';
 const CACHE = `yallabi-${BUILD}`;
 const ASSETS = ['./', './index.html', './style.css', './manifest.json', './icon.png'];
 
