@@ -1538,7 +1538,7 @@ async function saveJournal() {
   }
 }
 
-async function compressAndUpload(file) {
+async function compressAndUpload(file, customPath = null) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = async (e) => {
@@ -1553,7 +1553,7 @@ async function compressAndUpload(file) {
         canvas.getContext('2d').drawImage(img, 0, 0, w, h);
         canvas.toBlob(async (blob) => {
           try {
-            const path = `journal/${currentUser.uid}/${currentTripId}/${Date.now()}.jpg`;
+            const path = customPath || `journal/${currentUser.uid}/${currentTripId}/${Date.now()}.jpg`;
             const storageRef = ref(storage, path);
             await uploadBytes(storageRef, blob);
             const url = await getDownloadURL(storageRef);
@@ -2325,19 +2325,58 @@ async function removeMember(uid) {
 }
 
 // 頭貼編輯器
-const AVATAR_EMOJIS = ['🌸','🦁','🐼','🦊','🐨','🐸','🌈','⭐','🎀','🍀','🦋','🌺','🐬','🦄','🎸','🍕'];
+const AVATAR_EMOJIS = [
+  '😊','😎','🥰','😄','🤩','😋',
+  '🐱','🐶','🐼','🦊','🐨','🐸',
+  '🌸','🌈','⭐','🍀','🦋','🌺',
+  '🎀','🎸','🍕','🌙','🔥','💎'
+];
 
 function openAvatarEditor() {
-  const modal = document.getElementById('modal-avatar-editor');
   const grid = document.getElementById('avatar-emoji-grid');
+  const nicknameInput = document.getElementById('avatar-nickname-input');
 
-  const currentEmoji = currentUser?.avatarEmoji || '';
+  // 填入現有暱稱
+  if (nicknameInput) nicknameInput.value = userNickname || '';
+
+  const me = membersData.find(m => m.uid === currentUser?.uid);
+  const currentEmoji = me?.avatarEmoji || '';
   grid.innerHTML = AVATAR_EMOJIS.map(e =>
-    `<button onclick="selectAvatarEmoji('${e}')" style="width:44px;height:44px;border-radius:50%;font-size:22px;border:2px solid ${e === currentEmoji ? 'var(--accent)' : 'transparent'};background:var(--bg2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s">${e}</button>`
+    `<button onclick="selectTempEmoji(this, '${e}')" style="width:44px;height:44px;border-radius:50%;font-size:22px;border:2px solid ${e === currentEmoji ? 'var(--accent)' : 'transparent'};background:var(--bg2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s">${e}</button>`
   ).join('');
 
   closeModal('modal-invite');
   openModal('modal-avatar-editor');
+}
+
+function selectTempEmoji(btn, emoji) {
+  document.querySelectorAll('#avatar-emoji-grid button').forEach(b => b.style.borderColor = 'transparent');
+  btn.style.borderColor = 'var(--accent)';
+  btn.dataset.selected = 'true';
+}
+
+async function saveAvatarProfile() {
+  const nicknameInput = document.getElementById('avatar-nickname-input');
+  const nickname = nicknameInput?.value.trim();
+  const selectedBtn = document.querySelector('#avatar-emoji-grid button[data-selected="true"]');
+  const emoji = selectedBtn?.textContent.trim() || '';
+
+  const updates = {};
+  if (nickname) updates.nickname = nickname;
+  if (emoji) updates.avatarEmoji = emoji;
+
+  try {
+    await setDoc(doc(db,'users',currentUser.uid), updates, { merge: true });
+    if (nickname) userNickname = nickname;
+    const me = membersData.find(m => m.uid === currentUser.uid);
+    if (me) {
+      if (nickname) me.nickname = nickname;
+      if (emoji) me.avatarEmoji = emoji;
+    }
+    renderMemberAvatars();
+    showToast('已更新 ✓');
+    closeModal('modal-avatar-editor');
+  } catch(e) { showToast('更新失敗'); }
 }
 
 async function selectAvatarEmoji(emoji) {
@@ -2357,17 +2396,14 @@ async function uploadAvatarPhoto(input) {
   if (!file) return;
   try {
     showToast('上傳中...');
-    const path = `avatars/${currentUser.uid}.jpg`;
-    const storageRef = ref(storage, path);
-    // 壓縮
-    const url = await compressAndUpload(file);
+    const url = await compressAndUpload(file, `avatars/${currentUser.uid}.jpg`);
     await setDoc(doc(db,'users',currentUser.uid), { avatarUrl: url }, { merge: true });
     const me = membersData.find(m => m.uid === currentUser.uid);
-    if (me) me.avatarUrl = url;
+    if (me) { me.avatarUrl = url; delete me.avatarEmoji; }
     renderMemberAvatars();
     showToast('頭貼已更新 ✓');
     closeModal('modal-avatar-editor');
-  } catch(e) { showToast('上傳失敗'); }
+  } catch(e) { showToast('上傳失敗，請確認 Storage 規則'); }
 }
 
 // 讀取用戶頭貼資料到 membersData
@@ -2651,6 +2687,8 @@ window.editDayName = editDayName;
 window.openInvite = openInvite;
 window.shareInvite = shareInvite;
 window.removeMember = removeMember;
+window.saveAvatarProfile = saveAvatarProfile;
+window.selectTempEmoji = selectTempEmoji;
 window.openAvatarEditor = openAvatarEditor;
 window.selectAvatarEmoji = selectAvatarEmoji;
 window.uploadAvatarPhoto = uploadAvatarPhoto;
@@ -2873,7 +2911,7 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
 
       <!-- Weather -->
       <div class="weather-card mb-4" id="weather-card">
-        <div style="position:relative;z-index:1">
+        <div style="position:relative;z-index:1" id="weather-content">
           <div style="font-size:.58rem;opacity:.72;letter-spacing:.12em;text-transform:uppercase;color:white;margin-bottom:4px" id="weather-city">—</div>
           <div style="display:flex;align-items:flex-end;gap:12px">
             <div>
@@ -2990,10 +3028,10 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
   </div>
 
   <!-- ══ PAGE: BIBI ══ -->
-  <div id="page-bibi" class="page">
-    <div style="display:flex;flex-direction:column;height:calc(100dvh - 140px)">
+  <div id="page-bibi" class="page" style="padding:0;overflow:hidden">
+    <div style="display:flex;flex-direction:column;height:calc(100dvh - var(--header-h, 60px) - var(--nav-h, 80px))">
       <!-- Bibi header -->
-      <div style="padding:14px 16px 8px;border-bottom:1px solid var(--border)">
+      <div style="padding:12px 16px 8px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--bg)">
         <div class="flex items-center gap-3">
           <div style="width:36px;height:36px;border-radius:50%;background:var(--primary);color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.9rem;flex-shrink:0">B</div>
           <div>
@@ -3032,12 +3070,11 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
       </div>
 
       <!-- Chat area -->
-      <div id="bibi-chat" class="modal-body" style="flex:1;overflow-y:auto;padding:16px">
-        <!-- 開場白由 JS 動態插入，帶入用戶名字 -->
+      <div id="bibi-chat" style="flex:1;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch">
       </div>
 
       <!-- Input -->
-      <div style="padding:10px 16px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:flex-end;padding-bottom:calc(10px + env(safe-area-inset-bottom))">
+      <div style="padding:10px 16px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:flex-end;padding-bottom:calc(10px + env(safe-area-inset-bottom));flex-shrink:0;background:var(--bg)">
         <input id="bibi-input" type="text" placeholder="問問 Bibi..." style="flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:10px 16px;font-size:.9rem;color:var(--text);outline:none" onkeydown="if(event.key==='Enter')sendBibiMessage()">
         <button onclick="sendBibiMessage()" style="width:40px;height:40px;border-radius:50%;background:var(--primary);color:white;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;border:none">➤</button>
       </div>
@@ -3598,24 +3635,21 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
   <div class="modal-sheet" style="height:auto;max-height:80dvh">
     <div class="modal-handle"></div>
     <div class="modal-header">
-      <span class="modal-title">編輯頭貼</span>
+      <span class="modal-title">編輯個人資料</span>
       <button class="modal-close" onclick="closeModal('modal-avatar-editor')">✕</button>
     </div>
     <div class="modal-body">
-      <!-- 上傳照片 -->
+      <!-- 暱稱 -->
       <div style="margin-bottom:20px">
-        <div style="font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:10px">上傳照片</div>
-        <label style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:var(--r-sm);border:1.5px dashed var(--border2);cursor:pointer;background:var(--bg2)">
-          <span style="font-size:1.2rem">📷</span>
-          <span style="font-size:.82rem;color:var(--text2)">點擊選擇照片（自動壓縮）</span>
-          <input type="file" accept="image/*" style="display:none" onchange="uploadAvatarPhoto(this)">
-        </label>
+        <div style="font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:8px">暱稱</div>
+        <input id="avatar-nickname-input" type="text" class="form-input" placeholder="輸入你的暱稱">
       </div>
       <!-- 選 emoji -->
       <div>
-        <div style="font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:10px">或選一個 emoji</div>
+        <div style="font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:10px">選一個 Emoji 頭貼</div>
         <div id="avatar-emoji-grid" style="display:flex;flex-wrap:wrap;gap:8px"></div>
       </div>
+      <button class="btn btn-primary btn-full" style="margin-top:20px" onclick="saveAvatarProfile()">儲存</button>
     </div>
   </div>
 </div>
@@ -3946,27 +3980,86 @@ async function saveNickname() {
 async function fetchWeather(trip) {
   if (!trip?.country || trip.country === 'default') return;
   const cityMap = {
-    thailand:'Bangkok',japan:'Tokyo',france:'Paris',italy:'Rome',greece:'Santorini',
-    morocco:'Marrakech',maldives:'Male',korea:'Seoul',singapore:'Singapore',usa:'New York',australia:'Sydney'
+    thailand:'Bangkok', japan:'Tokyo', france:'Paris', italy:'Rome', greece:'Santorini',
+    morocco:'Marrakech', maldives:'Male', korea:'Seoul', singapore:'Singapore',
+    usa:'New York', australia:'Sydney'
   };
-  const city = cityMap[trip.country] || trip.countryName;
-  if (!city) return;
+
+  // 決定要顯示哪些城市
+  let cities = [];
+  if (trip.cities && trip.cities.length > 0) {
+    cities = trip.cities.slice(0, 3); // 最多3個
+  } else {
+    const defaultCity = cityMap[trip.country] || trip.countryName;
+    if (defaultCity) cities = [defaultCity];
+  }
+  if (cities.length === 0) return;
+
+  const weatherCard = document.getElementById('weather-card');
+  const content = document.getElementById('weather-content');
+  if (!content) return;
+
+  // 單城市 → 原本的大字顯示
+  // 多城市 → 並排顯示
   try {
-    const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${city}&count=1&language=en`);
-    const geoData = await geoRes.json();
-    const loc = geoData.results?.[0];
-    if (!loc) return;
-    const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${loc.latitude}&longitude=${loc.longitude}&current=temperature_2m,weather_code&timezone=auto`);
-    const data = await res.json();
-    const temp = Math.round(data.current.temperature_2m);
-    const code = data.current.weather_code;
-    const icon = code <= 1 ? '☀️' : code <= 3 ? '⛅' : code <= 67 ? '🌧️' : '🌨️';
-    const desc = code <= 1 ? '晴天' : code <= 3 ? '多雲' : code <= 67 ? '有雨' : '下雪';
-    document.getElementById('weather-city').textContent = city.toUpperCase();
-    document.getElementById('weather-temp').textContent = `${temp}°`;
-    document.getElementById('weather-desc').textContent = desc;
-    document.getElementById('weather-icon').textContent = icon;
-    document.getElementById('weather-sync').textContent = `SYNC · ${new Date().toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'})}`;
+    const results = await Promise.all(cities.map(async city => {
+      try {
+        const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=en`);
+        const geoData = await geoRes.json();
+        const loc = geoData.results?.[0];
+        if (!loc) return null;
+        const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${loc.latitude}&longitude=${loc.longitude}&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=1`);
+        const data = await res.json();
+        const temp = Math.round(data.current.temperature_2m);
+        const tempMax = Math.round(data.daily?.temperature_2m_max?.[0] ?? temp);
+        const tempMin = Math.round(data.daily?.temperature_2m_min?.[0] ?? temp);
+        const code = data.current.weather_code;
+        const icon = code <= 1 ? '☀️' : code <= 3 ? '⛅' : code <= 67 ? '🌧️' : '🌨️';
+        const desc = code <= 1 ? '晴天' : code <= 3 ? '多雲' : code <= 67 ? '有雨' : '下雪';
+        return { city, temp, tempMax, tempMin, icon, desc };
+      } catch { return null; }
+    }));
+
+    const valid = results.filter(Boolean);
+    if (valid.length === 0) return;
+
+    const timeStr = new Date().toLocaleTimeString('zh-TW', { hour:'2-digit', minute:'2-digit' });
+
+    if (valid.length === 1) {
+      // 單城市 — 大字顯示
+      const w = valid[0];
+      content.innerHTML = `
+        <div style="font-size:.58rem;opacity:.72;letter-spacing:.12em;text-transform:uppercase;color:white;margin-bottom:4px">${w.city.toUpperCase()}</div>
+        <div style="display:flex;align-items:flex-end;gap:12px">
+          <div>
+            <div style="font-family:var(--font-display);font-size:2.4rem;font-weight:300;color:white;line-height:1">${w.temp}°</div>
+            <div style="font-size:.62rem;color:rgba(255,255,255,.65);margin-top:2px">${w.tempMin}° - ${w.tempMax}°</div>
+            <div style="font-size:.68rem;color:rgba(255,255,255,.8);margin-top:2px">${w.desc}</div>
+          </div>
+          <div style="font-size:2rem;margin-bottom:4px">${w.icon}</div>
+        </div>
+        <div style="font-size:.58rem;color:rgba(255,255,255,.55);margin-top:8px">SYNC · ${timeStr}</div>`;
+    } else {
+      // 多城市 — 並排顯示
+      const cols = valid.map((w, i) => `
+        <div style="flex:1;text-align:center;${i > 0 ? 'border-left:1px solid rgba(255,255,255,.2);' : ''}padding:0 12px">
+          <div style="font-size:.52rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.65);margin-bottom:8px">${w.city.toUpperCase()}</div>
+          <div style="font-family:var(--font-display);font-size:2.2rem;font-weight:700;color:white;line-height:1">${w.temp}°</div>
+          <div style="font-size:.58rem;color:rgba(255,255,255,.55);margin:3px 0">${w.tempMin}° - ${w.tempMax}°</div>
+          <div style="font-size:1.8rem;margin:6px 0">${w.icon}</div>
+        </div>`).join('');
+
+      content.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <div style="font-size:.52rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.55)">即時天氣</div>
+          <div style="display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.12);padding:2px 8px;border-radius:999px">
+            <div style="width:5px;height:5px;border-radius:50%;background:#4ade80"></div>
+            <span style="font-size:.5rem;color:rgba(255,255,255,.8);letter-spacing:.06em">LIVE</span>
+          </div>
+        </div>
+        <div style="display:flex">${cols}</div>
+        <div style="font-size:.52rem;color:rgba(255,255,255,.4);text-align:center;margin-top:10px;letter-spacing:.06em">SYNC · ${timeStr}</div>`;
+    }
   } catch {}
 }
 
