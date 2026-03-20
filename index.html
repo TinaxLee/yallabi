@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
 <meta name="color-scheme" content="light">
 <meta name="theme-color" content="#F5F2EC">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1380,77 +1380,14 @@ function quickAsk(q) {
 }
 
 async function openPhraseCards(themeKey) {
-  const theme = PHRASE_THEMES[themeKey];
-  if (!theme) return;
+  // 轉跳到新的 Bibi drawer 字卡 tab
+  openBibiDrawer();
+  setTimeout(() => {
+    switchBibiTab('cards');
+    loadPhraseCards(themeKey);
+  }, 350);
+}
 
-  const country = currentTrip?.country || 'default';
-  const countryName = COUNTRY_THEMES[country]?.name || '目的地';
-  const langMap = {
-    thailand:'th-TH', japan:'ja-JP', france:'fr-FR', korea:'ko-KR',
-    germany:'de-DE', spain:'es-ES', morocco:'ar-SA', indonesia:'id-ID',
-    vietnam:'vi-VN', italy:'it-IT', greece:'el-GR', portugal:'pt-PT',
-    turkey:'tr-TR', malaysia:'ms-MY', singapore:'ms-MY',
-    usa:'en-US', australia:'en-AU', default:'en-US'
-  };
-  const langCode = langMap[country] || 'en-US';
-
-  // Bibi 先說一句
-  const chat = document.getElementById('bibi-chat');
-  chat.innerHTML += `<div class="flex mb-3" style="align-items:flex-start;gap:8px">
-    <div style="width:28px;height:28px;border-radius:50%;background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;flex-shrink:0">B</div>
-    <div class="chat-bubble-bibi">${theme.intro}</div>
-  </div>`;
-  chat.scrollTop = chat.scrollHeight;
-
-  // 開字卡 Modal
-  const modal = document.getElementById('modal-phrase-cards');
-  const titleEl = document.getElementById('phrase-cards-title');
-  const listEl = document.getElementById('phrase-cards-list');
-
-  titleEl.textContent = `${theme.label} · ${countryName}`;
-  listEl.innerHTML = `<div style="text-align:center;padding:20px;color:var(--text3);font-size:.85rem">翻譯中...</div>`;
-  openModal('modal-phrase-cards');
-
-  // 用 AI 翻譯所有句子
-  try {
-    const systemPrompt = `你是翻譯助理。把以下中文句子翻譯成${countryName}當地語言。
-以 JSON 陣列格式回應，每個項目包含：
-{"chinese":"中文","translated":"翻譯","phonetic":"羅馬拼音或注音"}
-只回傳 JSON 陣列，不要其他文字。`;
-
-    const userMsg = theme.prompts.join('\n');
-    const response = await fetch('https://yallabi-ai.hello-yallabi.workers.dev', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userMsg }
-        ],
-        temperature: 0.3,
-        max_tokens: 1000
-      })
-    });
-    const data = await response.json();
-    let text = data.choices?.[0]?.message?.content || '[]';
-    // 清除 markdown
-    text = text.replace(/```json|```/g, '').trim();
-    const phrases = JSON.parse(text);
-
-    listEl.innerHTML = phrases.map((p, i) => `
-      <div style="background:var(--surface);border-radius:var(--r-md);border:1px solid var(--border);padding:14px 16px;margin-bottom:8px;display:flex;align-items:center;gap:12px">
-        <div style="flex:1;min-width:0">
-          <div style="font-size:1.1rem;font-weight:600;color:var(--text);margin-bottom:3px">${escapeHtml(p.translated)}</div>
-          <div style="font-size:.7rem;color:var(--text3);font-style:italic;margin-bottom:2px">${escapeHtml(p.phonetic || '')}</div>
-          <div style="font-size:.75rem;color:var(--text2)">${escapeHtml(p.chinese)}</div>
-        </div>
-        <button onclick="speakPhrase('${encodeURIComponent(p.translated)}','${langCode}')" 
-          style="width:40px;height:40px;border-radius:50%;background:var(--accent-soft);border:none;font-size:1.1rem;cursor:pointer;flex-shrink:0;transition:transform .15s">🔊</button>
-      </div>`).join('');
-  } catch(e) {
-    listEl.innerHTML = `<div style="text-align:center;padding:20px;color:var(--red);font-size:.85rem">翻譯失敗，請重試</div>`;
-  }
 }
 
 function speakPhrase(encodedText, langCode) {
@@ -3190,13 +3127,50 @@ onAuthStateChanged(auth, async user => {
   }
 });
 
-// Keyboard handling
+// ── 全域鍵盤處理 ── iOS / Android 鍵盤彈出不打架
 if (window.visualViewport) {
+  let lastKbHeight = 0;
+
   window.visualViewport.addEventListener('resize', () => {
-    const kb = window.innerHeight - window.visualViewport.height;
+    const vv = window.visualViewport;
+    const kbHeight = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+    if (Math.abs(kbHeight - lastKbHeight) < 10) return; // 忽略小幅抖動
+    lastKbHeight = kbHeight;
+    const isKeyboardOpen = kbHeight > 80;
+    const safeBottom = 'env(safe-area-inset-bottom)';
+
+    // 1. Modal sheets（記帳、行程表單等）
     document.querySelectorAll('.modal-sheet').forEach(el => {
-      el.style.paddingBottom = kb > 50 ? `${kb}px` : 'env(safe-area-inset-bottom)';
+      el.style.paddingBottom = isKeyboardOpen ? kbHeight + 'px' : safeBottom;
+      el.style.maxHeight = isKeyboardOpen
+        ? (window.innerHeight - kbHeight) + 'px'
+        : '90dvh';
     });
+
+    // 2. Bibi drawer
+    const bibiDrawer = document.getElementById('bibi-drawer');
+    if (bibiDrawer) {
+      bibiDrawer.style.paddingBottom = isKeyboardOpen ? kbHeight + 'px' : safeBottom;
+      bibiDrawer.style.maxHeight = isKeyboardOpen
+        ? (window.innerHeight - kbHeight) + 'px'
+        : '92dvh';
+    }
+
+    // 3. 聊天區自動捲到底
+    if (isKeyboardOpen) {
+      const chat = document.getElementById('bibi-chat');
+      if (chat) setTimeout(() => { chat.scrollTop = chat.scrollHeight; }, 100);
+    }
+  });
+
+  // 輸入框 focus 時確保可見
+  document.addEventListener('focusin', e => {
+    const tag = e.target.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA') {
+      setTimeout(() => {
+        e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 350); // 等鍵盤完全升起
+    }
   });
 }
 
@@ -3413,15 +3387,14 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
      SPLASH SCREEN
 ══════════════════════════════════════ -->
 <div id="splash" class="splash-screen" style="background:#1E1810;position:fixed;inset:0;z-index:9999;transition:opacity .5s ease;" onclick="this.classList.add('fade-out');setTimeout(()=>{this.style.display='none';if(!currentUser){document.getElementById('login-screen')?.classList.remove('hidden');document.getElementById('app-shell')?.classList.add('hidden')}},500)">
-  <!-- 全部用 absolute 定位，互不影響，絕對不會跳 -->
   <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;width:280px">
-    <div style="font-family:'Noto Sans TC',sans-serif;font-size:2.4rem;font-weight:300;letter-spacing:.2em;text-transform:uppercase;color:#C8AA7C;margin-bottom:8px;animation:sIn .4s ease both"><em style="font-style:normal;font-weight:700">Y</em>ALLABI</div>
-    <div style="font-family:'Noto Sans TC',sans-serif;font-size:.6rem;font-weight:300;letter-spacing:.24em;text-transform:uppercase;color:rgba(200,170,100,.4);margin-bottom:36px;animation:sIn .4s ease .1s both">every trip, a story</div>
-    <div style="font-size:2.4rem;display:block;margin-bottom:36px;animation:sIn .4s ease .2s both">✈️</div>
-    <div style="display:flex;gap:7px;justify-content:center;animation:sIn .4s ease .3s both">
-      <div style="width:6px;height:6px;border-radius:50%;background:rgba(200,170,100,.8);animation:dotPulse 1.2s ease infinite"></div>
-      <div style="width:6px;height:6px;border-radius:50%;background:rgba(200,170,100,.4);animation:dotPulse 1.2s ease .2s infinite"></div>
-      <div style="width:6px;height:6px;border-radius:50%;background:rgba(200,170,100,.2);animation:dotPulse 1.2s ease .4s infinite"></div>
+    <div style="font-family:'Noto Sans TC',sans-serif;font-size:2.4rem;font-weight:300;letter-spacing:.2em;text-transform:uppercase;color:#C8AA7C;margin-bottom:8px"><em style="font-style:normal;font-weight:700">Y</em>ALLABI</div>
+    <div style="font-family:'Noto Sans TC',sans-serif;font-size:.6rem;font-weight:300;letter-spacing:.24em;text-transform:uppercase;color:rgba(200,170,100,.4);margin-bottom:36px">every trip, a story</div>
+    <div style="font-size:2.4rem;display:block;margin-bottom:36px">✈️</div>
+    <div style="display:flex;gap:7px;justify-content:center">
+      <div style="width:6px;height:6px;border-radius:50%;background:rgba(200,170,100,.8);animation:splashDot 1.4s ease infinite"></div>
+      <div style="width:6px;height:6px;border-radius:50%;background:rgba(200,170,100,.8);animation:splashDot 1.4s ease .25s infinite"></div>
+      <div style="width:6px;height:6px;border-radius:50%;background:rgba(200,170,100,.8);animation:splashDot 1.4s ease .5s infinite"></div>
     </div>
   </div>
   <div id="splash-debug" style="position:absolute;bottom:40px;left:0;right:0;font-size:.62rem;color:rgba(200,170,100,.4);letter-spacing:.06em;text-align:center;padding:0 32px">連線中...</div>
@@ -3481,40 +3454,29 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
   <div id="page-itinerary" class="page active">
     <div class="page-content pb-4">
 
-      <!-- Hero -->
-      <div style="text-align:center;padding:8px 16px 12px;position:relative;display:flex;flex-direction:column;align-items:center;gap:10px">
-        <!-- 浮水印 -->
-        <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-family:'Fraunces',serif;font-size:min(4.8rem,20vw);font-weight:300;font-style:italic;color:var(--accent);opacity:.055;white-space:nowrap;letter-spacing:-.02em;pointer-events:none;user-select:none;line-height:1">every trip</div>
+      <!-- Hero + Weather 合一區塊 -->
+      <div style="padding:10px 0 14px">
 
-        <!-- 小標 — 換符號，更精緻 -->
-        <div style="font-size:clamp(.54rem,.14vw + .48rem,.62rem);letter-spacing:.16em;text-transform:uppercase;color:var(--text3);margin-bottom:10px;position:relative;display:flex;align-items:center;justify-content:center;gap:8px">
-          <span style="display:inline-block;width:18px;height:1px;background:var(--accent);opacity:.4"></span>
-          every trip, a story
-          <span style="display:inline-block;width:18px;height:1px;background:var(--accent);opacity:.4"></span>
-        </div>
-
-        <!-- 倒數 Pill -->
-        <div id="countdown-pill" style="display:inline-flex;align-items:center;gap:6px;background:var(--primary);color:white;border-radius:999px;padding:8px 20px;font-size:clamp(.8rem,.28vw + .7rem,.9rem);font-weight:600;letter-spacing:.02em;position:relative">
-          <span id="countdown-display">距離出發還有 — 天</span>
-        </div>
-
-        <!-- 旅行標籤 -->
-        <div id="trip-label" style="position:relative">選擇旅行開始規劃</div>
-      </div>
-
-      <!-- Weather -->
-      <div class="weather-card mb-4" id="weather-card">
-        <div style="position:relative;z-index:1" id="weather-content">
-          <div style="font-size:.58rem;opacity:.72;letter-spacing:.12em;text-transform:uppercase;color:white;margin-bottom:4px" id="weather-city">—</div>
-          <div style="display:flex;align-items:flex-end;gap:12px">
-            <div>
-              <div style="font-family:var(--font-display);font-size:2.4rem;font-weight:300;color:white;line-height:1" id="weather-temp">—°</div>
-              <div style="font-size:.68rem;color:rgba(255,255,255,.8);margin-top:2px" id="weather-desc">載入天氣中...</div>
-            </div>
-            <div id="weather-icon" style="font-size:2rem;margin-bottom:4px"></div>
+        <!-- Hero：緊湊置中，無多餘空白 -->
+        <div style="text-align:center;margin-bottom:14px">
+          <div style="font-size:.58rem;letter-spacing:.18em;text-transform:uppercase;color:var(--text3);margin-bottom:8px;display:flex;align-items:center;justify-content:center;gap:8px">
+            <span style="display:inline-block;width:16px;height:1px;background:var(--accent);opacity:.4"></span>
+            every trip, a story
+            <span style="display:inline-block;width:16px;height:1px;background:var(--accent);opacity:.4"></span>
           </div>
-          <div style="font-size:.58rem;color:rgba(255,255,255,.55);margin-top:8px" id="weather-sync"></div>
+          <div id="countdown-pill" style="display:inline-flex;align-items:center;gap:6px;background:var(--primary);color:white;border-radius:999px;padding:8px 20px;font-size:.88rem;font-weight:600;margin-bottom:8px;letter-spacing:.02em">
+            <span id="countdown-display">距離出發還有 — 天</span>
+          </div>
+          <div id="trip-label">選擇旅行開始規劃</div>
         </div>
+
+        <!-- Weather -->
+        <div class="weather-card" id="weather-card">
+          <div style="position:relative;z-index:1" id="weather-content">
+            <div style="font-size:.72rem;color:rgba(255,255,255,.55);margin-bottom:8px">載入天氣中...</div>
+          </div>
+        </div>
+
       </div>
 
       <!-- Day Tabs -->
@@ -4314,7 +4276,7 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
      BIBI DRAWER — 全新設計
 ════════════════════════════════════════ -->
 <div id="modal-bibi" class="modal-overlay" style="align-items:flex-end">
-  <div id="bibi-drawer" style="width:100%;max-width:480px;height:92dvh;background:var(--bg);border-radius:28px 28px 0 0;transform:translateY(100%);transition:transform .32s cubic-bezier(0,0,.2,1);display:flex;flex-direction:column;overflow:hidden;padding-bottom:env(safe-area-inset-bottom)">
+  <div id="bibi-drawer" style="width:100%;max-width:480px;height:92dvh;max-height:92dvh;background:var(--bg);border-radius:28px 28px 0 0;transform:translateY(100%);transition:transform .32s cubic-bezier(0,0,.2,1);display:flex;flex-direction:column;overflow:hidden;padding-bottom:env(safe-area-inset-bottom)">
 
     <!-- 拖曳條 + Header -->
     <div style="flex-shrink:0">
@@ -4442,7 +4404,7 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
 <!-- Splash + global styles -->
 <style>
 @keyframes sIn{0%{opacity:0;}100%{opacity:1;}}
-@keyframes dotPulse{0%,100%{transform:translateY(0);opacity:.35;}50%{transform:translateY(-5px);opacity:1;}}
+@keyframes dotPulse{0%,100%{opacity:.25;}50%{opacity:1;}}
 @keyframes loginFloat{0%,100%{transform:translateY(0) rotate(-2deg);}50%{transform:translateY(-10px) rotate(2deg);}}
 </style>
 
