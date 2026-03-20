@@ -120,20 +120,31 @@ function updateCountryBadge(trip) {
 // 📅 DATE & COUNTDOWN
 // ════════════════════════════════════════
 function updateCountdown(departureDate) {
-  if (!departureDate) return;
+  const pill = document.getElementById('countdown-pill');
+  const el = document.getElementById('countdown-display');
+  const tripLabel = document.getElementById('trip-label');
+  if (!pill || !el) return;
+
+  if (!currentTripId) {
+    pill.style.display = 'none';
+    if (tripLabel) {
+      tripLabel.innerHTML = `<button onclick="openModal('modal-new-trip')" style="color:var(--accent);font-size:.78rem;font-weight:600;border:1.5px solid var(--accent);border-radius:999px;padding:6px 16px;background:var(--accent-soft)">＋ 新增第一趟旅行</button>`;
+    }
+    return;
+  }
+
+  if (!departureDate) { pill.style.display = 'none'; return; }
   const dep = new Date(departureDate);
   const now = new Date();
   const diff = Math.ceil((dep - now) / (1000 * 60 * 60 * 24));
-  const el = document.getElementById('countdown-display');
-  if (!el) return;
   if (diff > 0) {
     el.innerHTML = `距離出發還有 <strong>${diff}</strong> 天`;
-    document.getElementById('countdown-pill').style.display = 'inline-flex';
+    pill.style.display = 'inline-flex';
   } else if (diff === 0) {
     el.innerHTML = `🎉 今天出發！`;
-    document.getElementById('countdown-pill').style.display = 'inline-flex';
+    pill.style.display = 'inline-flex';
   } else {
-    document.getElementById('countdown-pill').style.display = 'none';
+    pill.style.display = 'none';
   }
 }
 
@@ -191,7 +202,25 @@ function selectDay(day) {
   renderItinerary();
 }
 
+// ════════════════════════════════════════
+// 🚫 NO TRIP EMPTY STATE
+// ════════════════════════════════════════
+function noTripHTML(icon, msg) {
+  return `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 24px;text-align:center">
+    <div style="font-size:3rem;margin-bottom:16px">${icon}</div>
+    <div style="font-size:.95rem;font-weight:600;color:var(--text);margin-bottom:6px">還沒有旅行</div>
+    <div style="font-size:.8rem;color:var(--text3);line-height:1.6;margin-bottom:24px">${msg}</div>
+    <button onclick="openModal('modal-new-trip')" style="display:inline-flex;align-items:center;gap:6px;background:var(--primary);color:white;border:none;border-radius:999px;padding:12px 24px;font-size:.88rem;font-weight:600;cursor:pointer">＋ 新增第一趟旅行</button>
+  </div>`;
+}
+
 function renderItinerary() {
+  if (!currentTripId) {
+    const container = document.getElementById('itinerary-list');
+    if (container) container.innerHTML = noTripHTML('🗺️', '建立你的第一趟旅行<br>開始規劃行程吧');
+    document.getElementById('day-tabs')?.replaceChildren();
+    return;
+  }
   renderDayTabs();
   const container = document.getElementById('itinerary-list');
   if (!container) return;
@@ -291,6 +320,7 @@ function openBibiStrategy(name, address) {
 
 // Add Itinerary Modal
 function openAddItinerary(editId = null) {
+  if (!currentTripId) { showToast('請先建立或選擇一個旅行'); return; }
   const modal = document.getElementById('modal-itinerary');
   const form = document.getElementById('form-itinerary');
   const title = document.getElementById('modal-itinerary-title');
@@ -463,6 +493,19 @@ function convertCurrency(amount, from, to) {
 }
 
 function renderExpenses() {
+  if (!currentTripId) {
+    const els = ['expense-summary','expense-person-tabs','expense-list'];
+    els.forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = ''; });
+    const list = document.getElementById('expense-list');
+    if (list) list.innerHTML = noTripHTML('💰', '建立旅行後<br>就可以開始記帳囉');
+    // 隱藏換算卡片
+    const conv = document.getElementById('converter-card');
+    if (conv) conv.style.display = 'none';
+    return;
+  }
+  // 顯示換算卡片
+  const conv = document.getElementById('converter-card');
+  if (conv) conv.style.display = '';
   renderExpenseSummary();
   renderExpenseList();
   renderExpenseChart();
@@ -633,6 +676,7 @@ function renderExpenseChart() {
 }
 
 function openAddExpense(editId = null) {
+  if (!currentTripId) { showToast('請先建立或選擇一個旅行'); return; }
   const modal = document.getElementById('modal-expense');
   const form = document.getElementById('form-expense');
   if (editId) {
@@ -670,6 +714,7 @@ function renderPayerOptions() {
 }
 
 async function saveExpense() {
+  if (!currentTripId) { showToast('請先選擇或建立一個旅行'); return; }
   const form = document.getElementById('form-expense');
   const amount = parseFloat(form.querySelector('#exp-amount').value);
   if (!amount || isNaN(amount)) { showToast('請輸入金額'); return; }
@@ -694,7 +739,14 @@ async function saveExpense() {
       showToast('已記帳 ✓');
     }
     closeModal('modal-expense');
-  } catch(e) { showToast('儲存失敗'); }
+  } catch(e) {
+    console.error('saveExpense error:', e);
+    if (e.code === 'permission-denied') {
+      showToast('權限不足，請確認 Firestore 規則');
+    } else {
+      showToast('儲存失敗：' + (e.message || '未知錯誤'));
+    }
+  }
 }
 
 async function deleteExpense(id) {
@@ -1153,6 +1205,10 @@ const JOURNAL_MOODS = [
 function renderJournal() {
   const container = document.getElementById('journal-list');
   if (!container) return;
+  if (!currentTripId) {
+    container.innerHTML = noTripHTML('📖', '建立旅行後<br>開始記錄美好瞬間');
+    return;
+  }
   const sorted = [...journalData].sort((a,b) => (b.createdAt||0) - (a.createdAt||0));
   if (sorted.length === 0) {
     container.innerHTML = `<div class="empty-state"><span class="empty-icon">📖</span><p>記錄旅途中的美好瞬間</p></div>`;
@@ -1338,6 +1394,15 @@ function previewJournalPhoto(input) {
 // ✈️ PAGE: DEPART (航班/飯店/行李/任務)
 // ════════════════════════════════════════
 function renderDepart() {
+  if (!currentTripId) {
+    ['flights-list','hotels-list','missions-card','packing-list'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = '';
+    });
+    const fl = document.getElementById('flights-list');
+    if (fl) fl.innerHTML = noTripHTML('✈️', '建立旅行後<br>可以記錄航班、飯店和行李');
+    return;
+  }
   renderFlights();
   renderHotels();
   renderMissions();
@@ -1738,6 +1803,20 @@ async function loadTrips() {
   renderTripSelector();
   if (tripsData.length > 0 && !currentTripId) {
     selectTrip(tripsData.find(t => !t.archived)?.id || tripsData[0].id);
+  } else if (tripsData.length === 0) {
+    // 沒有旅行 → 觸發空狀態
+    currentTripId = null;
+    currentTrip = null;
+    updateCountdown(null);
+    renderItinerary();
+    renderExpenses();
+    renderDepart();
+    renderJournal();
+    // 清空 header
+    const flag = document.getElementById('country-flag');
+    const name = document.getElementById('country-name');
+    if (flag) flag.textContent = '🌍';
+    if (name) name.textContent = '選擇旅行';
   }
 }
 
