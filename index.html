@@ -14,7 +14,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="style.css">
-<script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 // 全域錯誤捕捉
@@ -2833,15 +2832,18 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
      SPLASH SCREEN
 ══════════════════════════════════════ -->
 <div id="splash" class="splash-screen" style="background:#1E1810;position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity .5s ease;" onclick="this.classList.add('fade-out');setTimeout(()=>{this.style.display='none';if(!currentUser){document.getElementById('login-screen')?.classList.remove('hidden');document.getElementById('app-shell')?.classList.add('hidden')}},500)">
-  <div style="text-align:center;animation:splashPop .6s cubic-bezier(.34,1.56,.64,1) both">
-    <div style="font-family:'Noto Sans TC',sans-serif;font-size:2.4rem;font-weight:300;letter-spacing:.2em;text-transform:uppercase;color:#C8AA7C;margin-bottom:8px"><em style="font-style:normal;font-weight:700">Y</em>ALLABI</div>
-    <div style="font-family:'Noto Sans TC',sans-serif;font-size:.6rem;font-weight:300;letter-spacing:.24em;text-transform:uppercase;color:rgba(200,170,100,.4);margin-bottom:40px;animation:splashFade .8s ease .3s both">every trip, a story</div>
-  </div>
-  <div style="font-size:2.6rem;animation:splashFly 1.4s ease .1s both">✈️</div>
-  <div style="display:flex;gap:7px;margin-top:36px;animation:splashFade .8s ease .5s both">
-    <div style="width:6px;height:6px;border-radius:50%;background:rgba(200,170,100,.8);animation:dotPulse 1.2s ease infinite"></div>
-    <div style="width:6px;height:6px;border-radius:50%;background:rgba(200,170,100,.4);animation:dotPulse 1.2s ease .2s infinite"></div>
-    <div style="width:6px;height:6px;border-radius:50%;background:rgba(200,170,100,.2);animation:dotPulse 1.2s ease .4s infinite"></div>
+  <!-- 固定高度容器，避免動畫造成版面跳動 -->
+  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:260px;position:relative">
+    <div style="text-align:center;animation:splashPop .6s cubic-bezier(.34,1.56,.64,1) both;position:absolute;top:0;left:50%;transform:translateX(-50%);width:280px">
+      <div style="font-family:'Noto Sans TC',sans-serif;font-size:2.4rem;font-weight:300;letter-spacing:.2em;text-transform:uppercase;color:#C8AA7C;margin-bottom:8px"><em style="font-style:normal;font-weight:700">Y</em>ALLABI</div>
+      <div style="font-family:'Noto Sans TC',sans-serif;font-size:.6rem;font-weight:300;letter-spacing:.24em;text-transform:uppercase;color:rgba(200,170,100,.4);animation:splashFade .8s ease .3s both;opacity:0">every trip, a story</div>
+    </div>
+    <div style="font-size:2.6rem;position:absolute;top:110px;animation:splashFade .6s ease .2s both;opacity:0">✈️</div>
+    <div style="display:flex;gap:7px;position:absolute;top:180px;animation:splashFade .8s ease .5s both;opacity:0">
+      <div style="width:6px;height:6px;border-radius:50%;background:rgba(200,170,100,.8);animation:dotPulse 1.2s ease infinite"></div>
+      <div style="width:6px;height:6px;border-radius:50%;background:rgba(200,170,100,.4);animation:dotPulse 1.2s ease .2s infinite"></div>
+      <div style="width:6px;height:6px;border-radius:50%;background:rgba(200,170,100,.2);animation:dotPulse 1.2s ease .4s infinite"></div>
+    </div>
   </div>
   <div id="splash-debug" style="position:absolute;bottom:40px;font-size:.62rem;color:rgba(200,170,100,.4);letter-spacing:.06em;text-align:center;padding:0 32px">連線中...</div>
   <div style="position:absolute;bottom:16px;font-size:.6rem;color:rgba(200,170,100,.25)">點擊畫面可跳過</div>
@@ -2916,7 +2918,7 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
           <div style="display:flex;align-items:flex-end;gap:12px">
             <div>
               <div style="font-family:var(--font-display);font-size:2.4rem;font-weight:300;color:white;line-height:1" id="weather-temp">—°</div>
-              <div style="font-size:.68rem;color:rgba(255,255,255,.8);margin-top:2px" id="weather-desc">選擇旅行後顯示</div>
+              <div style="font-size:.68rem;color:rgba(255,255,255,.8);margin-top:2px" id="weather-desc">載入天氣中...</div>
             </div>
             <div id="weather-icon" style="font-size:2rem;margin-bottom:4px"></div>
           </div>
@@ -3799,9 +3801,8 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
 
 <!-- Splash + global styles -->
 <style>
-@keyframes splashPop{from{opacity:0;transform:scale(.85) translateY(8px);}to{opacity:1;transform:scale(1) translateY(0);}}
-@keyframes splashFade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
-@keyframes splashFly{from{opacity:0;transform:translateX(-24px);}to{opacity:1;transform:translateX(0);}}
+@keyframes splashPop{from{opacity:0;transform:translateX(-50%) scale(.9);}to{opacity:1;transform:translateX(-50%) scale(1);}}
+@keyframes splashFade{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
 @keyframes dotPulse{0%,100%{transform:translateY(0);opacity:.35;}50%{transform:translateY(-5px);opacity:1;}}
 @keyframes loginFloat{0%,100%{transform:translateY(0) rotate(-2deg);}50%{transform:translateY(-10px) rotate(2deg);}}
 </style>
@@ -3978,89 +3979,140 @@ async function saveNickname() {
 
 // Fetch weather
 async function fetchWeather(trip) {
-  if (!trip?.country || trip.country === 'default') return;
-  const cityMap = {
-    thailand:'Bangkok', japan:'Tokyo', france:'Paris', italy:'Rome', greece:'Santorini',
-    morocco:'Marrakech', maldives:'Male', korea:'Seoul', singapore:'Singapore',
-    usa:'New York', australia:'Sydney'
+  console.log('[Weather] fetchWeather called, trip:', trip?.country, 'cities:', trip?.cities);
+
+  // 用固定座標 map，跳過 geo API，直接查天氣 — 速度快且不需要 geo 二次請求
+  const CITY_COORDS = {
+    thailand:  { city:'Bangkok',     lat:13.7563,  lon:100.5018 },
+    japan:     { city:'Tokyo',       lat:35.6762,  lon:139.6503 },
+    france:    { city:'Paris',       lat:48.8566,  lon:2.3522   },
+    italy:     { city:'Rome',        lat:41.9028,  lon:12.4964  },
+    greece:    { city:'Santorini',   lat:36.3932,  lon:25.4615  },
+    morocco:   { city:'Marrakech',   lat:31.6295,  lon:-7.9811  },
+    maldives:  { city:'Malé',        lat:4.1755,   lon:73.5093  },
+    korea:     { city:'Seoul',       lat:37.5665,  lon:126.9780 },
+    singapore: { city:'Singapore',   lat:1.3521,   lon:103.8198 },
+    usa:       { city:'New York',    lat:40.7128,  lon:-74.0060 },
+    australia: { city:'Sydney',      lat:-33.8688, lon:151.2093 },
   };
 
-  // 決定要顯示哪些城市
-  let cities = [];
-  if (trip.cities && trip.cities.length > 0) {
-    cities = trip.cities.slice(0, 3); // 最多3個
-  } else {
-    const defaultCity = cityMap[trip.country] || trip.countryName;
-    if (defaultCity) cities = [defaultCity];
-  }
-  if (cities.length === 0) return;
-
-  const weatherCard = document.getElementById('weather-card');
   const content = document.getElementById('weather-content');
-  if (!content) return;
+  if (!content) { console.warn('[Weather] weather-content element not found'); return; }
 
-  // 單城市 → 原本的大字顯示
-  // 多城市 → 並排顯示
+  if (!trip?.country || trip.country === 'default') {
+    content.innerHTML = `
+      <div style="font-size:.7rem;color:rgba(255,255,255,.55)">選擇旅行後顯示即時天氣</div>`;
+    return;
+  }
+
+  // 決定查詢目標：優先用 trip.cities，否則查 CITY_COORDS
+  let targets = [];
+
+  if (trip.cities && trip.cities.length > 0) {
+    // 有設城市 → 用 geo API 查座標
+    targets = null; // 標記為需要 geo 查詢
+  } else {
+    const coord = CITY_COORDS[trip.country];
+    if (coord) targets = [coord];
+    else if (trip.countryName) targets = null; // 需要 geo 查詢
+  }
+
+  // 顯示 loading
+  const loadingCity = trip.cities?.[0] || CITY_COORDS[trip.country]?.city || trip.countryName || '';
+  content.innerHTML = `
+    <div style="font-size:.58rem;opacity:.65;letter-spacing:.12em;text-transform:uppercase;color:white;margin-bottom:6px">${loadingCity.toUpperCase()}</div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="font-family:var(--font-display);font-size:2.4rem;font-weight:300;color:rgba(255,255,255,.35);line-height:1">--°</div>
+      <div style="font-size:.68rem;color:rgba(255,255,255,.45)">取得天氣中...</div>
+    </div>`;
+
   try {
-    const results = await Promise.all(cities.map(async city => {
-      try {
-        const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=en`);
-        const geoData = await geoRes.json();
-        const loc = geoData.results?.[0];
+    // 如果 targets 是 null，需要先做 geo 查詢
+    if (targets === null) {
+      const cityNames = trip.cities?.slice(0,3) || [trip.countryName];
+      console.log('[Weather] geo lookup for:', cityNames);
+      const geoResults = await Promise.all(cityNames.map(async name => {
+        const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=1&language=en`);
+        const d = await r.json();
+        const loc = d.results?.[0];
         if (!loc) return null;
-        const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${loc.latitude}&longitude=${loc.longitude}&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=1`);
-        const data = await res.json();
-        const temp = Math.round(data.current.temperature_2m);
-        const tempMax = Math.round(data.daily?.temperature_2m_max?.[0] ?? temp);
-        const tempMin = Math.round(data.daily?.temperature_2m_min?.[0] ?? temp);
-        const code = data.current.weather_code;
-        const icon = code <= 1 ? '☀️' : code <= 3 ? '⛅' : code <= 67 ? '🌧️' : '🌨️';
-        const desc = code <= 1 ? '晴天' : code <= 3 ? '多雲' : code <= 67 ? '有雨' : '下雪';
-        return { city, temp, tempMax, tempMin, icon, desc };
-      } catch { return null; }
+        return { city: name, lat: loc.latitude, lon: loc.longitude };
+      }));
+      targets = geoResults.filter(Boolean);
+      console.log('[Weather] geo results:', targets);
+    }
+
+    if (!targets || targets.length === 0) {
+      content.innerHTML = `<div style="font-size:.75rem;color:rgba(255,255,255,.5)">找不到城市天氣</div>`;
+      return;
+    }
+
+    // 查天氣（直接用座標，一次 fetch 搞定）
+    const weatherResults = await Promise.all(targets.map(async t => {
+      console.log('[Weather] fetching weather for', t.city, t.lat, t.lon);
+      const r = await fetch(
+        `https://api.open-meteo.com/v1/forecast?latitude=${t.lat}&longitude=${t.lon}&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=1`
+      );
+      const d = await r.json();
+      console.log('[Weather] response for', t.city, ':', d.current);
+      const temp = Math.round(d.current?.temperature_2m ?? 0);
+      const tempMax = Math.round(d.daily?.temperature_2m_max?.[0] ?? temp);
+      const tempMin = Math.round(d.daily?.temperature_2m_min?.[0] ?? temp);
+      const code = d.current?.weather_code ?? 0;
+      const icon = code <= 1 ? '☀️' : code <= 3 ? '⛅' : code <= 48 ? '🌫️' : code <= 67 ? '🌧️' : code <= 77 ? '🌨️' : code <= 82 ? '🌦️' : '⛈️';
+      const desc = code <= 1 ? '晴天' : code <= 3 ? '多雲' : code <= 48 ? '霧' : code <= 67 ? '有雨' : code <= 77 ? '下雪' : '陣雨';
+      return { city: t.city, temp, tempMax, tempMin, icon, desc };
     }));
 
-    const valid = results.filter(Boolean);
-    if (valid.length === 0) return;
+    const valid = weatherResults.filter(w => w && w.temp !== undefined);
+    console.log('[Weather] valid results:', valid);
+
+    if (valid.length === 0) {
+      content.innerHTML = `<div style="font-size:.75rem;color:rgba(255,255,255,.5)">天氣資料載入失敗</div>`;
+      return;
+    }
 
     const timeStr = new Date().toLocaleTimeString('zh-TW', { hour:'2-digit', minute:'2-digit' });
 
     if (valid.length === 1) {
-      // 單城市 — 大字顯示
       const w = valid[0];
       content.innerHTML = `
         <div style="font-size:.58rem;opacity:.72;letter-spacing:.12em;text-transform:uppercase;color:white;margin-bottom:4px">${w.city.toUpperCase()}</div>
         <div style="display:flex;align-items:flex-end;gap:12px">
           <div>
             <div style="font-family:var(--font-display);font-size:2.4rem;font-weight:300;color:white;line-height:1">${w.temp}°</div>
-            <div style="font-size:.62rem;color:rgba(255,255,255,.65);margin-top:2px">${w.tempMin}° - ${w.tempMax}°</div>
+            <div style="font-size:.62rem;color:rgba(255,255,255,.65);margin-top:2px">${w.tempMin}° – ${w.tempMax}°</div>
             <div style="font-size:.68rem;color:rgba(255,255,255,.8);margin-top:2px">${w.desc}</div>
           </div>
           <div style="font-size:2rem;margin-bottom:4px">${w.icon}</div>
         </div>
         <div style="font-size:.58rem;color:rgba(255,255,255,.55);margin-top:8px">SYNC · ${timeStr}</div>`;
     } else {
-      // 多城市 — 並排顯示
       const cols = valid.map((w, i) => `
-        <div style="flex:1;text-align:center;${i > 0 ? 'border-left:1px solid rgba(255,255,255,.2);' : ''}padding:0 12px">
-          <div style="font-size:.52rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.65);margin-bottom:8px">${w.city.toUpperCase()}</div>
-          <div style="font-family:var(--font-display);font-size:2.2rem;font-weight:700;color:white;line-height:1">${w.temp}°</div>
-          <div style="font-size:.58rem;color:rgba(255,255,255,.55);margin:3px 0">${w.tempMin}° - ${w.tempMax}°</div>
-          <div style="font-size:1.8rem;margin:6px 0">${w.icon}</div>
+        <div style="flex:1;text-align:center;${i > 0 ? 'border-left:1px solid rgba(255,255,255,.2);' : ''}padding:0 10px">
+          <div style="font-size:.5rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.6);margin-bottom:6px">${w.city.toUpperCase()}</div>
+          <div style="font-family:var(--font-display);font-size:2rem;font-weight:300;color:white;line-height:1">${w.temp}°</div>
+          <div style="font-size:.55rem;color:rgba(255,255,255,.5);margin:3px 0">${w.tempMin}°–${w.tempMax}°</div>
+          <div style="font-size:1.5rem;margin:4px 0">${w.icon}</div>
         </div>`).join('');
-
       content.innerHTML = `
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-          <div style="font-size:.52rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.55)">即時天氣</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div style="font-size:.52rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.5)">即時天氣</div>
           <div style="display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.12);padding:2px 8px;border-radius:999px">
-            <div style="width:5px;height:5px;border-radius:50%;background:#4ade80"></div>
-            <span style="font-size:.5rem;color:rgba(255,255,255,.8);letter-spacing:.06em">LIVE</span>
+            <div style="width:5px;height:5px;border-radius:50%;background:#4ade80;animation:pulse 2s ease infinite"></div>
+            <span style="font-size:.5rem;color:rgba(255,255,255,.8)">LIVE</span>
           </div>
         </div>
         <div style="display:flex">${cols}</div>
-        <div style="font-size:.52rem;color:rgba(255,255,255,.4);text-align:center;margin-top:10px;letter-spacing:.06em">SYNC · ${timeStr}</div>`;
+        <div style="font-size:.5rem;color:rgba(255,255,255,.35);text-align:center;margin-top:8px">SYNC · ${timeStr}</div>`;
     }
-  } catch {}
+
+  } catch(e) {
+    console.error('[Weather] error:', e);
+    content.innerHTML = `
+      <div style="font-size:.58rem;opacity:.6;letter-spacing:.12em;text-transform:uppercase;color:white;margin-bottom:6px">${loadingCity.toUpperCase()}</div>
+      <div style="font-size:.75rem;color:rgba(255,255,255,.45)">網路連線問題，無法取得天氣</div>`;
+  }
 }
 
 // Expose globals
