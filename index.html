@@ -427,12 +427,13 @@ function toggleItCard(id) {
   const hiddenEl = wrap.querySelector('.it-new-detail-hidden');
   const shownEl = wrap.querySelector('.it-new-detail-shown');
   const dot = wrap.querySelector('.it-timeline-dot');
+  const hasDetail = !!(item.address || item.note);
 
   if (hiddenEl) {
-    const detailHTML = (item.address || item.note)
+    const detailHTML = hasDetail
       ? '<div class="it-new-detail-shown" style="border-top:1px solid var(--border);padding:10px 14px 12px;background:var(--bg2);border-radius:0 0 13px 13px">'
-        + (item.address ? '<div style="display:flex;align-items:flex-start;gap:6px;font-size:.72rem;color:var(--text2);line-height:1.55;margin-bottom:8px"><span>📍</span><span>' + item.address + '</span></div>' : '')
-        + (item.note ? '<div style="display:flex;align-items:flex-start;gap:6px;font-size:.72rem;color:var(--text2);line-height:1.55;margin-bottom:8px"><span>📝</span><span style="white-space:pre-wrap">' + escapeHtml(item.note) + '</span></div>' : '')
+        + (item.address ? '<div style="display:flex;align-items:flex-start;gap:6px;font-size:.75rem;color:var(--text2);line-height:1.6;margin-bottom:8px"><span>📍</span><span>' + item.address + '</span></div>' : '')
+        + (item.note ? '<div style="display:flex;align-items:flex-start;gap:6px;font-size:.75rem;color:var(--text2);line-height:1.6;margin-bottom:8px"><span>📝</span><span style="white-space:pre-wrap">' + escapeHtml(item.note) + '</span></div>' : '')
         + '<div style="display:flex;gap:6px;flex-wrap:wrap">'
         + (item.address ? '<button class="it-col-btn" onclick="openMaps(\'' + encodeURIComponent(safeAddress) + '\')">📍 導航</button>' : '')
         + (item.address ? '<button class="it-col-btn" onclick="copyAddress(\'' + safeAddress + '\')">📋 複製</button>' : '')
@@ -446,7 +447,6 @@ function toggleItCard(id) {
     if (dot) { dot.style.background = 'var(--border2)'; dot.style.boxShadow = '0 0 0 2px var(--border2)'; }
   }
 }
-
 function getTypeLabel(type) {
   const types = { attraction:'景點', food:'美食', hotel:'飯店', transport:'交通', memo:'備註', shopping:'購物', activity:'活動' };
   return types[type] || type;
@@ -3482,7 +3482,7 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
     <div class="page-content pb-4">
 
       <!-- Hero -->
-      <div style="text-align:center;padding:4px 16px 16px;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:180px">
+      <div style="text-align:center;padding:8px 16px 12px;position:relative;display:flex;flex-direction:column;align-items:center;gap:10px">
         <!-- 浮水印 -->
         <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-family:'Fraunces',serif;font-size:min(4.8rem,20vw);font-weight:300;font-style:italic;color:var(--accent);opacity:.055;white-space:nowrap;letter-spacing:-.02em;pointer-events:none;user-select:none;line-height:1">every trip</div>
 
@@ -3494,7 +3494,7 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
         </div>
 
         <!-- 倒數 Pill -->
-        <div id="countdown-pill" style="display:inline-flex;align-items:center;gap:6px;background:var(--primary);color:white;border-radius:999px;padding:8px 20px;font-size:clamp(.8rem,.28vw + .7rem,.9rem);font-weight:600;margin-bottom:10px;letter-spacing:.02em;position:relative">
+        <div id="countdown-pill" style="display:inline-flex;align-items:center;gap:6px;background:var(--primary);color:white;border-radius:999px;padding:8px 20px;font-size:clamp(.8rem,.28vw + .7rem,.9rem);font-weight:600;letter-spacing:.02em;position:relative">
           <span id="countdown-display">距離出發還有 — 天</span>
         </div>
 
@@ -4701,7 +4701,7 @@ function renderWeatherCard(weatherList, activeIdx) {
     + '<div style="display:flex;align-items:flex-end;gap:18px">'
     + '<div>'
     + '<div style="font-size:.68rem;opacity:.7;letter-spacing:.12em;text-transform:uppercase;color:white;margin-bottom:8px">'+w.displayName.toUpperCase()+'</div>'
-    + '<div style="font-family:var(--font-display);font-size:3.2rem;font-weight:300;color:white;line-height:1">'+w.temp+'°</div>'
+    + '<div style="font-family:var(--font-display);font-size:2.8rem;font-weight:300;color:white;line-height:1">'+w.temp+'°</div>'
     + '<div style="font-size:.75rem;color:rgba(255,255,255,.65);margin-top:5px">'+w.tempMin+'° – '+w.tempMax+'°</div>'
     + '<div style="font-size:.82rem;color:rgba(255,255,255,.9);margin-top:3px;font-weight:500">'+w.desc+'</div>'
     + '</div>'
