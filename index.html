@@ -2501,7 +2501,14 @@ async function logout() {
 // ════════════════════════════════════════
 
 // Splash 超時保護 — 8秒後強制顯示登入頁
+function splashDebug(msg) {
+  const el = document.getElementById('splash-debug');
+  if (el) el.textContent = msg;
+  console.log('[Yallabi]', msg);
+}
+
 const splashTimeout = setTimeout(() => {
+  splashDebug('連線逾時，請重試');
   const splash = document.getElementById('splash');
   const loginScreen = document.getElementById('login-screen');
   const appShell = document.getElementById('app-shell');
@@ -2515,16 +2522,18 @@ const splashTimeout = setTimeout(() => {
       }
     }, 500);
   }
-}, 8000);
+}, 5000);
 
 onAuthStateChanged(auth, async user => {
-  clearTimeout(splashTimeout); // 有回應就取消超時
+  clearTimeout(splashTimeout);
+  splashDebug(user ? '驗證成功，載入資料中...' : '未登入');
   const splash = document.getElementById('splash');
   const loginScreen = document.getElementById('login-screen');
   const appShell = document.getElementById('app-shell');
 
   if (user) {
     currentUser = user;
+    splashDebug('儲存用戶資料...');
     try {
       await setDoc(doc(db,'users',user.uid), {
         displayName: user.displayName,
@@ -2532,7 +2541,7 @@ onAuthStateChanged(auth, async user => {
         email: user.email,
         lastSeen: Date.now()
       }, { merge: true });
-    } catch(e) {}
+    } catch(e) { splashDebug('用戶資料儲存失敗: ' + e.code); }
 
     // Fade out splash
     setTimeout(() => {
@@ -2543,7 +2552,9 @@ onAuthStateChanged(auth, async user => {
     loginScreen?.classList.add('hidden');
     appShell?.classList.remove('hidden');
 
+    splashDebug('載入旅行資料...');
     await loadTrips();
+    splashDebug('完成！');
     await checkJoinTrip();
     fetchExchangeRates();
 
@@ -2768,7 +2779,7 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
 <!-- ══════════════════════════════════════
      SPLASH SCREEN
 ══════════════════════════════════════ -->
-<div id="splash" class="splash-screen" style="background:#1E1810;position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity .5s ease;">
+<div id="splash" class="splash-screen" style="background:#1E1810;position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity .5s ease;" onclick="this.classList.add('fade-out');setTimeout(()=>{this.style.display='none';if(!currentUser){document.getElementById('login-screen')?.classList.remove('hidden');document.getElementById('app-shell')?.classList.add('hidden')}},500)">
   <div style="text-align:center;animation:splashPop .6s cubic-bezier(.34,1.56,.64,1) both">
     <div style="font-family:'Noto Sans TC',sans-serif;font-size:2.4rem;font-weight:300;letter-spacing:.2em;text-transform:uppercase;color:#C8AA7C;margin-bottom:8px"><em style="font-style:normal;font-weight:700">Y</em>ALLABI</div>
     <div style="font-family:'Noto Sans TC',sans-serif;font-size:.6rem;font-weight:300;letter-spacing:.24em;text-transform:uppercase;color:rgba(200,170,100,.4);margin-bottom:40px;animation:splashFade .8s ease .3s both">every trip, a story</div>
@@ -2779,6 +2790,8 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
     <div style="width:6px;height:6px;border-radius:50%;background:rgba(200,170,100,.4);animation:dotPulse 1.2s ease .2s infinite"></div>
     <div style="width:6px;height:6px;border-radius:50%;background:rgba(200,170,100,.2);animation:dotPulse 1.2s ease .4s infinite"></div>
   </div>
+  <div id="splash-debug" style="position:absolute;bottom:40px;font-size:.62rem;color:rgba(200,170,100,.4);letter-spacing:.06em;text-align:center;padding:0 32px">連線中...</div>
+  <div style="position:absolute;bottom:16px;font-size:.6rem;color:rgba(200,170,100,.25)">點擊畫面可跳過</div>
 </div>
 
 <!-- ══════════════════════════════════════
