@@ -146,8 +146,71 @@
    RESET & BASE
 ════════════════════════════════════════════════════════ */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-html{overscroll-behavior-y:none;-webkit-text-size-adjust:100%;text-size-adjust:100%;color-scheme:light;background:var(--bg);transition:background-color var(--dur) var(--ease);}
-body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit-tap-highlight-color:transparent;touch-action:manipulation;padding-bottom:calc(96px + env(safe-area-inset-bottom));overscroll-behavior-y:none;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility;min-height:100dvh;transition:background-color var(--dur) var(--ease),color var(--dur) var(--ease);}
+html{overscroll-behavior-y:none;-webkit-text-size-adjust:100%;text-size-adjust:100%;color-scheme:light;background:var(--bg);transition:background-color var(--dur) var(--ease);overflow-x:hidden;}
+body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit-tap-highlight-color:transparent;touch-action:manipulation;overscroll-behavior-y:none;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility;min-height:100dvh;transition:background-color var(--dur) var(--ease),color var(--dur) var(--ease);overflow-x:hidden;}
+
+/* ── 手機：正常版面 ── */
+@media (max-width: 600px) {
+  body { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
+  .app-shell { max-width: 100%; width: 100%; margin: 0; min-height: 100dvh; position: relative; overflow-x: hidden; }
+}
+
+/* ── iPad / 桌機：手機框置中 + 漂亮背景 ── */
+@media (min-width: 601px) {
+  body {
+    padding-bottom: 0;
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+    background:
+      radial-gradient(ellipse at 20% 20%, rgba(200,170,100,.08) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 80%, rgba(200,170,100,.06) 0%, transparent 50%),
+      var(--bg);
+    min-height: 100dvh;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      radial-gradient(circle at 15% 35%, rgba(200,170,100,.05) 0%, transparent 35%),
+      radial-gradient(circle at 85% 65%, rgba(200,170,100,.04) 0%, transparent 35%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .app-shell {
+    width: 390px;
+    max-width: 390px;
+    min-height: 100dvh;
+    position: relative;
+    overflow-x: hidden;
+    overflow-y: auto;
+    box-shadow: 0 0 60px rgba(0,0,0,.18), 0 0 0 1px rgba(200,170,100,.08);
+    z-index: 1;
+    flex-shrink: 0;
+  }
+  /* 底部 nav 固定在手機框內 */
+  .bottom-nav {
+    width: calc(390px - 28px) !important;
+    max-width: calc(390px - 28px) !important;
+  }
+  /* 浮水印品牌字 在背景 */
+  body::after {
+    content: 'YALLABI';
+    position: fixed;
+    bottom: 10%;
+    left: 50%;
+    transform: translateX(-50%) translateX(-195px);
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 11rem;
+    font-weight: 700;
+    letter-spacing: .3em;
+    color: rgba(200,170,100,.03);
+    pointer-events: none;
+    z-index: 0;
+    white-space: nowrap;
+  }
+}
 input,select,textarea,button{font-family:var(--font-body);font-size:16px;}
 button{cursor:pointer;border:none;background:none;}
 a{color:inherit;text-decoration:none;}
@@ -171,8 +234,8 @@ a{color:inherit;text-decoration:none;}
 .text-warning{color:var(--warning);}
 
 /* LAYOUT */
-.app-shell{max-width:480px;margin:0 auto;min-height:100dvh;position:relative;}
-.page{display:none;padding:0 16px;padding-top:calc(env(safe-area-inset-top) + 12px);animation:pageIn var(--dur) var(--ease);}
+.app-shell{max-width:480px;margin:0 auto;min-height:100dvh;position:relative;overflow-x:hidden;background:var(--bg);transition:background-color var(--dur) var(--ease);}
+.page{display:none;padding:0 16px;padding-top:calc(env(safe-area-inset-top) + 12px);animation:pageIn var(--dur) var(--ease);overflow-x:hidden;}
 .page.active{display:block;}
 @keyframes pageIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
 
@@ -219,9 +282,11 @@ a{color:inherit;text-decoration:none;}
 
 /* DAY TABS */
 .day-tabs-wrap{display:flex;gap:8px;overflow-x:auto;padding:4px 0 12px;}
-.day-tab{flex-shrink:0;display:flex;flex-direction:column;align-items:center;padding:10px 16px;min-width:76px;border-radius:var(--r-md);background:var(--surface);border:1.5px solid var(--border);color:var(--text2);transition:all var(--dur-fast) var(--ease);}
-.day-tab .day-num{font-weight:700;font-size:.95rem;line-height:1.2;}
-.day-tab .day-date{font-size:.62rem;color:var(--text3);margin-top:2px;}
+.day-tabs{display:flex;gap:8px;overflow-x:auto;padding:4px 2px 10px;scrollbar-width:none;-webkit-overflow-scrolling:touch;}
+.day-tabs::-webkit-scrollbar{display:none;}
+.day-tab{flex-shrink:0;display:flex;flex-direction:column;align-items:center;padding:8px 16px;min-width:72px;border-radius:var(--r-md);background:var(--surface);border:1.5px solid var(--border);color:var(--text2);transition:all var(--dur-fast) var(--ease);cursor:pointer;}
+.day-tab .day-num{font-weight:700;font-size:.88rem;line-height:1.2;white-space:nowrap;}
+.day-tab .day-date{font-size:.6rem;color:var(--text3);margin-top:2px;white-space:nowrap;}
 .day-tab.active{background:var(--primary);border-color:var(--primary);color:white;box-shadow:0 4px 12px var(--shadow-md);}
 .day-tab.active .day-date{color:rgba(255,255,255,.7);}
 .day-tab:active{transform:scale(.94);}
@@ -411,6 +476,8 @@ textarea.form-input{resize:none;white-space:pre-wrap;line-height:1.6;}
 
 /* SPLASH */
 .splash{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;transition:opacity .5s var(--ease);}
+.splash-screen{transition:opacity .5s ease;}
+.splash-screen.fade-out,.splash.fade-out{opacity:0;pointer-events:none;}
 .splash.hidden{opacity:0;pointer-events:none;}
 .splash-logo{font-family:var(--font-display);font-size:2.6rem;font-weight:300;letter-spacing:-.02em;color:var(--text);}
 .splash-logo em{font-style:italic;color:var(--accent);}
