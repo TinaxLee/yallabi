@@ -910,6 +910,15 @@ async function settleExpenses() {
 // ════════════════════════════════════════
 let currentBibiTab = 'chat';
 let selectedTranslateLang = 'th';
+let bibiStyle = 'warm'; // 預設溫暖
+
+const BIBI_STYLES = {
+  warm:    { label:'暖心姊妹', emoji:'🥰', desc:'關心你、給建議、有溫度', prompt:'你說話風格溫暖親切，像一個關心朋友的姊妹，會關心對方的感受，給出貼心建議。' },
+  playful: { label:'調皮損友', emoji:'😜', desc:'開玩笑、虧你、但超有料', prompt:'你說話風格俏皮幽默，喜歡開開玩笑、調侃，但給的資訊超實用，就像一個懂很多的損友。' },
+  pro:     { label:'專業顧問', emoji:'💼', desc:'精準、有條理、不廢話', prompt:'你說話風格專業俐落，給精準的資訊和建議，有條理，不說廢話，像個專業的旅遊顧問。' },
+  funny:   { label:'綜藝主持', emoji:'😂', desc:'誇張反應、很好笑、但實用', prompt:'你說話風格誇張搞笑，有時候用誇張的反應，但資訊很實用，像個搞笑但有料的綜藝主持人。' },
+  zen:     { label:'佛系嚮導', emoji:'🧘', desc:'淡定、隨緣、偶爾智慧語錄', prompt:'你說話風格淡定從容，偶爾說出令人深思的話，不急不緩，就像一個見過世面的佛系旅行者。' },
+};
 
 const TRANSLATE_LANGS = [
   { code:'th',  label:'泰文',    flag:'🇹🇭' },
@@ -926,6 +935,27 @@ const TRANSLATE_LANGS = [
   { code:'el',  label:'希臘文',  flag:'🇬🇷' },
 ];
 
+function renderBibiStyleChips() {
+  const container = document.getElementById('bibi-style-chips');
+  if (!container) return;
+  container.innerHTML = Object.entries(BIBI_STYLES).map(([key, s]) => {
+    const isActive = key === bibiStyle;
+    return '<button onclick="setBibiStyle(\'' + key + '\')" style="flex-shrink:0;padding:3px 10px;border-radius:999px;font-size:.65rem;font-weight:600;white-space:nowrap;cursor:pointer;transition:all .15s;border:1.5px solid ' + (isActive ? 'var(--accent)' : 'var(--border)') + ';background:' + (isActive ? 'var(--accent-soft)' : 'var(--surface)') + ';color:' + (isActive ? 'var(--accent)' : 'var(--text3)') + '">' + s.emoji + ' ' + s.label + '</button>';
+  }).join('');
+}
+
+async function setBibiStyle(style) {
+  bibiStyle = style;
+  renderBibiStyleChips();
+  try {
+    await setDoc(doc(db, 'users', currentUser.uid), { bibiStyle: style }, { merge: true });
+  } catch(e) {}
+  // 重新打招呼
+  window.initBibiGreeting();
+  const styleInfo = BIBI_STYLES[style];
+  showToast('Bibi 切換成' + styleInfo.label + ' ' + styleInfo.emoji);
+}
+
 async function saveBibiNickname() {
   const input = document.getElementById('bibi-nickname-field');
   const name = input?.value.trim();
@@ -934,7 +964,6 @@ async function saveBibiNickname() {
   try {
     await setDoc(doc(db, 'users', currentUser.uid), { nickname: name }, { merge: true });
     showToast('Bibi 記住你了：' + name + ' ✦');
-    // 重新打招呼
     const chat = document.getElementById('bibi-chat');
     if (chat) window.initBibiGreeting();
   } catch(e) { showToast('儲存失敗'); }
@@ -950,6 +979,7 @@ function openBibiDrawer() {
   // 預填暱稱欄位
   const nicknameField = document.getElementById('bibi-nickname-field');
   if (nicknameField) nicknameField.value = userNickname || '';
+  renderBibiStyleChips();
 
   // 初始化
   renderTranslateLangGrid();
@@ -1048,15 +1078,15 @@ async function loadPhraseCards(themeKey) {
     const phrases = JSON.parse(text);
 
     listEl.innerHTML = '<div style="margin-bottom:12px;font-size:.72rem;color:var(--text3);line-height:1.5">' + theme.intro + '</div>'
-      + phrases.map(p => {
+      + phrases.map((p, i) => {
         const encodedText = encodeURIComponent(p.translated);
-        return '<div style="background:var(--surface);border-radius:var(--r-md);border:1px solid var(--border);padding:16px;margin-bottom:10px;display:flex;align-items:center;gap:12px">'
+        return '<div style="background:var(--surface);border-radius:var(--r-md);border:1px solid var(--border);padding:20px 16px;margin-bottom:10px;display:flex;align-items:center;gap:14px;box-shadow:0 2px 10px rgba(80,68,48,.06)">'
           + '<div style="flex:1;min-width:0">'
-          + '<div style="font-size:.65rem;color:var(--text3);margin-bottom:5px;letter-spacing:.02em">' + escapeHtml(p.chinese) + '</div>'
-          + '<div style="font-size:1.65rem;font-weight:700;color:var(--text);line-height:1.25;margin-bottom:5px">' + escapeHtml(p.translated) + '</div>'
-          + '<div style="font-size:.7rem;color:var(--text3);font-style:italic;letter-spacing:.03em">' + escapeHtml(p.phonetic || '') + '</div>'
+          + '<div style="font-size:.72rem;color:var(--text3);margin-bottom:7px">' + escapeHtml(p.chinese) + '</div>'
+          + '<div style="font-size:1.75rem;font-weight:700;color:var(--text);line-height:1.25;margin-bottom:6px;word-break:break-word">' + escapeHtml(p.translated) + '</div>'
+          + '<div style="font-size:.78rem;color:var(--text3);font-style:italic;letter-spacing:.04em">' + escapeHtml(p.phonetic || '') + '</div>'
           + '</div>'
-          + '<button onclick="speakPhrase(\'' + encodedText + '\',\'' + langCode + '\')" style="width:42px;height:42px;border-radius:50%;background:var(--accent-soft);border:1.5px solid var(--border);font-size:1.1rem;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:transform .15s" onmousedown="this.style.transform=\'scale(.88)\'" onmouseup="this.style.transform=\'\'">🔊</button>'
+          + '<button onclick="speakPhrase(\'' + encodedText + '\',\'' + langCode + '\')" style="width:48px;height:48px;border-radius:50%;background:var(--accent);border:none;font-size:1.2rem;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(168,137,90,.3);transition:transform .15s" onmousedown="this.style.transform=\'scale(.88)\'" onmouseup="this.style.transform=\'\'">🔊</button>'
           + '</div>';
       }).join('');
   } catch(e) {
@@ -1434,19 +1464,19 @@ async function sendBibiMessage() {
   bibiChatHistory.push({ role: 'user', content: query });
   if (bibiChatHistory.length > 30) bibiChatHistory = bibiChatHistory.slice(-30);
 
+  const styleInfo = BIBI_STYLES[bibiStyle] || BIBI_STYLES.warm;
   const systemPrompt = `你是 Yallabi App 的 AI 旅遊管家，名字叫 Bibi。
-你的個性：溫暖、幽默、有點撒嬌，像一個去過很多地方的旅遊達人好朋友。你對旅行充滿熱情，回答時會分享個人見解和有趣小知識，不只是列清單。
-
 用戶暱稱：「${name}」。自然地偶爾叫對方名字（不要每句都叫，大概3-4句叫一次）。
 絕對不要自己編造旅伴名字、家人名字或任何其他人的名字。
 
 當前旅行目的地：「${countryName}」${currentTrip?.cities?.length ? `，城市：${currentTrip.cities.join('、')}` : ''}。
 
-回答風格：
-- 像朋友聊天，不要條列式回答，用自然的段落
-- 回答要有溫度，適時加入「欸！」「對對對！」「超推！」這種口語
-- 長度適中，不要太短（至少3-4句），但也不要太長，重點突出
-- 繁體中文，台灣用語
+【說話風格】${styleInfo.prompt}
+
+其他規則：
+- 回答用繁體中文，台灣用語
+- 像朋友聊天，用自然段落不要條列式
+- 回答長度適中（3-5句），重點突出
 - 介紹具體地點時附上：MAP_SEARCH: {"name": "地點名稱"}
 - 翻譯單字或短句時用：TRANSLATION_CARD: {"original": "中文", "translated": "翻譯", "phonetic": "拼音", "lang": "${currentTrip?.country || 'default'}"}`;
 
@@ -3115,6 +3145,7 @@ onAuthStateChanged(auth, async user => {
     try {
       const userSnap = await getDoc(doc(db,'users',user.uid));
       userNickname = userSnap.data()?.nickname || '';
+      bibiStyle = userSnap.data()?.bibiStyle || 'warm';
     } catch(e) {}
 
     // Show notification prompt after 3s if not asked
@@ -3300,6 +3331,14 @@ function toggleCustomCountry(val) {
 
 window.openBibiDrawer = openBibiDrawer;
 window.saveBibiNickname = saveBibiNickname;
+window.translateText = translateText;
+window.setBibiStyle = setBibiStyle;
+window.renderBibiStyleChips = renderBibiStyleChips;
+window.analyzeBibiPhoto = analyzeBibiPhoto;
+window.handleBibiPhoto = handleBibiPhoto;
+window.resetBibiPhoto = resetBibiPhoto;
+window.sendPhotoResultToChat = sendPhotoResultToChat;
+window.quickAddExpenseFromPhoto = quickAddExpenseFromPhoto;
 window.closeBibiDrawer = closeBibiDrawer;
 window.switchBibiTab = switchBibiTab;
 window.selectTranslateLang = selectTranslateLang;
@@ -4268,11 +4307,17 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
 
     <!-- ── TAB: 聊天 ── -->
     <div id="btab-content-chat" style="flex:1;display:flex;flex-direction:column;overflow:hidden">
-      <!-- 暱稱設定列 -->
-      <div id="bibi-nickname-bar" style="padding:8px 16px 6px;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;gap:10px;background:var(--bg2)">
-        <div style="font-size:.65rem;color:var(--text3);white-space:nowrap;letter-spacing:.02em">Bibi 叫我</div>
-        <input id="bibi-nickname-field" type="text" placeholder="輸入你的暱稱..." style="flex:1;background:var(--surface);border:1.5px solid var(--border);border-radius:999px;padding:5px 12px;font-size:.8rem;color:var(--text);outline:none;transition:border-color .2s;min-width:0" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" onkeydown="if(event.key==='Enter')saveBibiNickname()">
-        <button onclick="saveBibiNickname()" style="flex-shrink:0;font-size:.72rem;font-weight:600;color:var(--accent);background:none;border:none;padding:0 4px;white-space:nowrap">儲存</button>
+      <!-- 暱稱 + 風格設定列 -->
+      <div id="bibi-nickname-bar" style="padding:8px 14px 6px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--bg2)">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <div style="font-size:.65rem;color:var(--text3);white-space:nowrap">叫我</div>
+          <input id="bibi-nickname-field" type="text" placeholder="輸入暱稱..." style="flex:1;background:var(--surface);border:1.5px solid var(--border);border-radius:999px;padding:5px 12px;font-size:.82rem;color:var(--text);outline:none;transition:border-color .2s;min-width:0" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" onkeydown="if(event.key==='Enter')saveBibiNickname()">
+          <button onclick="saveBibiNickname()" style="flex-shrink:0;font-size:.72rem;font-weight:600;color:var(--accent);background:none;border:none;padding:0 2px;white-space:nowrap">儲存</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <div style="font-size:.62rem;color:var(--text3)">Bibi 風格</div>
+          <div id="bibi-style-chips" style="display:flex;gap:5px;overflow-x:auto;scrollbar-width:none;flex:1"></div>
+        </div>
       </div>
       <!-- 對話區 -->
       <div id="bibi-chat" style="flex:1;overflow-y:auto;padding:12px 16px;-webkit-overflow-scrolling:touch"></div>
@@ -4650,14 +4695,10 @@ document.addEventListener('DOMContentLoaded', () => {
   if (window.speechSynthesis) window.speechSynthesis.getVoices();
 });
 
-window.fetchWeather = typeof fetchWeather !== "undefined" ? fetchWeather : null;
 window.initBibiGreeting = typeof initBibiGreeting !== "undefined" ? initBibiGreeting : null;
-window.quickConvert = typeof quickConvert !== "undefined" ? quickConvert : null;
 window.toggleConverter = typeof toggleConverter !== "undefined" ? toggleConverter : null;
  translateText !== "undefined" ? translateText : null;
-window.updateExpensePreview = typeof updateExpensePreview !== "undefined" ? updateExpensePreview : null;
  clearChat !== "undefined" ? clearChat : null;
-window.saveNicknameInline = typeof saveNicknameInline !== "undefined" ? saveNicknameInline : null;
 window.saveNickname = typeof saveNickname !== "undefined" ? saveNickname : null;
 </script>
 </body>
