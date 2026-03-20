@@ -1042,6 +1042,7 @@ async function openTripMemory(tripId) {
           </button>
         </div>
         <div style="font-size:1.1rem;font-weight:600;color:var(--text);margin-bottom:4px">${trip.name || info.name}</div>
+        ${trip.cities?.length ? `<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px">${trip.cities.map(c => `<span style="font-size:.68rem;background:var(--bg2);color:var(--text2);padding:3px 9px;border-radius:999px;border:1px solid var(--border)">${c}</span>`).join('')}</div>` : ''}
         <div style="font-size:.72rem;color:var(--text3);margin-bottom:${moodSummary?'10px':'0'}">
           ${trip.departureDate ? formatDateShort(trip.departureDate) : ''}
           ${trip.days?.length ? ` · ${trip.days.length} 天` : ''}
@@ -1833,24 +1834,30 @@ function renderMemberAvatars() {
 
 async function createNewTrip() {
   const form = document.getElementById('form-new-trip');
-  const name = form.querySelector('#nt-name').value.trim();
   const country = form.querySelector('#nt-country').value;
-  const countryName = form.querySelector('#nt-country-name').value.trim();
+  const countryName = form.querySelector('#nt-country-name')?.value.trim();
   const departure = form.querySelector('#nt-departure').value;
-  
+  const name = getAutoName();
+
   if (!departure) { showToast('請設定出發日期'); return; }
 
+  // 加入輸入框裡還沒按 Enter 的城市
+  const cityInputVal = document.getElementById('nt-city-input')?.value.trim();
+  if (cityInputVal && !ntCities.includes(cityInputVal)) {
+    ntCities.push(cityInputVal);
+  }
+
   const tripData = {
-    name: name || countryName || COUNTRY_THEMES[country]?.name || '新旅行',
+    name,
     country: country || 'default',
     countryName: countryName || COUNTRY_THEMES[country]?.name || '',
+    cities: [...ntCities],
     departureDate: departure,
     members: [currentUser.uid],
     days: ['Day 1','Day 2','Day 3'],
     dates: {},
     currency: form.querySelector('#nt-currency').value || 'TWD',
     archived: false,
-    isPremium: false,
     createdAt: Date.now(),
     createdBy: currentUser.uid
   };
@@ -1861,7 +1868,8 @@ async function createNewTrip() {
     tripsData.unshift({ id: ref.id, ...tripData });
     selectTrip(ref.id);
     closeModal('modal-new-trip');
-    // 建立後提示邀請
+    resetCityTags();
+    form.reset();
     setTimeout(() => {
       if (confirm('旅行建立成功！\n要邀請旅伴一起規劃嗎？')) openInvite();
     }, 400);
@@ -1882,6 +1890,7 @@ async function archiveTrip() {
 function openSettings() {
   if (!currentTrip) return;
   const form = document.getElementById('form-settings');
+  form.querySelector('#st-name').value = currentTrip.name || '';
   form.querySelector('#st-departure').value = currentTrip.departureDate || '';
   form.querySelector('#st-currency').value = currentTrip.currency || 'TWD';
   renderSettingsDays();
@@ -1903,14 +1912,19 @@ function renderSettingsDays() {
 
 async function saveSettings() {
   const form = document.getElementById('form-settings');
+  const name = form.querySelector('#st-name').value.trim();
   const departure = form.querySelector('#st-departure').value;
   const currency = form.querySelector('#st-currency').value;
   const updates = { departureDate: departure, currency };
+  if (name) updates.name = name;
   try {
     await updateDoc(doc(db,'trips',currentTripId), updates);
     currentTrip = { ...currentTrip, ...updates };
     tripCurrency = currency;
     updateCountdown(departure);
+    // 更新 header 顯示
+    const countryBadge = document.getElementById('country-name');
+    if (countryBadge && name) countryBadge.textContent = name;
     closeModal('modal-settings');
     showToast('設定已儲存 ✓');
   } catch(e) { showToast('儲存失敗'); }
@@ -2312,6 +2326,102 @@ window.selectAvatarEmoji = selectAvatarEmoji;
 window.uploadAvatarPhoto = uploadAvatarPhoto;
 window.createNewTrip = createNewTrip;
 window.toggleCustomCountry = toggleCustomCountry;
+// ════════════════════════════════════════
+// 🏙️ CITY TAGS INPUT
+// ════════════════════════════════════════
+let ntCities = []; // 城市標籤陣列
+
+function handleCityInput(e) {
+  const input = document.getElementById('nt-city-input');
+  const val = input.value;
+  if (e.key === 'Enter' || val.endsWith(',') || val.endsWith('，')) {
+    e.preventDefault();
+    const city = val.replace(/[,，]$/, '').trim();
+    if (city && !ntCities.includes(city)) {
+      ntCities.push(city);
+      renderCityTags();
+    }
+    input.value = '';
+    updateAutoName();
+  }
+}
+
+function renderCityTags() {
+  const container = document.getElementById('nt-city-tags');
+  const input = document.getElementById('nt-city-input');
+  // 移除舊的標籤
+  container.querySelectorAll('.city-tag-chip').forEach(el => el.remove());
+  // 重新插入標籤（在 input 前面）
+  ntCities.forEach(city => {
+    const tag = document.createElement('div');
+    tag.className = 'city-tag-chip';
+    tag.style.cssText = 'display:inline-flex;align-items:center;gap:5px;background:var(--bg2);border:1px solid var(--border2);border-radius:999px;padding:4px 10px;font-size:.78rem;color:var(--text2);font-weight:500;cursor:default';
+    tag.innerHTML = `${city}<span onclick="removeCity('${city}')" style="color:var(--text3);font-size:.7rem;cursor:pointer;margin-left:2px;line-height:1">✕</span>`;
+    container.insertBefore(tag, input);
+  });
+  // 如果有標籤，input placeholder 改掉
+  input.placeholder = ntCities.length > 0 ? '再新增城市...' : '輸入城市後按 Enter...';
+}
+
+function removeCity(city) {
+  ntCities = ntCities.filter(c => c !== city);
+  renderCityTags();
+  updateAutoName();
+}
+
+function updateAutoName() {
+  const nameInput = document.getElementById('nt-name');
+  const autoEl = document.getElementById('nt-auto-name');
+  const autoText = document.getElementById('nt-auto-name-text');
+  if (!autoEl || !autoText) return;
+
+  // 如果用戶自己填了名字就不顯示自動
+  if (nameInput?.value.trim()) { autoEl.style.display = 'none'; return; }
+
+  const country = document.getElementById('nt-country')?.value || 'default';
+  const customName = document.getElementById('nt-country-name')?.value.trim();
+  const countryName = customName || COUNTRY_THEMES[country]?.name || '';
+  const departure = document.getElementById('nt-departure')?.value;
+  const year = departure ? new Date(departure).getFullYear() : new Date().getFullYear();
+
+  let suggested = '';
+  if (country === 'default' || !countryName) {
+    suggested = `旅行 ${year}`;
+  } else if (ntCities.length === 0) {
+    suggested = `${countryName}之旅 ${year}`;
+  } else if (ntCities.length === 1) {
+    suggested = `${countryName} · ${ntCities[0]} ${year}`;
+  } else {
+    suggested = `${countryName} · ${ntCities.slice(0,3).join('、')} ${year}`;
+  }
+
+  autoText.textContent = `自動命名：${suggested}`;
+  autoEl.style.display = 'flex';
+}
+
+function getAutoName() {
+  const nameInput = document.getElementById('nt-name');
+  if (nameInput?.value.trim()) return nameInput.value.trim();
+
+  const country = document.getElementById('nt-country')?.value || 'default';
+  const customName = document.getElementById('nt-country-name')?.value.trim();
+  const countryName = customName || COUNTRY_THEMES[country]?.name || '';
+  const departure = document.getElementById('nt-departure')?.value;
+  const year = departure ? new Date(departure).getFullYear() : new Date().getFullYear();
+
+  if (country === 'default' || !countryName) return `旅行 ${year}`;
+  if (ntCities.length === 0) return `${countryName}之旅 ${year}`;
+  if (ntCities.length === 1) return `${countryName} · ${ntCities[0]} ${year}`;
+  return `${countryName} · ${ntCities.slice(0,3).join('、')} ${year}`;
+}
+
+function resetCityTags() {
+  ntCities = [];
+  renderCityTags();
+  const autoEl = document.getElementById('nt-auto-name');
+  if (autoEl) autoEl.style.display = 'none';
+}
+
 function toggleCustomCountry(val) {
   const group = document.getElementById('custom-country-group');
   if (group) group.style.display = val === 'other' ? 'block' : 'none';
@@ -2328,7 +2438,9 @@ window.requestNotifications = requestNotifications;
 window.quickConvert = quickConvert;
 window.toggleConverter = toggleConverter;
 window.updateExpensePreview = updateExpensePreview;
-window.openAddJournal = openAddJournal;
+window.handleCityInput = handleCityInput;
+window.removeCity = removeCity;
+window.updateAutoName = updateAutoName;
 window.saveJournal = saveJournal;
 window.editJournal = editJournal;
 window.deleteJournal = deleteJournal;
@@ -3019,12 +3131,8 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
       <form id="form-new-trip" onsubmit="return false">
         <div class="card-dashed mb-4">
           <div class="form-group">
-            <label class="form-label">旅行暱稱（顯示在清單裡）</label>
-            <input id="nt-name" type="text" class="form-input" placeholder="如：泰國蜜月 2026、日本賞楓">
-          </div>
-          <div class="form-group">
             <label class="form-label">目的地</label>
-            <select id="nt-country" class="form-select" onchange="toggleCustomCountry(this.value)">
+            <select id="nt-country" class="form-select" onchange="toggleCustomCountry(this.value);updateAutoName()">
               <option value="default">🌍 全球／未定</option>
               <option value="thailand">🇹🇭 Thailand 泰國</option>
               <option value="japan">🇯🇵 Japan 日本</option>
@@ -3042,12 +3150,30 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
           </div>
           <div class="form-group" id="custom-country-group" style="display:none">
             <label class="form-label">國家名稱</label>
-            <input id="nt-country-name" type="text" class="form-input" placeholder="如：冰島、峇里島、土耳其">
+            <input id="nt-country-name" type="text" class="form-input" placeholder="如：冰島、峇里島、土耳其" oninput="updateAutoName()">
+          </div>
+          <!-- 城市標籤輸入 -->
+          <div class="form-group">
+            <label class="form-label">城市 / 地區（選填，可多個）</label>
+            <div id="nt-city-tags" style="display:flex;flex-wrap:wrap;gap:6px;padding:9px 12px;border-radius:var(--r-md);border:1.5px solid var(--border);background:var(--surface);min-height:46px;align-items:center;cursor:text" onclick="document.getElementById('nt-city-input').focus()">
+              <!-- tags rendered here by JS -->
+              <input id="nt-city-input" type="text" placeholder="輸入城市後按 Enter..." style="border:none;outline:none;font-size:15px;color:var(--text);background:transparent;min-width:100px;flex:1;padding:1px 0" onkeydown="handleCityInput(event)" oninput="updateAutoName()">
+            </div>
+            <div style="font-size:.65rem;color:var(--text3);margin-top:4px">按 Enter 或逗號新增城市，點標籤刪除</div>
+          </div>
+          <!-- 旅行暱稱 -->
+          <div class="form-group">
+            <label class="form-label">旅行暱稱（選填）</label>
+            <input id="nt-name" type="text" class="form-input" placeholder="不填會自動命名" oninput="updateAutoName()">
+            <div id="nt-auto-name" style="display:none;background:var(--bg2);border-radius:var(--r-sm);padding:8px 12px;margin-top:6px;display:flex;align-items:center;justify-content:space-between;gap:8px">
+              <span style="font-size:.72rem;color:var(--text2);flex:1" id="nt-auto-name-text"></span>
+              <span style="font-size:.62rem;background:var(--accent);color:white;padding:2px 7px;border-radius:999px;white-space:nowrap">自動</span>
+            </div>
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px">
             <div>
               <label class="form-label">出發日期</label>
-              <input id="nt-departure" type="date" class="form-input" style="min-height:46px;width:100%">
+              <input id="nt-departure" type="date" class="form-input" style="min-height:46px;width:100%" onchange="updateAutoName()">
             </div>
             <div>
               <label class="form-label">主要幣別</label>
@@ -3096,6 +3222,11 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
     </div>
     <div class="modal-body">
       <form id="form-settings" onsubmit="return false">
+        <!-- 旅行名稱 -->
+        <div class="card-dashed mb-4">
+          <label class="form-label">旅行名稱</label>
+          <input id="st-name" type="text" class="form-input" placeholder="旅行名稱">
+        </div>
         <div class="card-dashed mb-4">
           <label class="form-label">✈️ 設定出發日期</label>
           <input id="st-departure" type="date" class="form-input mb-2">
