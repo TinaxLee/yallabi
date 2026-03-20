@@ -2042,17 +2042,23 @@ function renderTripSelector() {
   if (!container) return;
   container.innerHTML = tripsData.map(t => {
     const info = COUNTRY_THEMES[t.country] || { flag:'🌍', name: t.countryName || t.country };
-    return `<div class="card card-sm mb-2 press" onclick="selectTrip('${t.id}');closeModal('modal-trips')" style="${t.id===currentTripId?'border-color:var(--accent)':''}">
-      <div class="flex items-center gap-3">
-        <span style="font-size:1.6rem">${info.flag}</span>
-        <div style="flex:1">
-          <div style="font-size:.9rem;font-weight:600;color:var(--text)">${t.name || info.name}</div>
-          <div style="font-size:.7rem;color:var(--text3)">${t.departureDate ? formatDateDisplay(t.departureDate) : '未設定出發日'} ${t.archived?'· 已封存':''}</div>
+    const isActive = t.id === currentTripId;
+    return `
+    <div class="card mb-2" style="border:1.5px solid ${isActive ? 'var(--accent)' : 'var(--border)'};border-radius:var(--r-md);overflow:hidden">
+      <div style="display:flex;align-items:center;gap:12px;padding:13px 14px;cursor:pointer" onclick="selectTrip('${t.id}');closeModal('modal-trips')">
+        <span style="font-size:1.5rem;flex-shrink:0">${info.flag}</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:.9rem;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.name || info.name}</div>
+          <div style="font-size:.68rem;color:var(--text3);margin-top:2px">${t.departureDate ? formatDateDisplay(t.departureDate) : '未設定出發日'}${t.archived ? ' · 已封存' : ''}</div>
         </div>
-        ${t.id===currentTripId ? '<span style="color:var(--accent)">✓</span>' : ''}
+        ${isActive ? `<span style="color:var(--accent);font-size:.85rem;flex-shrink:0">✓</span>` : ''}
       </div>
-    </div>`;
-  }).join('') || `<div class="empty-state"><p>還沒有旅行<br>點下方新增</p></div>`;
+      <div style="display:flex;border-top:1px solid var(--border);background:var(--bg2)">
+        <button onclick="openEditTrip('${t.id}')" style="flex:1;padding:9px;font-size:.72rem;color:var(--text2);font-weight:500;border-right:1px solid var(--border)">✏️ 編輯</button>
+        <button onclick="archiveTripById('${t.id}')" style="flex:1;padding:9px;font-size:.72rem;color:var(--text2);font-weight:500;border-right:1px solid var(--border)">${t.archived ? '📂 取消封存' : '🗂️ 封存'}</button>
+        <button onclick="deleteTripById('${t.id}')" style="flex:1;padding:9px;font-size:.72rem;color:var(--danger);font-weight:500">✕ 刪除</button>
+      </div>
+    </div>`;\n  }).join('') || `<div class="empty-state"><p>還沒有旅行<br>點下方新增</p></div>`;
 }
 
 async function selectTrip(tripId) {
@@ -2184,6 +2190,52 @@ async function archiveTrip() {
   await updateDoc(doc(db,'trips',currentTripId), { archived: true, archivedAt: Date.now() });
   showToast('旅行已封存，護照印章已解鎖 🛂');
   await loadTrips();
+}
+
+async function archiveTripById(tripId) {
+  const trip = tripsData.find(t => t.id === tripId);
+  if (!trip) return;
+  if (trip.archived) {
+    if (!confirm('取消封存這個旅行？')) return;
+    await updateDoc(doc(db,'trips',tripId), { archived: false });
+    showToast('已取消封存');
+  } else {
+    if (!confirm('封存這個旅行？封存後會獲得護照印章！')) return;
+    await updateDoc(doc(db,'trips',tripId), { archived: true, archivedAt: Date.now() });
+    showToast('旅行已封存 🛂');
+  }
+  await loadTrips();
+  renderTripSelector();
+}
+
+async function deleteTripById(tripId) {
+  const trip = tripsData.find(t => t.id === tripId);
+  if (!trip) return;
+  if (!confirm(`確定刪除「${trip.name || '這個旅行'}」？所有資料將無法復原！`)) return;
+  try {
+    await deleteDoc(doc(db,'trips',tripId));
+    tripsData = tripsData.filter(t => t.id !== tripId);
+    if (currentTripId === tripId) {
+      currentTripId = null;
+      currentTrip = null;
+      unsubscribers.forEach(u => u());
+      unsubscribers = [];
+    }
+    renderTripSelector();
+    await loadTrips();
+    showToast('旅行已刪除');
+  } catch(e) { showToast('刪除失敗，請重試'); }
+}
+
+function openEditTrip(tripId) {
+  const trip = tripsData.find(t => t.id === tripId);
+  if (!trip) return;
+  // 複用 settings modal 來編輯
+  currentTripId = tripId;
+  currentTrip = trip;
+  tripCurrency = trip.currency || 'TWD';
+  closeModal('modal-trips');
+  openSettings();
 }
 
 // ════════════════════════════════════════
@@ -2823,6 +2875,9 @@ function toggleCustomCountry(val) {
 }
 
 window.archiveTrip = archiveTrip;
+window.archiveTripById = archiveTripById;
+window.deleteTripById = deleteTripById;
+window.openEditTrip = openEditTrip;
 window.loginGoogle = loginGoogle;
 window.loginApple = loginApple;
 window.logout = logout;
@@ -2858,19 +2913,20 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
 <!-- ══════════════════════════════════════
      SPLASH SCREEN
 ══════════════════════════════════════ -->
-<div id="splash" class="splash-screen" style="background:#1E1810;position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity .5s ease;" onclick="this.classList.add('fade-out');setTimeout(()=>{this.style.display='none';if(!currentUser){document.getElementById('login-screen')?.classList.remove('hidden');document.getElementById('app-shell')?.classList.add('hidden')}},500)">
-  <div style="text-align:center">
-    <div style="font-family:'Noto Sans TC',sans-serif;font-size:2.4rem;font-weight:300;letter-spacing:.2em;text-transform:uppercase;color:#C8AA7C;margin-bottom:8px;animation:sIn .5s ease both"><em style="font-style:normal;font-weight:700">Y</em>ALLABI</div>
-    <div style="font-family:'Noto Sans TC',sans-serif;font-size:.6rem;font-weight:300;letter-spacing:.24em;text-transform:uppercase;color:rgba(200,170,100,.4);animation:sIn .5s ease .15s both;opacity:0">every trip, a story</div>
-    <div style="font-size:2.6rem;margin:32px 0;animation:sIn .5s ease .25s both;opacity:0">✈️</div>
-    <div style="display:flex;gap:7px;justify-content:center;animation:sIn .5s ease .35s both;opacity:0">
+<div id="splash" class="splash-screen" style="background:#1E1810;position:fixed;inset:0;z-index:9999;transition:opacity .5s ease;" onclick="this.classList.add('fade-out');setTimeout(()=>{this.style.display='none';if(!currentUser){document.getElementById('login-screen')?.classList.remove('hidden');document.getElementById('app-shell')?.classList.add('hidden')}},500)">
+  <!-- 全部用 absolute 定位，互不影響，絕對不會跳 -->
+  <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;width:280px">
+    <div style="font-family:'Noto Sans TC',sans-serif;font-size:2.4rem;font-weight:300;letter-spacing:.2em;text-transform:uppercase;color:#C8AA7C;margin-bottom:8px;animation:sIn .4s ease both"><em style="font-style:normal;font-weight:700">Y</em>ALLABI</div>
+    <div style="font-family:'Noto Sans TC',sans-serif;font-size:.6rem;font-weight:300;letter-spacing:.24em;text-transform:uppercase;color:rgba(200,170,100,.4);margin-bottom:36px;animation:sIn .4s ease .1s both">every trip, a story</div>
+    <div style="font-size:2.4rem;display:block;margin-bottom:36px;animation:sIn .4s ease .2s both">✈️</div>
+    <div style="display:flex;gap:7px;justify-content:center;animation:sIn .4s ease .3s both">
       <div style="width:6px;height:6px;border-radius:50%;background:rgba(200,170,100,.8);animation:dotPulse 1.2s ease infinite"></div>
       <div style="width:6px;height:6px;border-radius:50%;background:rgba(200,170,100,.4);animation:dotPulse 1.2s ease .2s infinite"></div>
       <div style="width:6px;height:6px;border-radius:50%;background:rgba(200,170,100,.2);animation:dotPulse 1.2s ease .4s infinite"></div>
     </div>
   </div>
-  <div id="splash-debug" style="position:absolute;bottom:40px;font-size:.62rem;color:rgba(200,170,100,.4);letter-spacing:.06em;text-align:center;padding:0 32px">連線中...</div>
-  <div style="position:absolute;bottom:16px;font-size:.6rem;color:rgba(200,170,100,.25)">點擊畫面可跳過</div>
+  <div id="splash-debug" style="position:absolute;bottom:40px;left:0;right:0;font-size:.62rem;color:rgba(200,170,100,.4);letter-spacing:.06em;text-align:center;padding:0 32px">連線中...</div>
+  <div style="position:absolute;bottom:16px;left:0;right:0;font-size:.6rem;color:rgba(200,170,100,.25);text-align:center">點擊畫面可跳過</div>
 </div>
 
 <!-- ══════════════════════════════════════
@@ -3825,7 +3881,7 @@ window.renderBibiQuickBtns = renderBibiQuickBtns;
 
 <!-- Splash + global styles -->
 <style>
-@keyframes sIn{from{opacity:0;}to{opacity:1;}}
+@keyframes sIn{0%{opacity:0;}100%{opacity:1;}}
 @keyframes dotPulse{0%,100%{transform:translateY(0);opacity:.35;}50%{transform:translateY(-5px);opacity:1;}}
 @keyframes loginFloat{0%,100%{transform:translateY(0) rotate(-2deg);}50%{transform:translateY(-10px) rotate(2deg);}}
 </style>
@@ -4012,25 +4068,46 @@ async function fetchWeather(trip) {
 
   // 所有支援國家直接硬編碼座標，完全不依賴 geo API
   const COORDS = {
-    thailand:  [{ city:'Bangkok',     lat:13.7563,  lon:100.5018 }],
-    japan:     [{ city:'Tokyo',       lat:35.6762,  lon:139.6503 }],
-    france:    [{ city:'Paris',       lat:48.8566,  lon:2.3522   }],
-    italy:     [{ city:'Rome',        lat:41.9028,  lon:12.4964  }],
-    greece:    [{ city:'Santorini',   lat:36.3932,  lon:25.4615  }],
-    morocco:   [{ city:'Marrakech',   lat:31.6295,  lon:-7.9811  }],
+    thailand:  [{ city:'Bangkok',     lat:13.7563,  lon:100.5018 }, { city:'Phuket',     lat:7.8804,   lon:98.3923  }, { city:'Chiang Mai', lat:18.7883,  lon:98.9853  }, { city:'Pattaya',    lat:12.9236,  lon:100.8825 }],
+    japan:     [{ city:'Tokyo',       lat:35.6762,  lon:139.6503 }, { city:'Osaka',      lat:34.6937,  lon:135.5023 }, { city:'Kyoto',      lat:35.0116,  lon:135.7681 }, { city:'Sapporo',    lat:43.0618,  lon:141.3545 }],
+    france:    [{ city:'Paris',       lat:48.8566,  lon:2.3522   }, { city:'Nice',       lat:43.7102,  lon:7.2620   }, { city:'Lyon',       lat:45.7640,  lon:4.8357   }],
+    italy:     [{ city:'Rome',        lat:41.9028,  lon:12.4964  }, { city:'Milan',      lat:45.4654,  lon:9.1859   }, { city:'Florence',   lat:43.7696,  lon:11.2558  }, { city:'Venice',     lat:45.4408,  lon:12.3155  }],
+    greece:    [{ city:'Athens',      lat:37.9838,  lon:23.7275  }, { city:'Santorini',  lat:36.3932,  lon:25.4615  }, { city:'Mykonos',    lat:37.4467,  lon:25.3289  }],
+    morocco:   [{ city:'Marrakech',   lat:31.6295,  lon:-7.9811  }, { city:'Casablanca', lat:33.5731,  lon:-7.5898  }],
     maldives:  [{ city:'Malé',        lat:4.1755,   lon:73.5093  }],
-    korea:     [{ city:'Seoul',       lat:37.5665,  lon:126.9780 }],
+    korea:     [{ city:'Seoul',       lat:37.5665,  lon:126.9780 }, { city:'Busan',      lat:35.1796,  lon:129.0756 }, { city:'Jeju',       lat:33.4996,  lon:126.5312 }],
     singapore: [{ city:'Singapore',   lat:1.3521,   lon:103.8198 }],
-    usa:       [{ city:'New York',    lat:40.7128,  lon:-74.0060 }],
-    australia: [{ city:'Sydney',      lat:-33.8688, lon:151.2093 }],
+    usa:       [{ city:'New York',    lat:40.7128,  lon:-74.0060 }, { city:'Los Angeles',lat:34.0522,  lon:-118.2437}, { city:'Las Vegas',  lat:36.1699,  lon:-115.1398}],
+    australia: [{ city:'Sydney',      lat:-33.8688, lon:151.2093 }, { city:'Melbourne',  lat:-37.8136, lon:144.9631 }, { city:'Gold Coast', lat:-28.0167, lon:153.4000 }],
   };
 
   // 決定要查哪些城市的座標
-  let targets = COORDS[trip.country] || [];
+  const allCoords = COORDS[trip.country] || [];
+  let targets = [];
 
-  // 如果旅行有設城市且城市名能對應到座標，用城市名覆蓋（最多3個）
-  // 但只用 geo API 作為備用，不影響主流程
-  const displayCity = trip.cities?.[0] || targets[0]?.city || trip.countryName || '';
+  if (trip.cities && trip.cities.length > 0 && allCoords.length > 0) {
+    // 中文→英文城市對應表
+    const zhMap = {'曼谷':'bangkok','普吉':'phuket','普吉島':'phuket','清邁':'chiang mai','芭達雅':'pattaya','芭提雅':'pattaya','東京':'tokyo','大阪':'osaka','京都':'kyoto','札幌':'sapporo','首爾':'seoul','釜山':'busan','濟州':'jeju','濟州島':'jeju','巴黎':'paris','尼斯':'nice','里昂':'lyon','羅馬':'rome','米蘭':'milan','翡冷翠':'florence','佛羅倫斯':'florence','威尼斯':'venice','雅典':'athens','聖托里尼':'santorini','米克諾斯':'mykonos','馬拉喀什':'marrakech','卡薩布蘭卡':'casablanca','新加坡':'singapore','紐約':'new york','洛杉磯':'los angeles','拉斯維加斯':'las vegas','雪梨':'sydney','墨爾本':'melbourne','黃金海岸':'gold coast'};
+    trip.cities.forEach(cityName => {
+      const mapped = zhMap[cityName] || cityName.toLowerCase();
+      const found = allCoords.find(c =>
+        c.city.toLowerCase() === mapped ||
+        c.city.toLowerCase().includes(mapped) ||
+        mapped.includes(c.city.toLowerCase())
+      );
+      if (found && !targets.find(t => t.city === found.city)) targets.push(found);
+    });
+    // 一個都沒對應到 → 用預設第一個
+    if (targets.length === 0) targets = [allCoords[0]];
+  } else {
+    // 沒設城市 → 用國家預設
+    targets = allCoords.length > 0 ? [allCoords[0]] : [];
+  }
+
+  // 最多顯示 2 個
+  targets = targets.slice(0, 2);
+
+  const displayCity = targets[0]?.city || trip.countryName || '';
 
   // 立即顯示 loading
   content.innerHTML = `
@@ -4040,37 +4117,8 @@ async function fetchWeather(trip) {
       <div style="font-size:.68rem;color:rgba(255,255,255,.45)">取得天氣中...</div>
     </div>`;
 
-  // 如果有自訂城市，嘗試 geo 查詢覆蓋（但若失敗就用預設座標）
-  if (trip.cities && trip.cities.length > 0 && COORDS[trip.country]) {
-    try {
-      const geoResults = await Promise.all(trip.cities.slice(0,3).map(async name => {
-        const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=1&language=en`);
-        const d = await r.json();
-        const loc = d.results?.[0];
-        return loc ? { city: name, lat: loc.latitude, lon: loc.longitude } : null;
-      }));
-      const valid = geoResults.filter(Boolean);
-      if (valid.length > 0) targets = valid;
-    } catch(e) {
-      // geo 失敗就繼續用預設座標
-    }
-  } else if (trip.cities && trip.cities.length > 0 && !COORDS[trip.country]) {
-    // 非內建國家 + 有城市 → 用 geo 查
-    try {
-      const geoResults = await Promise.all(trip.cities.slice(0,3).map(async name => {
-        const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=1&language=en`);
-        const d = await r.json();
-        const loc = d.results?.[0];
-        return loc ? { city: name, lat: loc.latitude, lon: loc.longitude } : null;
-      }));
-      targets = geoResults.filter(Boolean);
-    } catch(e) {}
-  }
-
   if (targets.length === 0) {
-    content.innerHTML = `
-      <div style="font-size:.58rem;opacity:.65;letter-spacing:.12em;text-transform:uppercase;color:white;margin-bottom:6px">${displayCity.toUpperCase()}</div>
-      <div style="font-size:.75rem;color:rgba(255,255,255,.5)">暫無天氣資料</div>`;
+    content.innerHTML = `<div style="font-size:.75rem;color:rgba(255,255,255,.5)">暫無天氣資料</div>`;
     return;
   }
 
