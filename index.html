@@ -4614,6 +4614,7 @@ async function fetchWeather(trip) {
   weatherCache = {};
   weatherTargets = [];
 
+  console.log('[Weather] fetchWeather called, trip:', trip && trip.country, 'cities:', trip && trip.cities);
   if (!(trip && trip.country) || trip.country === 'default') {
     content.innerHTML = '<div style="font-size:.75rem;color:rgba(255,255,255,.55)">選擇旅行後顯示天氣</div>';
     return;
@@ -4649,6 +4650,7 @@ async function fetchWeather(trip) {
   }
 
   weatherTargets = targets;
+  console.log('[Weather] targets:', targets.length, targets.map(function(t){return t.city;}));
 
   const firstName = (targets[0] && targets[0].displayName) || (targets[0] && targets[0].city) || '';
   content.innerHTML = '<div style="font-size:.58rem;opacity:.65;letter-spacing:.12em;text-transform:uppercase;color:white;margin-bottom:6px">' + firstName.toUpperCase() + '</div><div style="display:flex;align-items:center;gap:10px"><div style="font-family:var(--font-display);font-size:2.4rem;font-weight:300;color:rgba(255,255,255,.35);line-height:1">--°</div><div style="font-size:.68rem;color:rgba(255,255,255,.45)">取得天氣中...</div></div>';
@@ -4683,7 +4685,8 @@ async function fetchWeather(trip) {
     valid.forEach(w => { weatherCache[w.city] = w; });
     renderWeatherCard(valid, 0);
   } catch(e) {
-    content.innerHTML = '<div style="font-size:.58rem;opacity:.65;letter-spacing:.12em;text-transform:uppercase;color:white;margin-bottom:6px">'+firstName.toUpperCase()+'</div><div style="font-size:.75rem;color:rgba(255,255,255,.45)">天氣載入失敗，請稍後再試</div>';
+    console.error('[Weather] fetch error:', e.message, e);
+    content.innerHTML = '<div style="font-size:.58rem;opacity:.65;letter-spacing:.12em;text-transform:uppercase;color:white;margin-bottom:6px">'+firstName.toUpperCase()+'</div><div style="font-size:.75rem;color:rgba(255,255,255,.45)">天氣載入失敗: ' + e.message + '</div>';
   }
 }
 
