@@ -2482,28 +2482,28 @@ async function selectTrip(tripId) {
   currentTrip = tripsData.find(t => t.id === tripId);
   if (!currentTrip) return;
 
-  // ── 立即關閉旅行清單 Modal（在函式內控制，比 inline onclick 更可靠）
+  // 1. 關閉旅行清單 Modal（統一在函式內控制，避免 inline onclick 時序問題）
   closeModal('modal-trips');
 
-  // ── 立即清除舊旅行的資料，防止切換時舊資料閃爍
-  itineraryData = []; missionsData = []; packingData = [];
-  expensesData  = []; flightsData  = []; hotelsData  = [];
+  // 2. 清空舊旅行資料，防止切換時舊行程卡片閃爍
+  itineraryData = []; missionsData = []; packingData  = [];
+  expensesData  = []; flightsData  = []; hotelsData   = [];
   journalData   = [];
 
-  // ── 立即更新 UI：主題色、Hero、第一個 Day
+  // 3. 立即套用新旅行的主題色、Hero、Day filter
   updateCountryBadge(currentTrip);
   renderHero(currentTrip);
   const days = currentTrip.days || ['Day 1'];
   currentDayFilter = days[0];
 
-  // ── 切換到行程頁並渲染（此時資料已清空，顯示 loading 空狀態）
+  // 4. 切換到行程 tab（資料已清空，顯示空狀態）
   switchTab('itinerary');
 
-  // ── 取消所有舊旅行的 Firestore 監聽
+  // 5. 取消舊旅行的 Firestore 監聽
   unsubscribers.forEach(u => u());
   unsubscribers = [];
 
-  // ── 訂閱新旅行的所有 collection（onSnapshot 推資料後自動 re-render）
+  // 6. 訂閱新旅行所有 collection
   const collections = ['itinerary','missions','packing','expenses','flights','hotels','journal'];
   collections.forEach(col => {
     const unsub = onSnapshot(tripCol(col), snap => {
@@ -2523,15 +2523,13 @@ async function selectTrip(tripId) {
     unsubscribers.push(unsub);
   });
 
-  // ── 載入旅伴資料
+  // 7. 載入旅伴資料
   const memberUids = currentTrip.members || [currentUser.uid];
   membersData = await Promise.all(memberUids.map(async uid => {
     try { const d = await getDoc(doc(db,'users',uid)); return { uid, ...d.data() }; }
     catch { return { uid, name:'旅伴' }; }
   }));
   renderMemberAvatars();
-
-  // ── 載入天氣
   fetchWeather(currentTrip);
 }
 
@@ -2650,9 +2648,8 @@ async function deleteTripById(tripId) {
   } catch(e) { showToast('刪除失敗，請重試'); }
 }
 
-// ── 「編輯旅行」模式：複用 modal-new-trip，預填所有欄位 ─────────────
-// 設計原則：不新增 HTML；DOM 操作僅在 Modal 開啟時生效，關閉後自動還原
-let _editingTripId = null; // 追蹤目前正在編輯的旅行 ID
+// 追蹤目前正在編輯的旅行 ID（null = 新增模式）
+let _editingTripId = null;
 
 function openEditTrip(tripId) {
   const trip = tripsData.find(t => t.id === tripId);
@@ -2661,77 +2658,70 @@ function openEditTrip(tripId) {
   _editingTripId = tripId;
   closeModal('modal-trips');
 
-  // ── 預填國家 ─────────────────────────────────────────
+  // 預填「目的地」
   const countryEl = document.getElementById('nt-country');
   if (countryEl) {
     countryEl.value = trip.country || 'default';
     toggleCustomCountry(countryEl.value);
     if (trip.country === 'other') {
-      const nameEl = document.getElementById('nt-country-name');
-      if (nameEl) nameEl.value = trip.countryName || '';
+      const cnEl = document.getElementById('nt-country-name');
+      if (cnEl) cnEl.value = trip.countryName || '';
     }
   }
 
-  // ── 預填城市標籤 ─────────────────────────────────────
-  ntCities = trip.cities ? [...trip.cities] : [];
+  // 預填城市標籤
+  ntCities = trip.cities ? trip.cities.slice() : [];
   renderCityTags();
 
-  // ── 預填旅行暱稱 ─────────────────────────────────────
+  // 預填旅行暱稱
   const nameEl = document.getElementById('nt-name');
   if (nameEl) nameEl.value = trip.name || '';
 
-  // ── 預填出發日期、天數、幣別 ─────────────────────────
+  // 預填出發日期、天數、幣別
   const depEl = document.getElementById('nt-departure');
   if (depEl) depEl.value = trip.departureDate || '';
-
   const daysEl = document.getElementById('nt-days');
   if (daysEl) daysEl.value = (trip.days && trip.days.length) || 3;
-
   const currEl = document.getElementById('nt-currency');
   if (currEl) currEl.value = trip.currency || 'TWD';
 
-  // ── 切換 Modal 標題與按鈕為「編輯」模式 ─────────────
+  // 切換 Modal 為「編輯旅行」模式
   const titleEl = document.querySelector('#modal-new-trip .modal-title');
   if (titleEl) titleEl.textContent = '✏️ 編輯旅行';
-
   const saveBtn = document.querySelector('#modal-new-trip .btn-primary');
   if (saveBtn) {
     saveBtn.textContent = '儲存變更';
     saveBtn.onclick = saveEditedTrip;
   }
 
-  // 更新自動命名顯示
   updateAutoName();
-
   openModal('modal-new-trip');
 }
 
 async function saveEditedTrip() {
   if (!_editingTripId) return;
-  const form = document.getElementById('form-new-trip');
-
-  const country    = form.querySelector('#nt-country').value;
-  const customName = country === 'other'
-    ? ((form.querySelector('#nt-country-name')||{value:''}).value.trim() || '')
+  const form      = document.getElementById('form-new-trip');
+  const country   = form.querySelector('#nt-country').value;
+  const customCN  = country === 'other'
+    ? (form.querySelector('#nt-country-name') || {value:''}).value.trim()
     : ((COUNTRY_THEMES[country] && COUNTRY_THEMES[country].name) || '');
-  const departure  = form.querySelector('#nt-departure').value;
-  const currency   = form.querySelector('#nt-currency').value;
-  const inputName  = form.querySelector('#nt-name').value.trim();
-  const name       = inputName || getAutoName();
-  const cities     = [...ntCities];
+  const departure = form.querySelector('#nt-departure').value;
+  const currency  = form.querySelector('#nt-currency').value;
+  const inputName = form.querySelector('#nt-name').value.trim();
+  const name      = inputName || getAutoName();
+  const cities    = ntCities.slice();
 
-  const updates = { country, countryName: customName, name, departureDate: departure, currency, cities };
-
+  const updates = { country, countryName: customCN, name, departureDate: departure, currency, cities };
   try {
-    await updateDoc(doc(db,'trips',_editingTripId), updates);
+    await updateDoc(doc(db, 'trips', _editingTripId), updates);
 
-    // 同步更新本地快取
+    // 同步本地快取
     const idx = tripsData.findIndex(t => t.id === _editingTripId);
-    if (idx !== -1) tripsData[idx] = { ...tripsData[idx], ...updates };
+    if (idx !== -1) tripsData[idx] = Object.assign({}, tripsData[idx], updates);
 
-    // 若正在編輯的就是目前選取的行程，同步更新 UI
+    // 若正在編輯的是目前選取的行程，立即同步 UI
     if (_editingTripId === currentTripId) {
-      currentTrip = { ...currentTrip, ...updates };
+      currentTrip  = Object.assign({}, currentTrip, updates);
       tripCurrency = currency;
       updateCountryBadge(currentTrip);
       renderHero(currentTrip);
@@ -2740,16 +2730,15 @@ async function saveEditedTrip() {
 
     closeModal('modal-new-trip');
     showToast('旅行資料已更新 ✓');
-    renderTripSelector(); // 重繪清單
+    renderTripSelector();
   } catch(e) {
     showToast('儲存失敗，請重試');
-  } finally {
-    // 還原 Modal 為「新增」模式
-    _resetNewTripModal();
   }
 }
 
+// 關閉 modal-new-trip 時自動還原為「新增」模式
 function _resetNewTripModal() {
+  if (_editingTripId === null) return;
   _editingTripId = null;
   const titleEl = document.querySelector('#modal-new-trip .modal-title');
   if (titleEl) titleEl.textContent = '新增旅行';
@@ -2758,13 +2747,11 @@ function _resetNewTripModal() {
     saveBtn.textContent = '新增旅行';
     saveBtn.onclick = createNewTrip;
   }
-  // 清空表單為預設狀態
   const form = document.getElementById('form-new-trip');
   if (form) form.reset();
   ntCities = [];
   renderCityTags();
   toggleCustomCountry('default');
-  updateAutoName();
 }
 
 // ════════════════════════════════════════
@@ -3082,9 +3069,9 @@ function openModal(id) {
 function closeModal(id) {
   (function(){var _e=document.getElementById(id);if(_e)_e.classList.remove('open');})();
   document.body.style.overflow = '';
-  // 若關閉的是 new-trip modal 且目前在「編輯旅行」模式，自動還原
-  if (id === 'modal-new-trip' && _editingTripId !== null) {
-    _resetNewTripModal();
+  // 關閉 new-trip modal 且在編輯模式時，等動畫完成後還原表單
+  if (id === 'modal-new-trip') {
+    setTimeout(_resetNewTripModal, 350);
   }
 }
 
@@ -3334,8 +3321,6 @@ window.togglePack = togglePack;
 window.deletePackItem = deletePackItem;
 window.switchPackCategory = switchPackCategory;
 window.openSettings = openSettings;
-window.saveEditedTrip = saveEditedTrip;
-window._resetNewTripModal = _resetNewTripModal;
 window.saveSettings = saveSettings;
 window.addDay = addDay;
 window.deleteDay = deleteDay;
@@ -3476,6 +3461,7 @@ window.archiveTrip = archiveTrip;
 window.archiveTripById = archiveTripById;
 window.deleteTripById = deleteTripById;
 window.openEditTrip = openEditTrip;
+window.saveEditedTrip = saveEditedTrip;
 window.loginGoogle = loginGoogle;
 window.loginApple = loginApple;
 window.logout = logout;
@@ -4703,24 +4689,42 @@ window.toggleWeatherForecast = toggleWeatherForecast;
 </style>
 <script>
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js').then(reg => {
-    // 監聽 SW 更新
-    reg.addEventListener('updatefound', () => {
-      const newSW = reg.installing;
+  // controllerchange：新 SW 執行 clients.claim() 取得控制權後立即觸發
+  // 這是最可靠的重載時機，iOS Safari / Android Chrome 均相容
+  var _swRefreshing = false;
+  navigator.serviceWorker.addEventListener('controllerchange', function() {
+    if (_swRefreshing) return; // 防止重複 reload
+    _swRefreshing = true;
+    window.location.reload();
+  });
+
+  navigator.serviceWorker.register('./sw.js').then(function(reg) {
+    reg.addEventListener('updatefound', function() {
+      var newSW = reg.installing;
       if (!newSW) return;
-      newSW.addEventListener('statechange', () => {
-        // 新 SW 安裝完成且舊 SW 存在 → 自動重載取最新版
-        if (newSW.state === 'activated' && navigator.serviceWorker.controller) {
-          window.location.reload();
+      newSW.addEventListener('statechange', function() {
+        // installed = 新版已就緒、等待接管 → 觸發 skipWaiting
+        if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+          newSW.postMessage({ type: 'SKIP_WAITING' });
         }
       });
     });
-  }).catch(() => {});
+  }).catch(function() {});
 
-  // 收到 SW 的更新訊息也重載
+  // SW 廣播 SW_ACTIVATED 訊息時重載（雙重保險）
   navigator.serviceWorker.addEventListener('message', function(e) {
-    if (e.data && e.data.type === 'SW_UPDATED') {
-      window.location.reload();
+    if (e.data && (e.data.type === 'SW_UPDATED' || e.data.type === 'SW_ACTIVATED')) {
+      if (!_swRefreshing) { _swRefreshing = true; window.location.reload(); }
+    }
+  });
+
+  // visibilitychange：頁面從背景回到前台時主動 check 更新
+  // 解決 iOS 長時間後台回來不觸發 updatefound 的問題
+  document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'visible') {
+      navigator.serviceWorker.getRegistration('./sw.js').then(function(reg) {
+        if (reg) reg.update().catch(function(){});
+      });
     }
   });
 }
