@@ -3477,55 +3477,81 @@ function renderWeatherCard(weatherList, activeIdx) {
   if (!content) return;
   var w = weatherList[activeIdx];
   var timeStr = new Date().toLocaleTimeString('zh-TW', {hour:'2-digit',minute:'2-digit'});
+  var hasForecast = !!(w.forecast && w.forecast.length > 0);
 
+  // 城市切換 tab — stopPropagation 確保不觸發展開
   var tabsHTML = weatherList.length > 1
-    ? '<div style="display:flex;gap:7px;margin-bottom:14px;flex-wrap:wrap" onclick="event.stopPropagation()">'
+    ? '<div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap" onclick="event.stopPropagation()">'
       + weatherList.map(function(city, i) {
-          return '<button onclick="event.stopPropagation();switchWeatherCity('+i+')" style="padding:5px 14px;border-radius:999px;font-size:.72rem;font-weight:600;cursor:pointer;letter-spacing:.02em;border:1.5px solid '+(i===activeIdx?'rgba(255,255,255,.8)':'rgba(255,255,255,.25)')+';background:'+(i===activeIdx?'rgba(255,255,255,.18)':'transparent')+';color:'+(i===activeIdx?'white':'rgba(255,255,255,.5)')+'">'+city.displayName+'</button>';
+          var active = i === activeIdx;
+          return '<button onclick="event.stopPropagation();switchWeatherCity('+i+')" style="padding:4px 13px;border-radius:999px;font-size:.7rem;font-weight:600;cursor:pointer;letter-spacing:.02em;border:1.5px solid '+(active?'rgba(255,255,255,.85)':'rgba(255,255,255,.22)')+';background:'+(active?'rgba(255,255,255,.18)':'transparent')+';color:'+(active?'white':'rgba(255,255,255,.45)')+'">'+city.displayName+'</button>';
         }).join('') + '</div>'
     : '';
 
+  // ▼ 箭頭提示（內聯，不 absolute，不被 tab 蓋住）
+  var chevronHTML = hasForecast
+    ? '<div id="weather-chevron" style="width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font-size:.62rem;color:rgba(255,255,255,.6);transition:transform .35s cubic-bezier(.4,0,.2,1);pointer-events:none;flex-shrink:0">&#9660;</div>'
+    : '';
+
+  // 5 天預報列（今/一/二/三/四 — 圖示 + 降雨機率 + 高/低溫）
   var forecastHTML = '';
-  if (w.forecast && w.forecast.length > 0) {
-    forecastHTML = '<div id="weather-forecast" style="overflow:hidden;max-height:0;transition:max-height .38s cubic-bezier(0,0,.2,1)">'
-      + '<div style="border-top:1px solid rgba(255,255,255,.15);margin-top:14px;padding-top:12px;display:flex;justify-content:space-between">';
-    w.forecast.forEach(function(fc) {
-      var rainColor = fc.rain >= 50 ? '#7dd3fc' : 'rgba(255,255,255,.38)';
-      forecastHTML += '<div style="display:flex;flex-direction:column;align-items:center;gap:3px;flex:1">'
-        + '<div style="font-size:.6rem;color:rgba(255,255,255,.55);font-weight:600">' + fc.dow + '</div>'
-        + '<div style="font-size:1.15rem;line-height:1.2">' + fc.icon + '</div>'
-        + '<div style="font-size:.55rem;font-weight:700;color:' + rainColor + '">' + fc.rain + '%</div>'
-        + '<div style="font-size:.62rem;color:rgba(255,255,255,.85);text-align:center;line-height:1.5">' + fc.hi + '°<br><span style="color:rgba(255,255,255,.4)">' + fc.lo + '°</span></div>'
+  if (hasForecast) {
+    forecastHTML = '<div id="weather-forecast" style="overflow:hidden;max-height:0;transition:max-height .42s cubic-bezier(0,0,.2,1)">'
+      + '<div style="border-top:1px solid rgba(255,255,255,.14);margin-top:14px;padding-top:14px;display:flex;justify-content:space-around;gap:2px">';
+    w.forecast.slice(0,5).forEach(function(fc) {
+      var rainHigh = fc.rain >= 50;
+      var rainMid  = fc.rain >= 30 && fc.rain < 50;
+      var rainColor = rainHigh ? '#7dd3fc' : rainMid ? 'rgba(255,255,255,.6)' : 'rgba(255,255,255,.28)';
+      var rainDot   = rainHigh
+        ? '<div style="width:4px;height:4px;border-radius:50%;background:#7dd3fc;margin:0 auto 1px"></div>'
+        : '';
+      forecastHTML +=
+        '<div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;min-width:0">'
+        + '<div style="font-size:.6rem;color:rgba(255,255,255,.55);font-weight:700;letter-spacing:.04em">' + fc.dow + '</div>'
+        + '<div style="font-size:1.3rem;line-height:1">' + fc.icon + '</div>'
+        + rainDot
+        + '<div style="font-size:.58rem;font-weight:700;color:' + rainColor + ';letter-spacing:.02em">' + fc.rain + '%</div>'
+        + '<div style="font-size:.66rem;color:rgba(255,255,255,.92);font-weight:600;line-height:1.2">' + fc.hi + '°</div>'
+        + '<div style="font-size:.6rem;color:rgba(255,255,255,.38);line-height:1">' + fc.lo + '°</div>'
         + '</div>';
     });
     forecastHTML += '</div></div>';
   }
 
-  var hasForecast = !!(w.forecast && w.forecast.length > 0);
-  var chevron = hasForecast ? '<div id="weather-chevron" style="position:absolute;top:12px;right:14px;font-size:.65rem;color:rgba(255,255,255,.4);transition:transform .3s;pointer-events:none">&#9660;</div>' : '';
-
-  content.innerHTML = '<div id="weather-card-inner"' + (hasForecast ? ' onclick="toggleWeatherForecast()" style="cursor:pointer;position:relative"' : ' style="position:relative"') + '>'
-    + chevron + tabsHTML
-    + '<div style="display:flex;align-items:flex-end;gap:18px">'
-    + '<div>'
-    + '<div style="font-size:.68rem;opacity:.7;letter-spacing:.12em;text-transform:uppercase;color:white;margin-bottom:8px">' + w.displayName.toUpperCase() + '</div>'
-    + '<div style="font-family:var(--font-display);font-size:2.8rem;font-weight:300;color:white;line-height:1">' + w.temp + '°</div>'
-    + '<div style="font-size:.75rem;color:rgba(255,255,255,.65);margin-top:5px">' + w.tempMin + '° – ' + w.tempMax + '°</div>'
-    + '<div style="font-size:.82rem;color:rgba(255,255,255,.9);margin-top:3px;font-weight:500">' + w.desc + '</div>'
-    + '</div>'
-    + '<div style="font-size:3rem;margin-bottom:8px;line-height:1">' + w.icon + '</div>'
+  // 主體：左側城市＋溫度、右側天氣圖示＋箭頭
+  content.innerHTML =
+    '<div id="weather-card-inner"'
+    + (hasForecast ? ' onclick="toggleWeatherForecast()" style="cursor:pointer"' : '')
+    + '>'
+    + tabsHTML
+    + '<div style="display:flex;align-items:center;gap:0">'
+      + '<div style="flex:1">'
+        + '<div style="font-size:.63rem;opacity:.6;letter-spacing:.13em;text-transform:uppercase;color:white;margin-bottom:7px">' + w.displayName.toUpperCase() + '</div>'
+        + '<div style="display:flex;align-items:flex-end;gap:11px">'
+          + '<div style="font-family:var(--font-display);font-size:2.9rem;font-weight:300;color:white;line-height:1">' + w.temp + '°</div>'
+          + '<div style="padding-bottom:5px">'
+            + '<div style="font-size:.82rem;color:rgba(255,255,255,.92);font-weight:500">' + w.desc + '</div>'
+            + '<div style="font-size:.7rem;color:rgba(255,255,255,.55);margin-top:2px">' + w.tempMin + '° – ' + w.tempMax + '°</div>'
+          + '</div>'
+        + '</div>'
+      + '</div>'
+      + '<div style="display:flex;flex-direction:column;align-items:center;gap:10px;padding-left:8px">'
+        + '<div style="font-size:2.9rem;line-height:1">' + w.icon + '</div>'
+        + chevronHTML
+      + '</div>'
     + '</div>'
     + forecastHTML
-    + '<div style="display:flex;align-items:center;gap:6px;margin-top:14px">'
-    + '<div style="width:6px;height:6px;border-radius:50%;background:#4ade80;animation:pulse 2s ease infinite"></div>'
-    + '<span style="font-size:.62rem;color:rgba(255,255,255,.5);letter-spacing:.06em">SYNC · ' + timeStr + '</span>'
+    + '<div style="display:flex;align-items:center;gap:6px;margin-top:13px">'
+      + '<div style="width:6px;height:6px;border-radius:50%;background:#4ade80;animation:pulse 2s ease infinite"></div>'
+      + '<span style="font-size:.62rem;color:rgba(255,255,255,.45);letter-spacing:.06em">SYNC · ' + timeStr + '</span>'
     + '</div>'
     + '</div>';
 
+  // 若之前已展開，重新 render 後維持展開狀態
   if (weatherExpanded) {
     var fc2 = document.getElementById('weather-forecast');
     var ch2 = document.getElementById('weather-chevron');
-    if (fc2) fc2.style.maxHeight = '200px';
+    if (fc2) fc2.style.maxHeight = '180px';
     if (ch2) ch2.style.transform = 'rotate(180deg)';
   }
 }
@@ -3535,12 +3561,13 @@ function toggleWeatherForecast() {
   var ch = document.getElementById('weather-chevron');
   if (!fc) return;
   weatherExpanded = !weatherExpanded;
-  fc.style.maxHeight = weatherExpanded ? '200px' : '0';
+  fc.style.maxHeight = weatherExpanded ? '180px' : '0';
   if (ch) ch.style.transform = weatherExpanded ? 'rotate(180deg)' : '';
 }
 
 function switchWeatherCity(idx) {
   var list = weatherTargets.map(function(t) { return weatherCache[t.city]; }).filter(Boolean);
+  // 切換城市時收起預報（不觸發 toggle，直接重設狀態）
   if (list.length > idx) { weatherExpanded = false; renderWeatherCard(list, idx); }
 }
 
