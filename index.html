@@ -3387,7 +3387,6 @@ window.speakPhrase = speakPhrase;
 window.renderBibiQuickBtns = renderBibiQuickBtns;
 window.toggleItCard = toggleItCard;
 window.renderHero = renderHero;
-window.fetchWeather = fetchWeather;
 window.switchWeatherCity = switchWeatherCity;
 window.renderWeatherCard = renderWeatherCard;
 window.toggleWeatherForecast = toggleWeatherForecast;
@@ -4420,6 +4419,8 @@ window.toggleWeatherForecast = toggleWeatherForecast;
 @keyframes sIn{0%{opacity:0;}100%{opacity:1;}}
 @keyframes dotPulse{0%,100%{opacity:.25;}50%{opacity:1;}}
 @keyframes loginFloat{0%,100%{transform:translateY(0) rotate(-2deg);}50%{transform:translateY(-10px) rotate(
+</style>
+<script>
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').then(reg => {
     // 監聽 SW 更新
@@ -4689,10 +4690,10 @@ async function fetchWeather(trip) {
 var weatherExpanded = false;
 
 function renderWeatherCard(weatherList, activeIdx) {
-  const content = document.getElementById('weather-content');
+  var content = document.getElementById('weather-content');
   if (!content) return;
-  const w = weatherList[activeIdx];
-  const timeStr = new Date().toLocaleTimeString('zh-TW', {hour:'2-digit',minute:'2-digit'});
+  var w = weatherList[activeIdx];
+  var timeStr = new Date().toLocaleTimeString('zh-TW', {hour:'2-digit',minute:'2-digit'});
 
   var tabsHTML = weatherList.length > 1
     ? '<div style="display:flex;gap:7px;margin-bottom:14px;flex-wrap:wrap" onclick="event.stopPropagation()">'
@@ -4739,10 +4740,10 @@ function renderWeatherCard(weatherList, activeIdx) {
     + '</div>';
 
   if (weatherExpanded) {
-    var fc = document.getElementById('weather-forecast');
-    var ch = document.getElementById('weather-chevron');
-    if (fc) fc.style.maxHeight = '200px';
-    if (ch) ch.style.transform = 'rotate(180deg)';
+    var fc2 = document.getElementById('weather-forecast');
+    var ch2 = document.getElementById('weather-chevron');
+    if (fc2) fc2.style.maxHeight = '200px';
+    if (ch2) ch2.style.transform = 'rotate(180deg)';
   }
 }
 
@@ -4756,28 +4757,8 @@ function toggleWeatherForecast() {
 }
 
 function switchWeatherCity(idx) {
-  const list = weatherTargets.map(t => weatherCache[t.city]).filter(Boolean);
+  var list = weatherTargets.map(function(t) { return weatherCache[t.city]; }).filter(Boolean);
   if (list.length > idx) { weatherExpanded = false; renderWeatherCard(list, idx); }
 }
 
 
-
-// Expose globals
-window.exchangeRates = {};
-window.tripCurrency = 'TWD';
-window.chatHistory = [];
-
-// Init day select in form
-document.addEventListener('DOMContentLoaded', () => {
-  if (window.speechSynthesis) window.speechSynthesis.getVoices();
-});
-
-window.initBibiGreeting = typeof initBibiGreeting !== "undefined" ? initBibiGreeting : null;
-window.toggleConverter = typeof toggleConverter !== "undefined" ? toggleConverter : null;
-window.translateText = typeof translateText !== "undefined" ? translateText : null;
-window.clearChat = typeof clearChat !== "undefined" ? clearChat : null;
-window.saveNickname = typeof saveNickname !== "undefined" ? saveNickname : null;
-window.saveNicknameInline = typeof saveNicknameInline !== "undefined" ? saveNicknameInline : null;
-</script>
-</body>
-</html>
