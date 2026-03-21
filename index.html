@@ -4656,7 +4656,7 @@ async function fetchWeather(trip) {
 
   try {
     const results = await Promise.all(targets.map(async t => {
-      const r = await fetch('https://api.open-meteo.com/v1/forecast?latitude='+t.lat+'&longitude='+t.lon+'&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=1');
+      const r = await fetch('https://api.open-meteo.com/v1/forecast?latitude='+t.lat+'&longitude='+t.lon+'&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min,weather_code,precipitation_probability_max&timezone=auto&forecast_days=7');
       const d = await r.json();
       const temp = Math.round((d.current && d.current.temperature_2m) || 0);
       const tempMax = Math.round((d.daily && d.daily.temperature_2m_max && d.daily.temperature_2m_max[0]) || temp);
@@ -4664,7 +4664,18 @@ async function fetchWeather(trip) {
       const code = (d.current && d.current.weather_code) || 0;
       const icon = code<=1?'☀️':code<=3?'⛅':code<=48?'🌫️':code<=67?'🌧️':code<=77?'🌨️':'🌦️';
       const desc = code<=1?'晴天':code<=3?'多雲':code<=48?'有霧':code<=67?'有雨':code<=77?'下雪':'陣雨';
-      return {city:t.city, displayName:t.displayName||t.city, temp, tempMax, tempMin, icon, desc};
+      var forecast = [];
+      var dowMap = ['日','一','二','三','四','五','六'];
+      for (var fi = 0; fi < 5; fi++) {
+        var fc = d.daily;
+        if (!fc || !fc.time || !fc.time[fi]) continue;
+        var fDate = new Date(fc.time[fi] + 'T12:00:00');
+        var fCode = (fc.weather_code && fc.weather_code[fi]) || 0;
+        var fIcon = fCode<=1?'☀️':fCode<=3?'⛅':fCode<=48?'🌫️':fCode<=67?'🌧️':fCode<=77?'🌨️':'🌦️';
+        var fRain = (fc.precipitation_probability_max && fc.precipitation_probability_max[fi]) || 0;
+        forecast.push({ dow: fi===0?'今':dowMap[fDate.getDay()], icon:fIcon, hi:Math.round(fc.temperature_2m_max[fi]), lo:Math.round(fc.temperature_2m_min[fi]), rain:fRain });
+      }
+      return {city:t.city, displayName:t.displayName||t.city, temp, tempMax, tempMin, icon, desc, forecast};
     }));
     const valid = results.filter(Boolean);
     if (valid.length === 0) throw new Error('no results');
@@ -4675,39 +4686,80 @@ async function fetchWeather(trip) {
   }
 }
 
+var weatherExpanded = false;
+
 function renderWeatherCard(weatherList, activeIdx) {
   const content = document.getElementById('weather-content');
   if (!content) return;
   const w = weatherList[activeIdx];
   const timeStr = new Date().toLocaleTimeString('zh-TW', {hour:'2-digit',minute:'2-digit'});
 
-  const tabsHTML = weatherList.length > 1
-    ? '<div style="display:flex;gap:7px;margin-bottom:14px;flex-wrap:wrap">'
-      + weatherList.map((city, i) =>
-        '<button onclick="switchWeatherCity('+i+')" style="padding:5px 14px;border-radius:999px;font-size:.72rem;font-weight:600;cursor:pointer;letter-spacing:.02em;border:1.5px solid '+(i===activeIdx?'rgba(255,255,255,.8)':'rgba(255,255,255,.25)')+';background:'+(i===activeIdx?'rgba(255,255,255,.18)':'transparent')+';color:'+(i===activeIdx?'white':'rgba(255,255,255,.5)')+'">'+city.displayName+'</button>'
-      ).join('') + '</div>'
+  var tabsHTML = weatherList.length > 1
+    ? '<div style="display:flex;gap:7px;margin-bottom:14px;flex-wrap:wrap" onclick="event.stopPropagation()">'
+      + weatherList.map(function(city, i) {
+          return '<button onclick="event.stopPropagation();switchWeatherCity('+i+')" style="padding:5px 14px;border-radius:999px;font-size:.72rem;font-weight:600;cursor:pointer;letter-spacing:.02em;border:1.5px solid '+(i===activeIdx?'rgba(255,255,255,.8)':'rgba(255,255,255,.25)')+';background:'+(i===activeIdx?'rgba(255,255,255,.18)':'transparent')+';color:'+(i===activeIdx?'white':'rgba(255,255,255,.5)')+'">'+city.displayName+'</button>';
+        }).join('') + '</div>'
     : '';
 
-  content.innerHTML = tabsHTML
+  var forecastHTML = '';
+  if (w.forecast && w.forecast.length > 0) {
+    forecastHTML = '<div id="weather-forecast" style="overflow:hidden;max-height:0;transition:max-height .38s cubic-bezier(0,0,.2,1)">'
+      + '<div style="border-top:1px solid rgba(255,255,255,.15);margin-top:14px;padding-top:12px;display:flex;justify-content:space-between">';
+    w.forecast.forEach(function(fc) {
+      var rainColor = fc.rain >= 50 ? '#7dd3fc' : 'rgba(255,255,255,.38)';
+      forecastHTML += '<div style="display:flex;flex-direction:column;align-items:center;gap:3px;flex:1">'
+        + '<div style="font-size:.6rem;color:rgba(255,255,255,.55);font-weight:600">' + fc.dow + '</div>'
+        + '<div style="font-size:1.15rem;line-height:1.2">' + fc.icon + '</div>'
+        + '<div style="font-size:.55rem;font-weight:700;color:' + rainColor + '">' + fc.rain + '%</div>'
+        + '<div style="font-size:.62rem;color:rgba(255,255,255,.85);text-align:center;line-height:1.5">' + fc.hi + '°<br><span style="color:rgba(255,255,255,.4)">' + fc.lo + '°</span></div>'
+        + '</div>';
+    });
+    forecastHTML += '</div></div>';
+  }
+
+  var hasForecast = !!(w.forecast && w.forecast.length > 0);
+  var chevron = hasForecast ? '<div id="weather-chevron" style="position:absolute;top:12px;right:14px;font-size:.65rem;color:rgba(255,255,255,.4);transition:transform .3s;pointer-events:none">&#9660;</div>' : '';
+
+  content.innerHTML = '<div id="weather-card-inner"' + (hasForecast ? ' onclick="toggleWeatherForecast()" style="cursor:pointer;position:relative"' : ' style="position:relative"') + '>'
+    + chevron + tabsHTML
     + '<div style="display:flex;align-items:flex-end;gap:18px">'
     + '<div>'
-    + '<div style="font-size:.68rem;opacity:.7;letter-spacing:.12em;text-transform:uppercase;color:white;margin-bottom:8px">'+w.displayName.toUpperCase()+'</div>'
-    + '<div style="font-family:var(--font-display);font-size:2.8rem;font-weight:300;color:white;line-height:1">'+w.temp+'°</div>'
-    + '<div style="font-size:.75rem;color:rgba(255,255,255,.65);margin-top:5px">'+w.tempMin+'° – '+w.tempMax+'°</div>'
-    + '<div style="font-size:.82rem;color:rgba(255,255,255,.9);margin-top:3px;font-weight:500">'+w.desc+'</div>'
+    + '<div style="font-size:.68rem;opacity:.7;letter-spacing:.12em;text-transform:uppercase;color:white;margin-bottom:8px">' + w.displayName.toUpperCase() + '</div>'
+    + '<div style="font-family:var(--font-display);font-size:2.8rem;font-weight:300;color:white;line-height:1">' + w.temp + '°</div>'
+    + '<div style="font-size:.75rem;color:rgba(255,255,255,.65);margin-top:5px">' + w.tempMin + '° – ' + w.tempMax + '°</div>'
+    + '<div style="font-size:.82rem;color:rgba(255,255,255,.9);margin-top:3px;font-weight:500">' + w.desc + '</div>'
     + '</div>'
-    + '<div style="font-size:3rem;margin-bottom:8px;line-height:1">'+w.icon+'</div>'
+    + '<div style="font-size:3rem;margin-bottom:8px;line-height:1">' + w.icon + '</div>'
     + '</div>'
+    + forecastHTML
     + '<div style="display:flex;align-items:center;gap:6px;margin-top:14px">'
     + '<div style="width:6px;height:6px;border-radius:50%;background:#4ade80;animation:pulse 2s ease infinite"></div>'
-    + '<span style="font-size:.62rem;color:rgba(255,255,255,.5);letter-spacing:.06em">SYNC · '+timeStr+'</span>'
+    + '<span style="font-size:.62rem;color:rgba(255,255,255,.5);letter-spacing:.06em">SYNC · ' + timeStr + '</span>'
+    + '</div>'
     + '</div>';
+
+  if (weatherExpanded) {
+    var fc = document.getElementById('weather-forecast');
+    var ch = document.getElementById('weather-chevron');
+    if (fc) fc.style.maxHeight = '200px';
+    if (ch) ch.style.transform = 'rotate(180deg)';
+  }
+}
+
+function toggleWeatherForecast() {
+  var fc = document.getElementById('weather-forecast');
+  var ch = document.getElementById('weather-chevron');
+  if (!fc) return;
+  weatherExpanded = !weatherExpanded;
+  fc.style.maxHeight = weatherExpanded ? '200px' : '0';
+  if (ch) ch.style.transform = weatherExpanded ? 'rotate(180deg)' : '';
 }
 
 function switchWeatherCity(idx) {
   const list = weatherTargets.map(t => weatherCache[t.city]).filter(Boolean);
-  if (list.length > idx) renderWeatherCard(list, idx);
+  if (list.length > idx) { weatherExpanded = false; renderWeatherCard(list, idx); }
 }
+
 
 
 // Expose globals
