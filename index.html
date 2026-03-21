@@ -3554,6 +3554,16 @@ window.renderHero = renderHero;
 window.switchWeatherCity = switchWeatherCity;
 window.renderWeatherCard = renderWeatherCard;
 window.toggleWeatherForecast = toggleWeatherForecast;
+
+// WEATHER DEBUG: force test on load
+document.addEventListener('DOMContentLoaded', function() {
+  setTimeout(function() {
+    var el = document.getElementById('weather-content');
+    console.log('[WeatherDebug] weather-content exists:', !!el);
+    console.log('[WeatherDebug] fetchWeather type:', typeof fetchWeather);
+    if (el) el.innerHTML = '<div style="color:white;font-size:.7rem">DEBUG: weather-content found, fetchWeather=' + typeof fetchWeather + '</div>';
+  }, 2000);
+});
 </script>
 </head>
 <body style="background:#1E1810">

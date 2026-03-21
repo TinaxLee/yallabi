@@ -1,4 +1,4 @@
-const BUILD = '1774093550';
+const BUILD = '1774093979';
 const CACHE = `yallabi-${BUILD}`;
 const ASSETS = ['./', './index.html', './style.css', './manifest.json', './icon.png'];
 self.addEventListener('install', e => { self.skipWaiting(); e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS))); });
