@@ -2463,7 +2463,7 @@ function renderTripSelector() {
     const archivedStr = t.archived ? ' · 已封存' : '';
     const tripName = t.name || info.name;
     return '<div class="card mb-2" style="border:1.5px solid ' + border + ';border-radius:var(--r-md);overflow:hidden">'
-      + '<div style="display:flex;align-items:center;gap:12px;padding:13px 14px;cursor:pointer" onclick="selectTrip(\'' + t.id + '\');closeModal(\'modal-trips\')">'
+      + '<div style="display:flex;align-items:center;gap:12px;padding:13px 14px;cursor:pointer" onclick="selectTrip(\'' + t.id + '\')">'
       + '<span style="font-size:1.5rem;flex-shrink:0">' + info.flag + '</span>'
       + '<div style="flex:1;min-width:0">'
       + '<div style="font-size:.9rem;font-weight:600;color:var(--text)">' + tripName + '</div>'
@@ -2482,19 +2482,32 @@ async function selectTrip(tripId) {
   currentTrip = tripsData.find(t => t.id === tripId);
   if (!currentTrip) return;
 
-  // Update UI
+  // ① 關閉旅行清單 Modal（統一在函式內控制）
+  closeModal('modal-trips');
+
+  // ② 記憶最後選取的旅行
+  try { localStorage.setItem('last_trip_id', tripId); } catch(e) {}
+
+  // ③ 清空舊旅行資料，防止切換時舊卡片閃爍
+  itineraryData = []; missionsData  = []; packingData = [];
+  expensesData  = []; flightsData  = []; hotelsData  = [];
+  journalData   = [];
+
+  // ④ 立即套用新旅行主題色 + 重設 Day filter
   updateCountryBadge(currentTrip);
   renderHero(currentTrip);
-
-  // Reset day filter
   const days = currentTrip.days || ['Day 1'];
   currentDayFilter = days[0];
 
-  // Unsubscribe old listeners
+  // ⑤ 切換到行程 tab（資料已清空，先顯示空狀態）
+  switchTab('itinerary');
+  window.scrollTo(0, 0);
+
+  // ⑥ 取消舊旅行所有 Firestore 監聽
   unsubscribers.forEach(u => u());
   unsubscribers = [];
 
-  // Subscribe to collections
+  // ⑦ 訂閱新旅行所有 collection
   const collections = ['itinerary','missions','packing','expenses','flights','hotels','journal'];
   collections.forEach(col => {
     const unsub = onSnapshot(tripCol(col), snap => {
@@ -2506,7 +2519,6 @@ async function selectTrip(tripId) {
       if (col==='flights')   flightsData   = data;
       if (col==='hotels')    hotelsData    = data;
       if (col==='journal')   journalData   = data;
-      // Re-render current tab
       if (currentNavTab==='itinerary') renderItinerary();
       if (currentNavTab==='expense')   renderExpenses();
       if (currentNavTab==='depart')    renderDepart();
@@ -2515,25 +2527,16 @@ async function selectTrip(tripId) {
     unsubscribers.push(unsub);
   });
 
-  // Members
+  // ⑧ 載入旅伴資料
   const memberUids = currentTrip.members || [currentUser.uid];
   membersData = await Promise.all(memberUids.map(async uid => {
     try { const d = await getDoc(doc(db,'users',uid)); return { uid, ...d.data() }; }
     catch { return { uid, name:'旅伴' }; }
   }));
-
   renderMemberAvatars();
   fetchWeather(currentTrip);
-  renderHero(currentTrip);
-  switchTab('itinerary');
 
-  // 記憶最後選取的行程（下次開啟 App 可直接恢復）
-  try { localStorage.setItem('last_trip_id', tripId); } catch(e) {}
-
-  // 切換後回到頂端，確保使用者看到 Hero 區
-  window.scrollTo(0, 0);
-
-  console.log('[Yallabi] Switching to trip:', tripId, currentTrip && currentTrip.name);
+  console.log('[Yallabi] selectTrip:', tripId, currentTrip.name || '');
 }
 
 function getMemberAvatar(m) {
@@ -2651,15 +2654,104 @@ async function deleteTripById(tripId) {
   } catch(e) { showToast('刪除失敗，請重試'); }
 }
 
+// ── 編輯模式追蹤 ──────────────────────────────────────────
+let _editingTripId = null;
+
 function openEditTrip(tripId) {
   const trip = tripsData.find(t => t.id === tripId);
   if (!trip) return;
-  // 複用 settings modal 來編輯
-  currentTripId = tripId;
-  currentTrip = trip;
-  tripCurrency = trip.currency || 'TWD';
+
+  _editingTripId = tripId;
   closeModal('modal-trips');
-  openSettings();
+
+  // 預填目的地
+  const countryEl = document.getElementById('nt-country');
+  if (countryEl) {
+    countryEl.value = trip.country || 'default';
+    toggleCustomCountry(countryEl.value);
+    if (trip.country === 'other') {
+      const cnEl = document.getElementById('nt-country-name');
+      if (cnEl) cnEl.value = trip.countryName || '';
+    }
+  }
+
+  // 預填城市標籤
+  ntCities = trip.cities ? trip.cities.slice() : [];
+  renderCityTags();
+
+  // 預填暱稱
+  const nameEl = document.getElementById('nt-name');
+  if (nameEl) nameEl.value = trip.name || '';
+
+  // 預填出發日、天數、幣別
+  const depEl = document.getElementById('nt-departure');
+  if (depEl) depEl.value = trip.departureDate || '';
+  const daysEl = document.getElementById('nt-days');
+  if (daysEl) daysEl.value = (trip.days && trip.days.length) || 3;
+  const currEl = document.getElementById('nt-currency');
+  if (currEl) currEl.value = trip.currency || 'TWD';
+
+  // 切換 Modal 標題與按鈕為「編輯」模式
+  const titleEl = document.querySelector('#modal-new-trip .modal-title');
+  if (titleEl) titleEl.textContent = '✏️ 編輯旅行';
+  const saveBtn = document.querySelector('#modal-new-trip .btn-primary');
+  if (saveBtn) { saveBtn.textContent = '儲存變更'; saveBtn.onclick = saveEditedTrip; }
+
+  updateAutoName();
+  openModal('modal-new-trip');
+}
+
+async function saveEditedTrip() {
+  if (!_editingTripId) return;
+  const form     = document.getElementById('form-new-trip');
+  const country  = form.querySelector('#nt-country').value;
+  const customCN = country === 'other'
+    ? (form.querySelector('#nt-country-name') || {value:''}).value.trim()
+    : ((COUNTRY_THEMES[country] && COUNTRY_THEMES[country].name) || '');
+  const departure = form.querySelector('#nt-departure').value;
+  const currency  = form.querySelector('#nt-currency').value;
+  const inputName = form.querySelector('#nt-name').value.trim();
+  const name      = inputName || getAutoName();
+  const cities    = ntCities.slice();
+
+  const updates = { country, countryName: customCN, name, departureDate: departure, currency, cities };
+  try {
+    await updateDoc(doc(db, 'trips', _editingTripId), updates);
+
+    // 同步本地快取
+    const idx = tripsData.findIndex(t => t.id === _editingTripId);
+    if (idx !== -1) tripsData[idx] = Object.assign({}, tripsData[idx], updates);
+
+    // 若正在編輯的是目前選取的行程，同步 UI
+    if (_editingTripId === currentTripId) {
+      currentTrip  = Object.assign({}, currentTrip, updates);
+      tripCurrency = currency;
+      updateCountryBadge(currentTrip);
+      renderHero(currentTrip);
+      fetchWeather(currentTrip);
+    }
+
+    closeModal('modal-new-trip');
+    showToast('旅行資料已更新 ✓');
+    renderTripSelector();
+  } catch(e) {
+    showToast('儲存失敗，請重試');
+  }
+}
+
+// 關閉 modal-new-trip 時還原為「新增」模式
+function _resetNewTripModal() {
+  if (_editingTripId === null) return;
+  _editingTripId = null;
+  const titleEl = document.querySelector('#modal-new-trip .modal-title');
+  if (titleEl) titleEl.textContent = '新增旅行';
+  const saveBtn = document.querySelector('#modal-new-trip .btn-primary');
+  if (saveBtn) { saveBtn.textContent = '新增旅行'; saveBtn.onclick = createNewTrip; }
+  const form = document.getElementById('form-new-trip');
+  if (form) form.reset();
+  ntCities = [];
+  renderCityTags();
+  toggleCustomCountry('default');
 }
 
 // ════════════════════════════════════════
@@ -2977,6 +3069,9 @@ function openModal(id) {
 function closeModal(id) {
   (function(){var _e=document.getElementById(id);if(_e)_e.classList.remove('open');})();
   document.body.style.overflow = '';
+  if (id === 'modal-new-trip') {
+    setTimeout(_resetNewTripModal, 350); // 等動畫結束後還原
+  }
 }
 
 // Close bibi on overlay click
@@ -3362,9 +3457,11 @@ window.quickAddExpenseFromPhoto = quickAddExpenseFromPhoto;
 window.sendPhotoResultToChat = sendPhotoResultToChat;
 window.resetBibiPhoto = resetBibiPhoto;
 window.archiveTrip = archiveTrip;
+window.selectTrip = selectTrip;
 window.archiveTripById = archiveTripById;
 window.deleteTripById = deleteTripById;
 window.openEditTrip = openEditTrip;
+window.saveEditedTrip = saveEditedTrip;
 window.loginGoogle = loginGoogle;
 window.loginApple = loginApple;
 window.logout = logout;
@@ -3567,7 +3664,7 @@ window.toggleWeatherForecast = toggleWeatherForecast;
 <!-- ══════════════════════════════════════
      SPLASH SCREEN
 ══════════════════════════════════════ -->
-<div id="splash" class="splash-screen" style="background:#1E1810;position:fixed;inset:0;z-index:9999;transition:opacity .5s ease;" onclick="this.classList.add('fade-out');setTimeout(()=>{this.style.display='none';if(!currentUser){document.getElementById('login-screen')?.classList.remove('hidden');document.getElementById('app-shell')?.classList.add('hidden')}},500)">
+<div id="splash" class="splash-screen" style="background:#1E1810;position:fixed;inset:0;z-index:9999;transition:opacity .5s ease;" onclick="this.classList.add('fade-out');document.body.classList.remove('splash-open');setTimeout(()=>{this.style.display='none';if(!currentUser){document.getElementById('login-screen')?.classList.remove('hidden');document.getElementById('app-shell')?.classList.add('hidden')}},500)">
   <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;width:280px">
     <div style="font-family:'Noto Sans TC',sans-serif;font-size:2.4rem;font-weight:300;letter-spacing:.2em;text-transform:uppercase;color:#C8AA7C;margin-bottom:8px"><em style="font-style:normal;font-weight:700">Y</em>ALLABI</div>
     <div style="font-family:'Noto Sans TC',sans-serif;font-size:.6rem;font-weight:300;letter-spacing:.24em;text-transform:uppercase;color:rgba(200,170,100,.4);margin-bottom:36px">every trip, a story</div>
@@ -4589,55 +4686,106 @@ window.toggleWeatherForecast = toggleWeatherForecast;
 @keyframes sIn{0%{opacity:0;}100%{opacity:1;}}
 @keyframes dotPulse{0%,100%{opacity:.25;}50%{opacity:1;}}
 @keyframes loginFloat{0%,100%{transform:translateY(0) rotate(-2deg);}50%{transform:translateY(-10px) rotate(-2deg);}}
-/* .splash-screen 額外保險：position:fixed 確保不受父元素 transform 干擾 */
-#splash{transform:none!important;}
+/* Splash 防位移：body overflow 鎖定 */
+body.splash-open{overflow:hidden;}
+/* SW 更新 Toast */
+#update-toast{
+  position:fixed;bottom:calc(88px + env(safe-area-inset-bottom));left:50%;
+  transform:translateX(-50%) translateY(20px);
+  background:var(--accent);color:#fff;
+  padding:12px 22px;border-radius:999px;
+  font-size:.84rem;font-weight:600;letter-spacing:.02em;
+  white-space:nowrap;cursor:pointer;
+  box-shadow:0 6px 24px rgba(0,0,0,.22);
+  opacity:0;pointer-events:none;z-index:9991;
+  transition:opacity .3s ease,transform .3s ease;
+  -webkit-tap-highlight-color:transparent;
+}
+#update-toast.visible{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto;}
 </style>
+<!-- SW 更新提示框（由 JS 控制 .visible class）-->
+<div id="update-toast">✦ 發現新版本，點擊立即更新</div>
 <script>
 if ('serviceWorker' in navigator) {
-  // ── 防止重複 reload 的旗標 ────────────────────────────
+  /* ─── 防重複 reload 旗標 ─────────────────────────────── */
   var _swRefreshing = false;
 
-  // ── controllerchange：新 SW 呼叫 clients.claim() 後立即觸發
-  // 這是最可靠的重載時機，iOS Safari / Android Chrome 均相容
+  /* ─── controllerchange：新 SW clients.claim() 後立即觸發
+        這是 iOS Safari / Android Chrome 最可靠的重載時機  */
   navigator.serviceWorker.addEventListener('controllerchange', function() {
     if (_swRefreshing) return;
     _swRefreshing = true;
     window.location.reload();
   });
 
-  // ── 訊息監聽（SW 廣播 SW_ACTIVATED / SW_UPDATED）────────
+  /* ─── SW 訊息監聽 ──────────────────────────────────────── */
   navigator.serviceWorker.addEventListener('message', function(e) {
-    if (e.data && (e.data.type === 'SW_ACTIVATED' || e.data.type === 'SW_UPDATED')) {
+    if (!e.data) return;
+    if (e.data.type === 'SW_ACTIVATED' || e.data.type === 'SW_UPDATED') {
       if (!_swRefreshing) { _swRefreshing = true; window.location.reload(); }
     }
   });
 
+  /* ─── 顯示 / 隱藏更新 Toast ────────────────────────────── */
+  function showUpdateToast(waitingSW) {
+    var toast = document.getElementById('update-toast');
+    if (!toast) return;
+    // 雙 rAF 確保 iOS Safari 的 opacity 淡入動畫正確觸發
+    requestAnimationFrame(function() {
+      requestAnimationFrame(function() { toast.classList.add('visible'); });
+    });
+    toast.onclick = function() {
+      toast.textContent = '更新中...';
+      if (waitingSW) {
+        waitingSW.postMessage({ type: 'SKIP_WAITING' });
+      } else {
+        window.location.reload();
+      }
+    };
+  }
+
+  /* ─── 檢查是否已有等待中的 SW（頁面重開時的情況）─────── */
+  function checkWaiting(reg) {
+    if (reg.waiting && navigator.serviceWorker.controller) {
+      showUpdateToast(reg.waiting);
+    }
+  }
+
   navigator.serviceWorker.register('./sw.js').then(function(reg) {
 
-    // ── 每次 App 開啟都主動向伺服器比對 sw.js 是否有變動
+    /* 每次開啟 App 主動比對 sw.js 是否有新版 */
     reg.update().catch(function(){});
 
-    // ── 監聽新版 SW 安裝
+    /* 頁面重開時若已有等待中的 SW */
+    checkWaiting(reg);
+
+    /* 監聽新版 SW 安裝 */
     reg.addEventListener('updatefound', function() {
       var newSW = reg.installing;
       if (!newSW) return;
       newSW.addEventListener('statechange', function() {
-        // installed = 新版已下載完成、正在等待接管
+        /* installed = 新版已下載完成，等待接管 */
         if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
-          // 立即觸發 skipWaiting，不等使用者關閉 App
-          newSW.postMessage({ type: 'SKIP_WAITING' });
+          showUpdateToast(newSW);          // 顯示 Toast
+          newSW.postMessage({ type: 'SKIP_WAITING' }); // 立即觸發接管
         }
       });
     });
 
+    /* 每小時自動 check 一次（解決 App 長時間開著不更新的問題）*/
+    setInterval(function() {
+      reg.update().catch(function(){});
+    }, 60 * 60 * 1000);
+
   }).catch(function() {});
 
-  // ── visibilitychange：從背景回到前台時主動 check 更新
-  // 解決 iOS 長時間放在背景後回來不觸發 updatefound 的問題
+  /* ─── visibilitychange：從背景回到前台主動 check ──────── */
   document.addEventListener('visibilitychange', function() {
     if (document.visibilityState === 'visible') {
       navigator.serviceWorker.getRegistration('./sw.js').then(function(reg) {
-        if (reg) reg.update().catch(function(){});
+        if (!reg) return;
+        reg.update().catch(function(){});
+        checkWaiting(reg);
       });
     }
   });
@@ -4802,6 +4950,10 @@ async function saveNickname() {
 }
 
 
+</script>
+<script>
+// 載入時鎖定 body scroll，防止 splash 位移感
+document.body.classList.add('splash-open');
 </script>
 </body>
 </html>
