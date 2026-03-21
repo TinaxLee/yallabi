@@ -7,7 +7,7 @@
    ═══════════════════════════════════════════════════════ */
 
 // ── 版本號：每次部署改這一行即可清除舊快取 ──────────────
-const VERSION       = 'v6';
+const VERSION       = 'v7';
 const CACHE_SHELL   = `yallabi-shell-${VERSION}`;
 const CACHE_RUNTIME = `yallabi-runtime-${VERSION}`;
 
