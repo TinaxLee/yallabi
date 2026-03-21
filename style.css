@@ -226,10 +226,6 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
   --fs-lg:    clamp(1rem,   2.6vw + .1rem,  1.15rem); /* 標題 */
   --fs-xl:    clamp(1.1rem, 2.8vw + .1rem,  1.3rem);  /* 大標題 */
   --fs-2xl:   clamp(1.3rem, 3.4vw + .1rem,  1.6rem);  /* 超大 */
-  /* 互動回饋變數 — 可在元件層局部覆寫 */
-  --tap-scale:      .97;   /* 按壓縮放幅度 */
-  --tap-brightness: .90;   /* 按壓亮度衰減 */
-  --tap-dur:        .15s;  /* 回饋動畫時長 */
 }
 
 input, select, textarea, button {
@@ -241,50 +237,6 @@ a{color:inherit;text-decoration:none;}
 .no-scrollbar::-webkit-scrollbar{display:none;}
 .no-scrollbar{-ms-overflow-style:none;scrollbar-width:none;}
 .bottom-nav,.main-header,button,.nav-btn,.day-tab,.chip,.modal-header{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;}
-
-/* ════════════════════════════════════════════════════════
-   INTERACTION FEEDBACK SYSTEM
-   統一點擊手感 — iOS / Android 雙平台
-   架構說明：
-   · 本區塊刻意置於各元件 :active 規則「之前」
-   · transform 由後方各元件覆寫（維持原有縮放幅度）
-   · filter:brightness 為新增屬性，後方規則不覆寫，全體生效
-════════════════════════════════════════════════════════ */
-
-/* 1. 消除系統預設干擾 ─ 補全 body 層之外所有互動元件 */
-button,
-.btn, .day-tab, .nav-btn, .chip,
-.country-pill, .country-badge, .it-col-btn, .modal-close,
-.card-press, .stamp, .pack-check, .btn-new, .btn-add, .fab {
-  -webkit-tap-highlight-color: transparent; /* iOS：移除點擊藍色遮罩 */
-  -webkit-touch-callout: none;              /* iOS：禁止長按系統選單 */
-  user-select: none;                        /* 通用：防止連點選取文字 */
-  -webkit-user-select: none;
-  outline: none;                            /* Android：移除 focus 外框 */
-}
-
-/* 2. 統一點擊回饋：scale + brightness
-   transform 由後方各元件自有 :active 覆寫，此為後備值
-   filter 為全新屬性，不受後方現有規則干擾，全體生效     */
-button:active,
-.btn:active, .day-tab:active, .nav-btn:active, .chip:active,
-.country-pill:active, .country-badge:active, .it-col-btn:active,
-.modal-close:active, .card-press:active, .stamp:active,
-.pack-check:active, .btn-new:active, .btn-add:active, .fab:active {
-  filter: brightness(var(--tap-brightness));
-  transform: scale(var(--tap-scale)); /* 後備值；各元件後方規則可覆寫 */
-  transition: transform var(--tap-dur) ease, filter var(--tap-dur) ease;
-}
-
-/* 3. 補全 filter 的 release transition
-   · 已使用 transition:all 的元件（.btn .chip 等）自動包含 filter，無需處理
-   · .nav-btn 僅列出 color/transform，需補上 filter 才有回彈動畫         */
-.nav-btn{
-  transition:
-    color     var(--dur-fast) var(--ease),
-    transform var(--dur-fast) var(--spring),
-    filter    var(--tap-dur)  ease;
-}
 
 /* TYPOGRAPHY */
 .font-display{font-family:var(--font-display);}
@@ -555,7 +507,7 @@ textarea.form-input{resize:none;white-space:pre-wrap;line-height:1.6;}
 
 /* SPLASH */
 .splash{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;transition:opacity .5s var(--ease);}
-.splash-screen{transition:opacity .5s ease;}
+.splash-screen{position:fixed;top:0;left:0;width:100%;height:100%;transform:none;transition:opacity .5s ease;}
 .splash-screen.fade-out,.splash.fade-out{opacity:0;pointer-events:none;}
 .splash.hidden{opacity:0;pointer-events:none;}
 .splash-logo{font-family:var(--font-display);font-size:2.6rem;font-weight:300;letter-spacing:-.02em;color:var(--text);}
