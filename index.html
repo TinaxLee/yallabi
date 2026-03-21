@@ -454,7 +454,9 @@ function getTypeLabel(type) {
 }
 
 function openMaps(address) {
-  window.open(`https://maps.google.com/?q=${address}`, '_blank');
+  // Universal URL：相容性最高，iOS / Android 均可喚起原生 App
+  // address 傳入時已 encodeURIComponent，此處直接使用
+  window.open('https://www.google.com/maps/search/?api=1&query=' + address, '_blank');
 }
 
 function copyAddress(address) {
@@ -540,10 +542,72 @@ async function saveItinerary() {
   } catch(e) { showToast('儲存失敗，請重試'); }
 }
 
-async function deleteItinerary(id) {
-  if (!confirm('確定刪除這個行程？')) return;
-  await deleteDoc(tripDoc('itinerary', id));
-  showToast('已刪除');
+// ─── 自訂刪除確認 Dialog ────────────────────────────────
+// 使用現有 .dialog-overlay / .dialog-box CSS 系統
+// 完全套用 CSS 變數，跟著主題色自動切換
+function confirmDeleteItinerary(id) {
+  // 取得行程名稱作為提示文字
+  const item = itineraryData.find(i => i.id === id);
+  const name = (item && item.name) ? '「' + item.name + '」' : '這個行程';
+
+  // 動態建立 dialog（不污染靜態 HTML，用完即銷毀）
+  const overlay = document.createElement('div');
+  overlay.className = 'dialog-overlay';
+  overlay.style.backdropFilter = 'blur(6px)';
+  overlay.style.webkitBackdropFilter = 'blur(6px)';
+
+  overlay.innerHTML =
+    '<div class="dialog-box" style="text-align:center">' +
+      '<div style="font-size:1.6rem;margin-bottom:12px">🗑️</div>' +
+      '<div style="font-size:1rem;font-weight:600;color:var(--text);margin-bottom:8px">刪除行程</div>' +
+      '<div style="font-size:.82rem;color:var(--text3);line-height:1.6;margin-bottom:22px">' +
+        '確定要刪除 ' + name + '？<br>此操作無法復原。' +
+      '</div>' +
+      '<div style="display:flex;gap:10px">' +
+        '<button id="dlg-cancel" style="' +
+          'flex:1;padding:12px;border-radius:var(--r-xl);' +
+          'background:transparent;border:1.5px solid var(--accent);' +
+          'color:var(--accent);font-size:.88rem;font-weight:600;cursor:pointer;' +
+          'transition:all .15s ease;-webkit-tap-highlight-color:transparent' +
+        '">取消</button>' +
+        '<button id="dlg-confirm" style="' +
+          'flex:1;padding:12px;border-radius:var(--r-xl);' +
+          'background:#C0392B;border:none;' +
+          'color:#fff;font-size:.88rem;font-weight:600;cursor:pointer;' +
+          'transition:all .15s ease;-webkit-tap-highlight-color:transparent' +
+        '">確認刪除</button>' +
+      '</div>' +
+    '</div>';
+
+  document.body.appendChild(overlay);
+
+  // 觸發入場動畫（一個 rAF 讓 opacity:0 先渲染）
+  requestAnimationFrame(() => requestAnimationFrame(() => overlay.classList.add('open')));
+
+  // ── 關閉函式 ────────────────────────────────────────
+  function closeDialog() {
+    overlay.classList.remove('open');
+    // 等 transition 結束後移除 DOM（.3s）
+    setTimeout(() => { if (overlay.parentNode) overlay.parentNode.removeChild(overlay); }, 320);
+  }
+
+  // 點擊遮罩關閉
+  overlay.addEventListener('click', function(e) {
+    if (e.target === overlay) closeDialog();
+  });
+
+  overlay.querySelector('#dlg-cancel').addEventListener('click', closeDialog);
+
+  overlay.querySelector('#dlg-confirm').addEventListener('click', async function() {
+    closeDialog();
+    await deleteDoc(tripDoc('itinerary', id));
+    showToast('已刪除');
+  });
+}
+
+// 保持原本的函式名稱，HTML 裡的 onclick 不需要改
+function deleteItinerary(id) {
+  confirmDeleteItinerary(id);
 }
 
 // ════════════════════════════════════════
@@ -1482,7 +1546,7 @@ async function sendBibiMessage() {
 
 function processMapSearch(text) {
   return text.replace(/MAP_SEARCH:\s*\{"name":\s*"([^"]+)"\}/g, (_, name) =>
-    `<br><button class="it-col-btn mt-2" onclick="window.open('https://maps.google.com/?q=${encodeURIComponent(name)}','_blank')">📍 ${name} 在地圖上看</button>`
+    `<br><button class="it-col-btn mt-2" onclick="window.open('https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(name),'_blank')">📍 ${name} 在地圖上看</button>`
   );
 }
 
@@ -4583,143 +4647,28 @@ window.toggleWeatherForecast = toggleWeatherForecast;
 @keyframes loginFloat{0%,100%{transform:translateY(0) rotate(-2deg);}50%{transform:translateY(-10px) rotate(
 </style>
 <script>
-/* ════════════════════════════════════════════════════
-   Service Worker 更新管理
-   ‣ updatefound  → 顯示「發現新版本」提示框
-   ‣ 使用者點擊  → 發 SKIP_WAITING 給 SW
-   ‣ SW 回傳 SW_ACTIVATED → 重載頁面
-════════════════════════════════════════════════════ */
-(function () {
-  if (!('serviceWorker' in navigator)) return;
-
-  // ── 更新提示框（Toast）HTML + Style ───────────────
-  // 使用 var(--accent) 色調，與整體主題一致
-  // bottom 距底部導覽列上方，z-index 高於所有 UI
-  var UPDATE_TOAST_ID = 'sw-update-toast';
-
-  function injectToastStyle() {
-    if (document.getElementById('sw-toast-style')) return;
-    var style = document.createElement('style');
-    style.id  = 'sw-toast-style';
-    style.textContent = [
-      '#' + UPDATE_TOAST_ID + '{',
-        'position:fixed;',
-        'bottom:calc(90px + env(safe-area-inset-bottom));',
-        'left:50%;',
-        'transform:translateX(-50%) translateY(20px);',
-        'background:var(--accent);',
-        'color:#fff;',
-        'padding:13px 22px;',
-        'border-radius:999px;',
-        'font-size:.85rem;',
-        'font-weight:600;',
-        'letter-spacing:.02em;',
-        'white-space:nowrap;',
-        'cursor:pointer;',
-        'box-shadow:0 6px 24px rgba(0,0,0,.22);',
-        'opacity:0;',
-        'pointer-events:none;',
-        'z-index:9990;',
-        'transition:opacity .3s ease, transform .3s ease;',
-        '-webkit-tap-highlight-color:transparent;',
-      '}',
-      '#' + UPDATE_TOAST_ID + '.visible{',
-        'opacity:1;',
-        'transform:translateX(-50%) translateY(0);',
-        'pointer-events:auto;',
-      '}',
-    ].join('');
-    document.head.appendChild(style);
-  }
-
-  function showUpdateToast(waitingSW) {
-    injectToastStyle();
-    var existing = document.getElementById(UPDATE_TOAST_ID);
-    if (existing) return; // 已顯示，不重複
-
-    var toast = document.createElement('div');
-    toast.id          = UPDATE_TOAST_ID;
-    toast.textContent = '✦ 發現新版本，點擊立即體驗最新功能';
-    toast.setAttribute('role', 'alert');
-    document.body.appendChild(toast);
-
-    // 顯示動畫（需一個 frame 讓 opacity:0 先生效）
-    requestAnimationFrame(function () {
-      requestAnimationFrame(function () {
-        toast.classList.add('visible');
-      });
-    });
-
-    // 點擊：發送 SKIP_WAITING 給等待中的 SW
-    toast.addEventListener('click', function () {
-      toast.textContent = '更新中...';
-      if (waitingSW) {
-        waitingSW.postMessage({ type: 'SKIP_WAITING' });
-      } else {
-        // fallback：直接重載
-        window.location.reload();
-      }
-    });
-  }
-
-  // ── 偵測「已有等待中的 SW」（頁面重開時的情況）───────
-  function checkWaiting(reg) {
-    if (reg.waiting && navigator.serviceWorker.controller) {
-      showUpdateToast(reg.waiting);
-    }
-  }
-
-  // ── SW 回傳 SW_ACTIVATED → 重載 ─────────────────────
-  navigator.serviceWorker.addEventListener('message', function (e) {
-    if (e.data && e.data.type === 'SW_ACTIVATED') {
-      window.location.reload();
-    }
-  });
-
-  // ── 控制器變更（skipWaiting 生效）→ 重載 ────────────
-  // 雙重保險：確保 iOS Safari 也能觸發
-  var refreshing = false;
-  navigator.serviceWorker.addEventListener('controllerchange', function () {
-    if (!refreshing) {
-      refreshing = true;
-      window.location.reload();
-    }
-  });
-
-  // ── 註冊 SW ───────────────────────────────────────────
-  navigator.serviceWorker.register('./sw.js').then(function (reg) {
-
-    // 頁面開啟時若已有等待中的 SW（使用者上次沒更新）
-    checkWaiting(reg);
-
-    // 偵測新版 SW 安裝
-    reg.addEventListener('updatefound', function () {
-      var newSW = reg.installing;
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').then(reg => {
+    // 監聽 SW 更新
+    reg.addEventListener('updatefound', () => {
+      const newSW = reg.installing;
       if (!newSW) return;
-
-      newSW.addEventListener('statechange', function () {
-        // installed = 安裝完成、等待接管
-        if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
-          showUpdateToast(newSW);
+      newSW.addEventListener('statechange', () => {
+        // 新 SW 安裝完成且舊 SW 存在 → 自動重載取最新版
+        if (newSW.state === 'activated' && navigator.serviceWorker.controller) {
+          window.location.reload();
         }
       });
     });
+  }).catch(() => {});
 
-  }).catch(function () {});
-
-  // ── 頁面重新聚焦時主動檢查更新 ──────────────────────
-  // 解決 iOS 長時間放在背景後回來不觸發 updatefound 的問題
-  document.addEventListener('visibilitychange', function () {
-    if (document.visibilityState === 'visible') {
-      navigator.serviceWorker.getRegistration('./sw.js').then(function (reg) {
-        if (!reg) return;
-        reg.update().catch(function () {});
-        checkWaiting(reg);
-      });
+  // 收到 SW 的更新訊息也重載
+  navigator.serviceWorker.addEventListener('message', function(e) {
+    if (e.data && e.data.type === 'SW_UPDATED') {
+      window.location.reload();
     }
   });
-
-}());
+}
 
 // Quick convert function
 function toggleConverter() {
