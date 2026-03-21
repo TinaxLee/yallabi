@@ -3385,6 +3385,170 @@ window.initBibiGreeting = initBibiGreeting;
 window.openPhraseCards = openPhraseCards;
 window.speakPhrase = speakPhrase;
 window.renderBibiQuickBtns = renderBibiQuickBtns;
+// Fetch weather
+// 天氣資料快取
+let weatherCache = {};
+let weatherTargets = [];
+
+async function fetchWeather(trip) {
+  const content = document.getElementById('weather-content');
+  if (!content) return;
+
+  weatherCache = {};
+  weatherTargets = [];
+
+  console.log('[Weather] fetchWeather called, trip:', trip && trip.country, 'cities:', trip && trip.cities);
+  if (!(trip && trip.country) || trip.country === 'default') {
+    content.innerHTML = '<div style="font-size:.75rem;color:rgba(255,255,255,.55)">選擇旅行後顯示天氣</div>';
+    return;
+  }
+
+  const COORDS = {
+    thailand:  [{city:'Bangkok',zh:'曼谷',lat:13.7563,lon:100.5018},{city:'Phuket',zh:'普吉島',lat:7.8804,lon:98.3923},{city:'Chiang Mai',zh:'清邁',lat:18.7883,lon:98.9853},{city:'Pattaya',zh:'芭達雅',lat:12.9236,lon:100.8825}],
+    japan:     [{city:'Tokyo',zh:'東京',lat:35.6762,lon:139.6503},{city:'Osaka',zh:'大阪',lat:34.6937,lon:135.5023},{city:'Kyoto',zh:'京都',lat:35.0116,lon:135.7681},{city:'Sapporo',zh:'札幌',lat:43.0618,lon:141.3545}],
+    france:    [{city:'Paris',zh:'巴黎',lat:48.8566,lon:2.3522},{city:'Nice',zh:'尼斯',lat:43.7102,lon:7.2620},{city:'Lyon',zh:'里昂',lat:45.7640,lon:4.8357}],
+    italy:     [{city:'Rome',zh:'羅馬',lat:41.9028,lon:12.4964},{city:'Milan',zh:'米蘭',lat:45.4654,lon:9.1859},{city:'Florence',zh:'佛羅倫斯',lat:43.7696,lon:11.2558},{city:'Venice',zh:'威尼斯',lat:45.4408,lon:12.3155}],
+    greece:    [{city:'Athens',zh:'雅典',lat:37.9838,lon:23.7275},{city:'Santorini',zh:'聖托里尼',lat:36.3932,lon:25.4615},{city:'Mykonos',zh:'米克諾斯',lat:37.4467,lon:25.3289}],
+    morocco:   [{city:'Marrakech',zh:'馬拉喀什',lat:31.6295,lon:-7.9811},{city:'Casablanca',zh:'卡薩布蘭卡',lat:33.5731,lon:-7.5898}],
+    maldives:  [{city:'Malé',zh:'馬列',lat:4.1755,lon:73.5093}],
+    korea:     [{city:'Seoul',zh:'首爾',lat:37.5665,lon:126.9780},{city:'Busan',zh:'釜山',lat:35.1796,lon:129.0756},{city:'Jeju',zh:'濟州',lat:33.4996,lon:126.5312}],
+    singapore: [{city:'Singapore',zh:'新加坡',lat:1.3521,lon:103.8198}],
+    usa:       [{city:'New York',zh:'紐約',lat:40.7128,lon:-74.0060},{city:'Los Angeles',zh:'洛杉磯',lat:34.0522,lon:-118.2437},{city:'Las Vegas',zh:'拉斯維加斯',lat:36.1699,lon:-115.1398}],
+    australia: [{city:'Sydney',zh:'雪梨',lat:-33.8688,lon:151.2093},{city:'Melbourne',zh:'墨爾本',lat:-37.8136,lon:144.9631},{city:'Gold Coast',zh:'黃金海岸',lat:-28.0167,lon:153.4000}],
+  };
+
+  const allCoords = COORDS[trip.country] || [];
+  let targets = [];
+
+  if (trip.cities && trip.cities.length > 0 && allCoords.length > 0) {
+    const zhMap = {'曼谷':'bangkok','普吉':'phuket','普吉島':'phuket','清邁':'chiang mai','芭達雅':'pattaya','芭提雅':'pattaya','東京':'tokyo','大阪':'osaka','京都':'kyoto','札幌':'sapporo','首爾':'seoul','釜山':'busan','濟州':'jeju','濟州島':'jeju','巴黎':'paris','尼斯':'nice','里昂':'lyon','羅馬':'rome','米蘭':'milan','翡冷翠':'florence','佛羅倫斯':'florence','威尼斯':'venice','雅典':'athens','聖托里尼':'santorini','米克諾斯':'mykonos','馬拉喀什':'marrakech','卡薩布蘭卡':'casablanca','新加坡':'singapore','紐約':'new york','洛杉磯':'los angeles','拉斯維加斯':'las vegas','雪梨':'sydney','墨爾本':'melbourne','黃金海岸':'gold coast'};
+    trip.cities.forEach(cityName => {
+      const mapped = zhMap[cityName] || cityName.toLowerCase();
+      const found = allCoords.find(c => c.city.toLowerCase() === mapped || c.city.toLowerCase().includes(mapped) || mapped.includes(c.city.toLowerCase()));
+      if (found && !targets.find(t => t.city === found.city)) targets.push({...found, displayName: cityName});
+    });
+    if (targets.length === 0) targets = [{...allCoords[0], displayName: allCoords[0].zh}];
+  } else {
+    targets = allCoords.length > 0 ? [{...allCoords[0], displayName: allCoords[0].zh}] : [];
+  }
+
+  weatherTargets = targets;
+  console.log('[Weather] targets:', targets.length, targets.map(function(t){return t.city;}));
+
+  const firstName = (targets[0] && targets[0].displayName) || (targets[0] && targets[0].city) || '';
+  content.innerHTML = '<div style="font-size:.58rem;opacity:.65;letter-spacing:.12em;text-transform:uppercase;color:white;margin-bottom:6px">' + firstName.toUpperCase() + '</div><div style="display:flex;align-items:center;gap:10px"><div style="font-family:var(--font-display);font-size:2.4rem;font-weight:300;color:rgba(255,255,255,.35);line-height:1">--°</div><div style="font-size:.68rem;color:rgba(255,255,255,.45)">取得天氣中...</div></div>';
+
+  if (targets.length === 0) { content.innerHTML = '<div style="font-size:.75rem;color:rgba(255,255,255,.5)">暫無天氣資料</div>'; return; }
+
+  try {
+    const results = await Promise.all(targets.map(async t => {
+      const r = await fetch('https://api.open-meteo.com/v1/forecast?latitude='+t.lat+'&longitude='+t.lon+'&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min,weather_code,precipitation_probability_max&timezone=auto&forecast_days=7');
+      const d = await r.json();
+      const temp = Math.round((d.current && d.current.temperature_2m) || 0);
+      const tempMax = Math.round((d.daily && d.daily.temperature_2m_max && d.daily.temperature_2m_max[0]) || temp);
+      const tempMin = Math.round((d.daily && d.daily.temperature_2m_min && d.daily.temperature_2m_min[0]) || temp);
+      const code = (d.current && d.current.weather_code) || 0;
+      const icon = code<=1?'☀️':code<=3?'⛅':code<=48?'🌫️':code<=67?'🌧️':code<=77?'🌨️':'🌦️';
+      const desc = code<=1?'晴天':code<=3?'多雲':code<=48?'有霧':code<=67?'有雨':code<=77?'下雪':'陣雨';
+      var forecast = [];
+      var dowMap = ['日','一','二','三','四','五','六'];
+      for (var fi = 0; fi < 5; fi++) {
+        var fc = d.daily;
+        if (!fc || !fc.time || !fc.time[fi]) continue;
+        var fDate = new Date(fc.time[fi] + 'T12:00:00');
+        var fCode = (fc.weather_code && fc.weather_code[fi]) || 0;
+        var fIcon = fCode<=1?'☀️':fCode<=3?'⛅':fCode<=48?'🌫️':fCode<=67?'🌧️':fCode<=77?'🌨️':'🌦️';
+        var fRain = (fc.precipitation_probability_max && fc.precipitation_probability_max[fi]) || 0;
+        forecast.push({ dow: fi===0?'今':dowMap[fDate.getDay()], icon:fIcon, hi:Math.round(fc.temperature_2m_max[fi]), lo:Math.round(fc.temperature_2m_min[fi]), rain:fRain });
+      }
+      return {city:t.city, displayName:t.displayName||t.city, temp, tempMax, tempMin, icon, desc, forecast};
+    }));
+    const valid = results.filter(Boolean);
+    if (valid.length === 0) throw new Error('no results');
+    valid.forEach(w => { weatherCache[w.city] = w; });
+    renderWeatherCard(valid, 0);
+  } catch(e) {
+    console.error('[Weather] fetch error:', e.message, e);
+    content.innerHTML = '<div style="font-size:.58rem;opacity:.65;letter-spacing:.12em;text-transform:uppercase;color:white;margin-bottom:6px">'+firstName.toUpperCase()+'</div><div style="font-size:.75rem;color:rgba(255,255,255,.45)">天氣載入失敗: ' + e.message + '</div>';
+  }
+}
+
+var weatherExpanded = false;
+
+function renderWeatherCard(weatherList, activeIdx) {
+  var content = document.getElementById('weather-content');
+  if (!content) return;
+  var w = weatherList[activeIdx];
+  var timeStr = new Date().toLocaleTimeString('zh-TW', {hour:'2-digit',minute:'2-digit'});
+
+  var tabsHTML = weatherList.length > 1
+    ? '<div style="display:flex;gap:7px;margin-bottom:14px;flex-wrap:wrap" onclick="event.stopPropagation()">'
+      + weatherList.map(function(city, i) {
+          return '<button onclick="event.stopPropagation();switchWeatherCity('+i+')" style="padding:5px 14px;border-radius:999px;font-size:.72rem;font-weight:600;cursor:pointer;letter-spacing:.02em;border:1.5px solid '+(i===activeIdx?'rgba(255,255,255,.8)':'rgba(255,255,255,.25)')+';background:'+(i===activeIdx?'rgba(255,255,255,.18)':'transparent')+';color:'+(i===activeIdx?'white':'rgba(255,255,255,.5)')+'">'+city.displayName+'</button>';
+        }).join('') + '</div>'
+    : '';
+
+  var forecastHTML = '';
+  if (w.forecast && w.forecast.length > 0) {
+    forecastHTML = '<div id="weather-forecast" style="overflow:hidden;max-height:0;transition:max-height .38s cubic-bezier(0,0,.2,1)">'
+      + '<div style="border-top:1px solid rgba(255,255,255,.15);margin-top:14px;padding-top:12px;display:flex;justify-content:space-between">';
+    w.forecast.forEach(function(fc) {
+      var rainColor = fc.rain >= 50 ? '#7dd3fc' : 'rgba(255,255,255,.38)';
+      forecastHTML += '<div style="display:flex;flex-direction:column;align-items:center;gap:3px;flex:1">'
+        + '<div style="font-size:.6rem;color:rgba(255,255,255,.55);font-weight:600">' + fc.dow + '</div>'
+        + '<div style="font-size:1.15rem;line-height:1.2">' + fc.icon + '</div>'
+        + '<div style="font-size:.55rem;font-weight:700;color:' + rainColor + '">' + fc.rain + '%</div>'
+        + '<div style="font-size:.62rem;color:rgba(255,255,255,.85);text-align:center;line-height:1.5">' + fc.hi + '°<br><span style="color:rgba(255,255,255,.4)">' + fc.lo + '°</span></div>'
+        + '</div>';
+    });
+    forecastHTML += '</div></div>';
+  }
+
+  var hasForecast = !!(w.forecast && w.forecast.length > 0);
+  var chevron = hasForecast ? '<div id="weather-chevron" style="position:absolute;top:12px;right:14px;font-size:.65rem;color:rgba(255,255,255,.4);transition:transform .3s;pointer-events:none">&#9660;</div>' : '';
+
+  content.innerHTML = '<div id="weather-card-inner"' + (hasForecast ? ' onclick="toggleWeatherForecast()" style="cursor:pointer;position:relative"' : ' style="position:relative"') + '>'
+    + chevron + tabsHTML
+    + '<div style="display:flex;align-items:flex-end;gap:18px">'
+    + '<div>'
+    + '<div style="font-size:.68rem;opacity:.7;letter-spacing:.12em;text-transform:uppercase;color:white;margin-bottom:8px">' + w.displayName.toUpperCase() + '</div>'
+    + '<div style="font-family:var(--font-display);font-size:2.8rem;font-weight:300;color:white;line-height:1">' + w.temp + '°</div>'
+    + '<div style="font-size:.75rem;color:rgba(255,255,255,.65);margin-top:5px">' + w.tempMin + '° – ' + w.tempMax + '°</div>'
+    + '<div style="font-size:.82rem;color:rgba(255,255,255,.9);margin-top:3px;font-weight:500">' + w.desc + '</div>'
+    + '</div>'
+    + '<div style="font-size:3rem;margin-bottom:8px;line-height:1">' + w.icon + '</div>'
+    + '</div>'
+    + forecastHTML
+    + '<div style="display:flex;align-items:center;gap:6px;margin-top:14px">'
+    + '<div style="width:6px;height:6px;border-radius:50%;background:#4ade80;animation:pulse 2s ease infinite"></div>'
+    + '<span style="font-size:.62rem;color:rgba(255,255,255,.5);letter-spacing:.06em">SYNC · ' + timeStr + '</span>'
+    + '</div>'
+    + '</div>';
+
+  if (weatherExpanded) {
+    var fc2 = document.getElementById('weather-forecast');
+    var ch2 = document.getElementById('weather-chevron');
+    if (fc2) fc2.style.maxHeight = '200px';
+    if (ch2) ch2.style.transform = 'rotate(180deg)';
+  }
+}
+
+function toggleWeatherForecast() {
+  var fc = document.getElementById('weather-forecast');
+  var ch = document.getElementById('weather-chevron');
+  if (!fc) return;
+  weatherExpanded = !weatherExpanded;
+  fc.style.maxHeight = weatherExpanded ? '200px' : '0';
+  if (ch) ch.style.transform = weatherExpanded ? 'rotate(180deg)' : '';
+}
+
+function switchWeatherCity(idx) {
+  var list = weatherTargets.map(function(t) { return weatherCache[t.city]; }).filter(Boolean);
+  if (list.length > idx) { weatherExpanded = false; renderWeatherCard(list, idx); }
+}
+
+
+
 window.toggleItCard = toggleItCard;
 window.renderHero = renderHero;
 window.switchWeatherCity = switchWeatherCity;
@@ -4600,168 +4764,6 @@ async function saveNickname() {
   closeModal('modal-nickname');
   initBibiGreeting();
   showToast(`好的，${name}！Bibi 記住你了 ✦`);
-}
-
-// Fetch weather
-// 天氣資料快取
-let weatherCache = {};
-let weatherTargets = [];
-
-async function fetchWeather(trip) {
-  const content = document.getElementById('weather-content');
-  if (!content) return;
-
-  weatherCache = {};
-  weatherTargets = [];
-
-  console.log('[Weather] fetchWeather called, trip:', trip && trip.country, 'cities:', trip && trip.cities);
-  if (!(trip && trip.country) || trip.country === 'default') {
-    content.innerHTML = '<div style="font-size:.75rem;color:rgba(255,255,255,.55)">選擇旅行後顯示天氣</div>';
-    return;
-  }
-
-  const COORDS = {
-    thailand:  [{city:'Bangkok',zh:'曼谷',lat:13.7563,lon:100.5018},{city:'Phuket',zh:'普吉島',lat:7.8804,lon:98.3923},{city:'Chiang Mai',zh:'清邁',lat:18.7883,lon:98.9853},{city:'Pattaya',zh:'芭達雅',lat:12.9236,lon:100.8825}],
-    japan:     [{city:'Tokyo',zh:'東京',lat:35.6762,lon:139.6503},{city:'Osaka',zh:'大阪',lat:34.6937,lon:135.5023},{city:'Kyoto',zh:'京都',lat:35.0116,lon:135.7681},{city:'Sapporo',zh:'札幌',lat:43.0618,lon:141.3545}],
-    france:    [{city:'Paris',zh:'巴黎',lat:48.8566,lon:2.3522},{city:'Nice',zh:'尼斯',lat:43.7102,lon:7.2620},{city:'Lyon',zh:'里昂',lat:45.7640,lon:4.8357}],
-    italy:     [{city:'Rome',zh:'羅馬',lat:41.9028,lon:12.4964},{city:'Milan',zh:'米蘭',lat:45.4654,lon:9.1859},{city:'Florence',zh:'佛羅倫斯',lat:43.7696,lon:11.2558},{city:'Venice',zh:'威尼斯',lat:45.4408,lon:12.3155}],
-    greece:    [{city:'Athens',zh:'雅典',lat:37.9838,lon:23.7275},{city:'Santorini',zh:'聖托里尼',lat:36.3932,lon:25.4615},{city:'Mykonos',zh:'米克諾斯',lat:37.4467,lon:25.3289}],
-    morocco:   [{city:'Marrakech',zh:'馬拉喀什',lat:31.6295,lon:-7.9811},{city:'Casablanca',zh:'卡薩布蘭卡',lat:33.5731,lon:-7.5898}],
-    maldives:  [{city:'Malé',zh:'馬列',lat:4.1755,lon:73.5093}],
-    korea:     [{city:'Seoul',zh:'首爾',lat:37.5665,lon:126.9780},{city:'Busan',zh:'釜山',lat:35.1796,lon:129.0756},{city:'Jeju',zh:'濟州',lat:33.4996,lon:126.5312}],
-    singapore: [{city:'Singapore',zh:'新加坡',lat:1.3521,lon:103.8198}],
-    usa:       [{city:'New York',zh:'紐約',lat:40.7128,lon:-74.0060},{city:'Los Angeles',zh:'洛杉磯',lat:34.0522,lon:-118.2437},{city:'Las Vegas',zh:'拉斯維加斯',lat:36.1699,lon:-115.1398}],
-    australia: [{city:'Sydney',zh:'雪梨',lat:-33.8688,lon:151.2093},{city:'Melbourne',zh:'墨爾本',lat:-37.8136,lon:144.9631},{city:'Gold Coast',zh:'黃金海岸',lat:-28.0167,lon:153.4000}],
-  };
-
-  const allCoords = COORDS[trip.country] || [];
-  let targets = [];
-
-  if (trip.cities && trip.cities.length > 0 && allCoords.length > 0) {
-    const zhMap = {'曼谷':'bangkok','普吉':'phuket','普吉島':'phuket','清邁':'chiang mai','芭達雅':'pattaya','芭提雅':'pattaya','東京':'tokyo','大阪':'osaka','京都':'kyoto','札幌':'sapporo','首爾':'seoul','釜山':'busan','濟州':'jeju','濟州島':'jeju','巴黎':'paris','尼斯':'nice','里昂':'lyon','羅馬':'rome','米蘭':'milan','翡冷翠':'florence','佛羅倫斯':'florence','威尼斯':'venice','雅典':'athens','聖托里尼':'santorini','米克諾斯':'mykonos','馬拉喀什':'marrakech','卡薩布蘭卡':'casablanca','新加坡':'singapore','紐約':'new york','洛杉磯':'los angeles','拉斯維加斯':'las vegas','雪梨':'sydney','墨爾本':'melbourne','黃金海岸':'gold coast'};
-    trip.cities.forEach(cityName => {
-      const mapped = zhMap[cityName] || cityName.toLowerCase();
-      const found = allCoords.find(c => c.city.toLowerCase() === mapped || c.city.toLowerCase().includes(mapped) || mapped.includes(c.city.toLowerCase()));
-      if (found && !targets.find(t => t.city === found.city)) targets.push({...found, displayName: cityName});
-    });
-    if (targets.length === 0) targets = [{...allCoords[0], displayName: allCoords[0].zh}];
-  } else {
-    targets = allCoords.length > 0 ? [{...allCoords[0], displayName: allCoords[0].zh}] : [];
-  }
-
-  weatherTargets = targets;
-  console.log('[Weather] targets:', targets.length, targets.map(function(t){return t.city;}));
-
-  const firstName = (targets[0] && targets[0].displayName) || (targets[0] && targets[0].city) || '';
-  content.innerHTML = '<div style="font-size:.58rem;opacity:.65;letter-spacing:.12em;text-transform:uppercase;color:white;margin-bottom:6px">' + firstName.toUpperCase() + '</div><div style="display:flex;align-items:center;gap:10px"><div style="font-family:var(--font-display);font-size:2.4rem;font-weight:300;color:rgba(255,255,255,.35);line-height:1">--°</div><div style="font-size:.68rem;color:rgba(255,255,255,.45)">取得天氣中...</div></div>';
-
-  if (targets.length === 0) { content.innerHTML = '<div style="font-size:.75rem;color:rgba(255,255,255,.5)">暫無天氣資料</div>'; return; }
-
-  try {
-    const results = await Promise.all(targets.map(async t => {
-      const r = await fetch('https://api.open-meteo.com/v1/forecast?latitude='+t.lat+'&longitude='+t.lon+'&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min,weather_code,precipitation_probability_max&timezone=auto&forecast_days=7');
-      const d = await r.json();
-      const temp = Math.round((d.current && d.current.temperature_2m) || 0);
-      const tempMax = Math.round((d.daily && d.daily.temperature_2m_max && d.daily.temperature_2m_max[0]) || temp);
-      const tempMin = Math.round((d.daily && d.daily.temperature_2m_min && d.daily.temperature_2m_min[0]) || temp);
-      const code = (d.current && d.current.weather_code) || 0;
-      const icon = code<=1?'☀️':code<=3?'⛅':code<=48?'🌫️':code<=67?'🌧️':code<=77?'🌨️':'🌦️';
-      const desc = code<=1?'晴天':code<=3?'多雲':code<=48?'有霧':code<=67?'有雨':code<=77?'下雪':'陣雨';
-      var forecast = [];
-      var dowMap = ['日','一','二','三','四','五','六'];
-      for (var fi = 0; fi < 5; fi++) {
-        var fc = d.daily;
-        if (!fc || !fc.time || !fc.time[fi]) continue;
-        var fDate = new Date(fc.time[fi] + 'T12:00:00');
-        var fCode = (fc.weather_code && fc.weather_code[fi]) || 0;
-        var fIcon = fCode<=1?'☀️':fCode<=3?'⛅':fCode<=48?'🌫️':fCode<=67?'🌧️':fCode<=77?'🌨️':'🌦️';
-        var fRain = (fc.precipitation_probability_max && fc.precipitation_probability_max[fi]) || 0;
-        forecast.push({ dow: fi===0?'今':dowMap[fDate.getDay()], icon:fIcon, hi:Math.round(fc.temperature_2m_max[fi]), lo:Math.round(fc.temperature_2m_min[fi]), rain:fRain });
-      }
-      return {city:t.city, displayName:t.displayName||t.city, temp, tempMax, tempMin, icon, desc, forecast};
-    }));
-    const valid = results.filter(Boolean);
-    if (valid.length === 0) throw new Error('no results');
-    valid.forEach(w => { weatherCache[w.city] = w; });
-    renderWeatherCard(valid, 0);
-  } catch(e) {
-    console.error('[Weather] fetch error:', e.message, e);
-    content.innerHTML = '<div style="font-size:.58rem;opacity:.65;letter-spacing:.12em;text-transform:uppercase;color:white;margin-bottom:6px">'+firstName.toUpperCase()+'</div><div style="font-size:.75rem;color:rgba(255,255,255,.45)">天氣載入失敗: ' + e.message + '</div>';
-  }
-}
-
-var weatherExpanded = false;
-
-function renderWeatherCard(weatherList, activeIdx) {
-  var content = document.getElementById('weather-content');
-  if (!content) return;
-  var w = weatherList[activeIdx];
-  var timeStr = new Date().toLocaleTimeString('zh-TW', {hour:'2-digit',minute:'2-digit'});
-
-  var tabsHTML = weatherList.length > 1
-    ? '<div style="display:flex;gap:7px;margin-bottom:14px;flex-wrap:wrap" onclick="event.stopPropagation()">'
-      + weatherList.map(function(city, i) {
-          return '<button onclick="event.stopPropagation();switchWeatherCity('+i+')" style="padding:5px 14px;border-radius:999px;font-size:.72rem;font-weight:600;cursor:pointer;letter-spacing:.02em;border:1.5px solid '+(i===activeIdx?'rgba(255,255,255,.8)':'rgba(255,255,255,.25)')+';background:'+(i===activeIdx?'rgba(255,255,255,.18)':'transparent')+';color:'+(i===activeIdx?'white':'rgba(255,255,255,.5)')+'">'+city.displayName+'</button>';
-        }).join('') + '</div>'
-    : '';
-
-  var forecastHTML = '';
-  if (w.forecast && w.forecast.length > 0) {
-    forecastHTML = '<div id="weather-forecast" style="overflow:hidden;max-height:0;transition:max-height .38s cubic-bezier(0,0,.2,1)">'
-      + '<div style="border-top:1px solid rgba(255,255,255,.15);margin-top:14px;padding-top:12px;display:flex;justify-content:space-between">';
-    w.forecast.forEach(function(fc) {
-      var rainColor = fc.rain >= 50 ? '#7dd3fc' : 'rgba(255,255,255,.38)';
-      forecastHTML += '<div style="display:flex;flex-direction:column;align-items:center;gap:3px;flex:1">'
-        + '<div style="font-size:.6rem;color:rgba(255,255,255,.55);font-weight:600">' + fc.dow + '</div>'
-        + '<div style="font-size:1.15rem;line-height:1.2">' + fc.icon + '</div>'
-        + '<div style="font-size:.55rem;font-weight:700;color:' + rainColor + '">' + fc.rain + '%</div>'
-        + '<div style="font-size:.62rem;color:rgba(255,255,255,.85);text-align:center;line-height:1.5">' + fc.hi + '°<br><span style="color:rgba(255,255,255,.4)">' + fc.lo + '°</span></div>'
-        + '</div>';
-    });
-    forecastHTML += '</div></div>';
-  }
-
-  var hasForecast = !!(w.forecast && w.forecast.length > 0);
-  var chevron = hasForecast ? '<div id="weather-chevron" style="position:absolute;top:12px;right:14px;font-size:.65rem;color:rgba(255,255,255,.4);transition:transform .3s;pointer-events:none">&#9660;</div>' : '';
-
-  content.innerHTML = '<div id="weather-card-inner"' + (hasForecast ? ' onclick="toggleWeatherForecast()" style="cursor:pointer;position:relative"' : ' style="position:relative"') + '>'
-    + chevron + tabsHTML
-    + '<div style="display:flex;align-items:flex-end;gap:18px">'
-    + '<div>'
-    + '<div style="font-size:.68rem;opacity:.7;letter-spacing:.12em;text-transform:uppercase;color:white;margin-bottom:8px">' + w.displayName.toUpperCase() + '</div>'
-    + '<div style="font-family:var(--font-display);font-size:2.8rem;font-weight:300;color:white;line-height:1">' + w.temp + '°</div>'
-    + '<div style="font-size:.75rem;color:rgba(255,255,255,.65);margin-top:5px">' + w.tempMin + '° – ' + w.tempMax + '°</div>'
-    + '<div style="font-size:.82rem;color:rgba(255,255,255,.9);margin-top:3px;font-weight:500">' + w.desc + '</div>'
-    + '</div>'
-    + '<div style="font-size:3rem;margin-bottom:8px;line-height:1">' + w.icon + '</div>'
-    + '</div>'
-    + forecastHTML
-    + '<div style="display:flex;align-items:center;gap:6px;margin-top:14px">'
-    + '<div style="width:6px;height:6px;border-radius:50%;background:#4ade80;animation:pulse 2s ease infinite"></div>'
-    + '<span style="font-size:.62rem;color:rgba(255,255,255,.5);letter-spacing:.06em">SYNC · ' + timeStr + '</span>'
-    + '</div>'
-    + '</div>';
-
-  if (weatherExpanded) {
-    var fc2 = document.getElementById('weather-forecast');
-    var ch2 = document.getElementById('weather-chevron');
-    if (fc2) fc2.style.maxHeight = '200px';
-    if (ch2) ch2.style.transform = 'rotate(180deg)';
-  }
-}
-
-function toggleWeatherForecast() {
-  var fc = document.getElementById('weather-forecast');
-  var ch = document.getElementById('weather-chevron');
-  if (!fc) return;
-  weatherExpanded = !weatherExpanded;
-  fc.style.maxHeight = weatherExpanded ? '200px' : '0';
-  if (ch) ch.style.transform = weatherExpanded ? 'rotate(180deg)' : '';
-}
-
-function switchWeatherCity(idx) {
-  var list = weatherTargets.map(function(t) { return weatherCache[t.city]; }).filter(Boolean);
-  if (list.length > idx) { weatherExpanded = false; renderWeatherCard(list, idx); }
 }
 
 
