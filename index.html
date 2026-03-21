@@ -3445,8 +3445,8 @@ async function fetchWeather(trip) {
       const tempMax = Math.round((d.daily && d.daily.temperature_2m_max && d.daily.temperature_2m_max[0]) || temp);
       const tempMin = Math.round((d.daily && d.daily.temperature_2m_min && d.daily.temperature_2m_min[0]) || temp);
       const code = (d.current && d.current.weather_code) || 0;
-      const icon = weatherIconFromCode(code);
-      const desc = weatherDescFromCode(code);
+      const icon = code<=1?'☀️':code<=3?'⛅':code<=48?'🌫️':code<=67?'🌧️':code<=77?'🌨️':'🌦️';
+      const desc = code<=1?'晴天':code<=3?'多雲':code<=48?'有霧':code<=67?'有雨':code<=77?'下雪':'陣雨';
       var forecast = [];
       var dowMap = ['日','一','二','三','四','五','六'];
       for (var fi = 0; fi < 5; fi++) {
@@ -3454,7 +3454,7 @@ async function fetchWeather(trip) {
         if (!fc || !fc.time || !fc.time[fi]) continue;
         var fDate = new Date(fc.time[fi] + 'T12:00:00');
         var fCode = (fc.weather_code && fc.weather_code[fi]) || 0;
-        var fIcon = weatherIconFromCode(fCode);
+        var fIcon = fCode<=1?'☀️':fCode<=3?'⛅':fCode<=48?'🌫️':fCode<=67?'🌧️':fCode<=77?'🌨️':'🌦️';
         var fRain = (fc.precipitation_probability_max && fc.precipitation_probability_max[fi]) || 0;
         forecast.push({ dow: fi===0?'今':dowMap[fDate.getDay()], icon:fIcon, hi:Math.round(fc.temperature_2m_max[fi]), lo:Math.round(fc.temperature_2m_min[fi]), rain:fRain });
       }
@@ -3472,102 +3472,60 @@ async function fetchWeather(trip) {
 
 var weatherExpanded = false;
 
-// ── WMO weather code → emoji / 中文描述 ─────────────
-function weatherIconFromCode(c) {
-  return c<=1?'☀️':c<=3?'⛅':c<=48?'🌫️':c<=55?'🌦️':c<=67?'🌧️':c<=77?'🌨️':c<=82?'🌦️':'⛈️';
-}
-function weatherDescFromCode(c) {
-  return c<=1?'晴天':c<=3?'多雲':c<=48?'有霧':c<=55?'毛毛雨':c<=67?'有雨':c<=77?'下雪':c<=82?'陣雨':'雷陣雨';
-}
-
 function renderWeatherCard(weatherList, activeIdx) {
   var content = document.getElementById('weather-content');
   if (!content) return;
   var w = weatherList[activeIdx];
-  var timeStr = new Date().toLocaleTimeString('zh-TW', {hour:'2-digit', minute:'2-digit'});
-  var hasForecast = !!(w.forecast && w.forecast.length > 0);
+  var timeStr = new Date().toLocaleTimeString('zh-TW', {hour:'2-digit',minute:'2-digit'});
 
-  // ── 城市切換按鈕：兩層 stopPropagation，確保不觸發展開 ──
   var tabsHTML = weatherList.length > 1
-    ? '<div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap" onclick="event.stopPropagation()">'
+    ? '<div style="display:flex;gap:7px;margin-bottom:14px;flex-wrap:wrap" onclick="event.stopPropagation()">'
       + weatherList.map(function(city, i) {
-          var a = (i === activeIdx);
-          return '<button onclick="event.stopPropagation();switchWeatherCity(' + i + ')" style="'
-            + 'padding:4px 13px;border-radius:999px;font-size:.7rem;font-weight:600;cursor:pointer;'
-            + 'letter-spacing:.02em;border:1.5px solid ' + (a?'rgba(255,255,255,.75)':'rgba(255,255,255,.22)') + ';'
-            + 'background:' + (a?'rgba(255,255,255,.16)':'transparent') + ';'
-            + 'color:' + (a?'white':'rgba(255,255,255,.48)') + ';transition:all .18s">'
-            + city.displayName + '</button>';
+          return '<button onclick="event.stopPropagation();switchWeatherCity('+i+')" style="padding:5px 14px;border-radius:999px;font-size:.72rem;font-weight:600;cursor:pointer;letter-spacing:.02em;border:1.5px solid '+(i===activeIdx?'rgba(255,255,255,.8)':'rgba(255,255,255,.25)')+';background:'+(i===activeIdx?'rgba(255,255,255,.18)':'transparent')+';color:'+(i===activeIdx?'white':'rgba(255,255,255,.5)')+'">'+city.displayName+'</button>';
         }).join('') + '</div>'
     : '';
 
-  // ── 5天預報：所有狀態樣式寫 inline，不依賴外部 CSS ──
   var forecastHTML = '';
-  if (hasForecast) {
-    forecastHTML =
-      '<div id="weather-forecast" style="overflow:hidden;max-height:0;opacity:0;'
-      + 'transition:max-height .4s cubic-bezier(0,.85,.2,1),opacity .3s ease">'
-      + '<div style="border-top:1px solid rgba(255,255,255,.14);margin-top:14px;padding-top:12px;'
-      + 'display:grid;grid-template-columns:repeat(' + w.forecast.length + ',1fr);gap:0">';
-    w.forecast.forEach(function(fc, idx) {
-      var rainColor = fc.rain>=60?'#7dd3fc':fc.rain>=30?'rgba(180,220,255,.75)':'rgba(255,255,255,.32)';
-      var today     = (idx === 0);
-      forecastHTML +=
-        '<div style="display:flex;flex-direction:column;align-items:center;gap:3px;'
-        + 'padding:8px 4px;border-radius:10px;background:' + (today?'rgba(255,255,255,.1)':'transparent') + '">'
-        + '<div style="font-size:.6rem;color:' + (today?'rgba(255,255,255,.9)':'rgba(255,255,255,.52)') + ';'
-        + 'font-weight:' + (today?'700':'500') + ';letter-spacing:.04em">' + fc.dow + '</div>'
-        + '<div style="font-size:1.2rem;line-height:1.15;margin:1px 0">' + fc.icon + '</div>'
-        + '<div style="font-size:.56rem;font-weight:700;color:' + rainColor + ';letter-spacing:.03em">' + fc.rain + '%</div>'
-        + '<div style="font-size:.64rem;font-weight:600;color:rgba(255,255,255,.88);margin-top:1px">' + fc.hi + '°</div>'
-        + '<div style="font-size:.58rem;color:rgba(255,255,255,.38)">' + fc.lo + '°</div>'
+  if (w.forecast && w.forecast.length > 0) {
+    forecastHTML = '<div id="weather-forecast" style="overflow:hidden;max-height:0;transition:max-height .38s cubic-bezier(0,0,.2,1)">'
+      + '<div style="border-top:1px solid rgba(255,255,255,.15);margin-top:14px;padding-top:12px;display:flex;justify-content:space-between">';
+    w.forecast.forEach(function(fc) {
+      var rainColor = fc.rain >= 50 ? '#7dd3fc' : 'rgba(255,255,255,.38)';
+      forecastHTML += '<div style="display:flex;flex-direction:column;align-items:center;gap:3px;flex:1">'
+        + '<div style="font-size:.6rem;color:rgba(255,255,255,.55);font-weight:600">' + fc.dow + '</div>'
+        + '<div style="font-size:1.15rem;line-height:1.2">' + fc.icon + '</div>'
+        + '<div style="font-size:.55rem;font-weight:700;color:' + rainColor + '">' + fc.rain + '%</div>'
+        + '<div style="font-size:.62rem;color:rgba(255,255,255,.85);text-align:center;line-height:1.5">' + fc.hi + '°<br><span style="color:rgba(255,255,255,.4)">' + fc.lo + '°</span></div>'
         + '</div>';
     });
     forecastHTML += '</div></div>';
   }
 
-  // ── 箭頭：所有定位 / 視覺樣式全部寫 inline ──────────
-  // position:absolute 的 containing block 是 #weather-card-inner (position:relative)
-  var chevronHTML = hasForecast
-    ? '<div id="weather-chevron" style="'
-      + 'position:absolute;top:12px;right:12px;'           // ← 定位 inline，不依賴 CSS
-      + 'width:22px;height:22px;border-radius:50%;'
-      + 'background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);'
-      + 'display:flex;align-items:center;justify-content:center;'
-      + 'font-size:.6rem;color:rgba(255,255,255,.8);'
-      + 'transition:transform .3s cubic-bezier(.4,0,.2,1);'
-      + 'pointer-events:none">&#9660;</div>'
-    : '';
+  var hasForecast = !!(w.forecast && w.forecast.length > 0);
+  var chevron = hasForecast ? '<div id="weather-chevron" style="position:absolute;top:12px;right:14px;font-size:.65rem;color:rgba(255,255,255,.4);transition:transform .3s;pointer-events:none">&#9660;</div>' : '';
 
-  content.innerHTML =
-    '<div id="weather-card-inner"'
-    + (hasForecast
-        ? ' onclick="toggleWeatherForecast()" style="cursor:pointer;position:relative"'
-        : ' style="position:relative"')
-    + '>'
-    + chevronHTML          // absolute → 不佔 flow，永遠釘在右上角
-    + tabsHTML
+  content.innerHTML = '<div id="weather-card-inner"' + (hasForecast ? ' onclick="toggleWeatherForecast()" style="cursor:pointer;position:relative"' : ' style="position:relative"') + '>'
+    + chevron + tabsHTML
     + '<div style="display:flex;align-items:flex-end;gap:18px">'
-    +   '<div>'
-    +     '<div style="font-size:.64rem;opacity:.68;letter-spacing:.14em;text-transform:uppercase;color:white;margin-bottom:8px">' + w.displayName.toUpperCase() + '</div>'
-    +     '<div style="font-family:var(--font-display);font-size:2.8rem;font-weight:300;color:white;line-height:1">' + w.temp + '°</div>'
-    +     '<div style="font-size:.72rem;color:rgba(255,255,255,.6);margin-top:4px">' + w.tempMin + '° – ' + w.tempMax + '°</div>'
-    +     '<div style="font-size:.8rem;color:rgba(255,255,255,.88);margin-top:3px;font-weight:500">' + w.desc + '</div>'
-    +   '</div>'
-    +   '<div style="font-size:3rem;margin-bottom:6px;line-height:1">' + w.icon + '</div>'
+    + '<div>'
+    + '<div style="font-size:.68rem;opacity:.7;letter-spacing:.12em;text-transform:uppercase;color:white;margin-bottom:8px">' + w.displayName.toUpperCase() + '</div>'
+    + '<div style="font-family:var(--font-display);font-size:2.8rem;font-weight:300;color:white;line-height:1">' + w.temp + '°</div>'
+    + '<div style="font-size:.75rem;color:rgba(255,255,255,.65);margin-top:5px">' + w.tempMin + '° – ' + w.tempMax + '°</div>'
+    + '<div style="font-size:.82rem;color:rgba(255,255,255,.9);margin-top:3px;font-weight:500">' + w.desc + '</div>'
+    + '</div>'
+    + '<div style="font-size:3rem;margin-bottom:8px;line-height:1">' + w.icon + '</div>'
     + '</div>'
     + forecastHTML
-    + '<div style="display:flex;align-items:center;gap:6px;margin-top:12px">'
-    +   '<div style="width:6px;height:6px;border-radius:50%;background:#4ade80;animation:pulse 2s ease infinite"></div>'
-    +   '<span style="font-size:.6rem;color:rgba(255,255,255,.45);letter-spacing:.06em">SYNC · ' + timeStr + '</span>'
+    + '<div style="display:flex;align-items:center;gap:6px;margin-top:14px">'
+    + '<div style="width:6px;height:6px;border-radius:50%;background:#4ade80;animation:pulse 2s ease infinite"></div>'
+    + '<span style="font-size:.62rem;color:rgba(255,255,255,.5);letter-spacing:.06em">SYNC · ' + timeStr + '</span>'
     + '</div>'
     + '</div>';
 
-  // 城市切換時若已展開，恢復展開狀態
-  if (weatherExpanded && hasForecast) {
+  if (weatherExpanded) {
     var fc2 = document.getElementById('weather-forecast');
     var ch2 = document.getElementById('weather-chevron');
-    if (fc2) { fc2.style.maxHeight = '300px'; fc2.style.opacity = '1'; }
+    if (fc2) fc2.style.maxHeight = '200px';
     if (ch2) ch2.style.transform = 'rotate(180deg)';
   }
 }
@@ -3577,16 +3535,13 @@ function toggleWeatherForecast() {
   var ch = document.getElementById('weather-chevron');
   if (!fc) return;
   weatherExpanded = !weatherExpanded;
-  // inline style 直接控制，不依賴 CSS class
-  fc.style.maxHeight = weatherExpanded ? '300px' : '0';
-  fc.style.opacity   = weatherExpanded ? '1'     : '0';
+  fc.style.maxHeight = weatherExpanded ? '200px' : '0';
   if (ch) ch.style.transform = weatherExpanded ? 'rotate(180deg)' : '';
 }
 
 function switchWeatherCity(idx) {
   var list = weatherTargets.map(function(t) { return weatherCache[t.city]; }).filter(Boolean);
-  // weatherExpanded 不重置 → 切城市保留展開/收合狀態
-  if (list.length > idx) renderWeatherCard(list, idx);
+  if (list.length > idx) { weatherExpanded = false; renderWeatherCard(list, idx); }
 }
 
 
@@ -3596,8 +3551,6 @@ window.renderHero = renderHero;
 window.switchWeatherCity = switchWeatherCity;
 window.renderWeatherCard = renderWeatherCard;
 window.toggleWeatherForecast = toggleWeatherForecast;
-window.weatherIconFromCode = weatherIconFromCode;
-window.weatherDescFromCode = weatherDescFromCode;
 
 </script>
 </head>
@@ -4629,6 +4582,143 @@ window.weatherDescFromCode = weatherDescFromCode;
 @keyframes dotPulse{0%,100%{opacity:.25;}50%{opacity:1;}}
 @keyframes loginFloat{0%,100%{transform:translateY(0) rotate(-2deg);}50%{transform:translateY(-10px) rotate(
 </style>
+
+<!-- ══════════════════════════════════════════════════════════
+     ⌨️  KEYBOARD AVOIDANCE SYSTEM
+     策略：Visual Viewport 同步（方案 B）
+     核心：鍵盤彈出時動態縮小 modal-sheet 高度 + 自動捲動焦點欄位
+     相容：iOS Safari 15+ ／ Android Chrome 84+，舊版自動降級
+     ══════════════════════════════════════════════════════════ -->
+<script>
+(function () {
+  'use strict';
+
+  /* ── 0. 特徵偵測 ───────────────────────────────────────
+     沒有 visualViewport 的老瀏覽器跳過，不影響任何功能  */
+  var vv = window.visualViewport;
+  if (!vv) return;
+
+  /* ── 1. 平台識別 ───────────────────────────────────────
+     iOS 的 position:fixed 錨定到 layout viewport，
+     鍵盤彈出時 fixed 元素會被覆蓋，需要用 offsetTop 補償 */
+  var isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+  /* ── 2. rAF 節流 ────────────────────────────────────── */
+  var rafId = null;
+  function scheduleSync() {
+    if (rafId) cancelAnimationFrame(rafId);
+    rafId = requestAnimationFrame(syncAll);
+  }
+
+  /* ── 3. 同步所有開啟中的 modal-overlay ─────────────────
+     做兩件事：
+     A. iOS：把 overlay 的 top / height 貼齊 visual viewport
+        （繞過 iOS fixed 不跟鍵盤走的問題）
+     B. 把 modal-sheet 的 max-height 限制為 visual viewport 的 92%
+        → sheet 自動縮短，modal-body 維持 overflow-y:auto 可捲動
+        → 確認儲存按鈕因 modal 縮短而自動上移，不再被鍵盤壓住 */
+  function syncAll() {
+    var vpH       = vv.height;            // 排除鍵盤後的可視高度
+    var vpOffsetY = vv.offsetTop;         // visual viewport 距 layout 頂部的距離
+
+    document.querySelectorAll('.modal-overlay.open').forEach(function (overlay) {
+      var sheet = overlay.querySelector('.modal-sheet');
+      if (!sheet) return;
+
+      if (isIOS) {
+        /* iOS 補償：讓 overlay 跟著 visual viewport 走
+           - top = offsetTop  → 貼齊可視頂部
+           - height = vpH     → 只佔鍵盤上方的空間
+           - inset reset：避免原有 inset:0 干擾                       */
+        overlay.style.cssText +=
+          ';top:' + vpOffsetY + 'px' +
+          ';height:' + vpH + 'px' +
+          ';bottom:auto';
+      }
+
+      /* 動態縮小 sheet：留 8% 作為頂部半透明遮罩的視覺留白
+         max-height 用 !important 確保覆蓋 HTML inline style  */
+      var maxH = Math.floor(vpH * 0.92);
+      sheet.style.setProperty('max-height', maxH + 'px', 'important');
+    });
+  }
+
+  /* ── 4. 重置樣式（鍵盤收起後還原） ─────────────────── */
+  function resetAll() {
+    document.querySelectorAll('.modal-overlay').forEach(function (overlay) {
+      var sheet = overlay.querySelector('.modal-sheet');
+      if (isIOS) {
+        overlay.style.top    = '';
+        overlay.style.height = '';
+        overlay.style.bottom = '';
+      }
+      if (sheet) sheet.style.removeProperty('max-height');
+    });
+  }
+
+  /* ── 5. 監聽 visual viewport 變化 ──────────────────────
+     resize：Android / iOS 鍵盤彈出會觸發
+     scroll：iOS 有時用 scroll 而非 resize 推移 viewport    */
+  vv.addEventListener('resize', scheduleSync);
+  vv.addEventListener('scroll', scheduleSync);
+
+  /* ── 6. 焦點自動捲動 ────────────────────────────────────
+     input / textarea / select 獲得焦點時，確保它不被
+     鍵盤遮住。在 modal-body（overflow-y:auto）內部捲動，
+     而不是捲動整個頁面。
+
+     延遲 380ms：等鍵盤動畫 + visual viewport resize 都完成
+     才計算位置，避免計算到舊座標                           */
+  document.addEventListener('focusin', function (e) {
+    var target = e.target;
+    if (!target.matches('input, textarea, select')) return;
+
+    // 只處理 modal 內的輸入框
+    var scrollEl = target.closest('.modal-body');
+    if (!scrollEl) return;
+
+    setTimeout(function () {
+      var vpH    = vv ? vv.height : window.innerHeight;
+      var rect   = target.getBoundingClientRect();
+
+      // 欄位底部距可視底部的距離（負值 = 被鍵盤遮住）
+      var hiddenBy = rect.bottom - (vpH - 16); // 16px 底部呼吸空間
+
+      if (hiddenBy > 0) {
+        // 往上捲 hiddenBy + 一個欄位高度作為緩衝，讓欄位置中顯示
+        scrollEl.scrollTop += hiddenBy + Math.min(rect.height, 40);
+      }
+    }, 380);
+  }, true); // capture phase：確保在任何 stopPropagation 前觸發
+
+  /* ── 7. 失焦時重置 ───────────────────────────────────────
+     debounce 200ms：避免在欄位之間 tab 切換時閃爍重置      */
+  var blurTimer = null;
+  document.addEventListener('focusout', function () {
+    clearTimeout(blurTimer);
+    blurTimer = setTimeout(function () {
+      var active = document.activeElement;
+      var stillInForm = active && active.matches('input, textarea, select');
+      if (!stillInForm) resetAll();
+    }, 200);
+  }, true);
+
+  /* ── 8. 全局防止 iOS body scroll 穿透 ───────────────────
+     iOS Safari：modal 開啟時 body 底層有時仍可捲動，
+     對 touchmove 事件加 passive:false 抑制              */
+  if (isIOS) {
+    document.addEventListener('touchmove', function (e) {
+      // 只阻擋 modal-overlay 以外的 touchmove（保留 modal-body 的捲動）
+      var insideScrollable = e.target.closest('.modal-body, .modal-sheet');
+      if (!insideScrollable && document.querySelector('.modal-overlay.open')) {
+        e.preventDefault();
+      }
+    }, { passive: false });
+  }
+
+})();
+</script>
+
 <script>
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').then(reg => {
