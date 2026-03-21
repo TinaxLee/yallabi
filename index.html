@@ -3439,7 +3439,7 @@ async function fetchWeather(trip) {
 
   try {
     const results = await Promise.all(targets.map(async t => {
-      const r = await fetch('https://api.open-meteo.com/v1/forecast?latitude='+t.lat+'&longitude='+t.lon+'&current=temperature_2m,apparent_temperature,weather_code&daily=temperature_2m_max,temperature_2m_min,weather_code,precipitation_probability_max&timezone=auto&forecast_days=7');
+      const r = await fetch('https://api.open-meteo.com/v1/forecast?latitude='+t.lat+'&longitude='+t.lon+'&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min,weather_code,precipitation_probability_max&timezone=auto&forecast_days=7');
       const d = await r.json();
       const temp = Math.round((d.current && d.current.temperature_2m) || 0);
       const tempMax = Math.round((d.daily && d.daily.temperature_2m_max && d.daily.temperature_2m_max[0]) || temp);
@@ -3472,26 +3472,12 @@ async function fetchWeather(trip) {
 
 var weatherExpanded = false;
 
-// ─── 天氣圖示與描述 ────────────────────────────
-function weatherIconFromCode(code) {
-  if (code <= 1)  return '☀️';
-  if (code <= 3)  return '⛅';
-  if (code <= 48) return '🌫️';
-  if (code <= 55) return '🌦️'; // drizzle
-  if (code <= 67) return '🌧️';
-  if (code <= 77) return '🌨️';
-  if (code <= 82) return '🌦️'; // rain showers
-  return '⛈️';
+// ── WMO weather code → emoji / 中文描述 ─────────────
+function weatherIconFromCode(c) {
+  return c<=1?'☀️':c<=3?'⛅':c<=48?'🌫️':c<=55?'🌦️':c<=67?'🌧️':c<=77?'🌨️':c<=82?'🌦️':'⛈️';
 }
-function weatherDescFromCode(code) {
-  if (code <= 1)  return '晴天';
-  if (code <= 3)  return '多雲';
-  if (code <= 48) return '有霧';
-  if (code <= 55) return '毛毛雨';
-  if (code <= 67) return '有雨';
-  if (code <= 77) return '下雪';
-  if (code <= 82) return '陣雨';
-  return '雷陣雨';
+function weatherDescFromCode(c) {
+  return c<=1?'晴天':c<=3?'多雲':c<=48?'有霧':c<=55?'毛毛雨':c<=67?'有雨':c<=77?'下雪':c<=82?'陣雨':'雷陣雨';
 }
 
 function renderWeatherCard(weatherList, activeIdx) {
@@ -3501,36 +3487,36 @@ function renderWeatherCard(weatherList, activeIdx) {
   var timeStr = new Date().toLocaleTimeString('zh-TW', {hour:'2-digit', minute:'2-digit'});
   var hasForecast = !!(w.forecast && w.forecast.length > 0);
 
-  // ── 城市切換按鈕（點擊不觸發展開）──────────────
+  // ── 城市切換按鈕：兩層 stopPropagation，確保不觸發展開 ──
   var tabsHTML = weatherList.length > 1
     ? '<div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap" onclick="event.stopPropagation()">'
       + weatherList.map(function(city, i) {
-          var isActive = (i === activeIdx);
+          var a = (i === activeIdx);
           return '<button onclick="event.stopPropagation();switchWeatherCity(' + i + ')" style="'
             + 'padding:4px 13px;border-radius:999px;font-size:.7rem;font-weight:600;cursor:pointer;'
-            + 'letter-spacing:.02em;border:1.5px solid ' + (isActive ? 'rgba(255,255,255,.75)' : 'rgba(255,255,255,.22)') + ';'
-            + 'background:' + (isActive ? 'rgba(255,255,255,.16)' : 'transparent') + ';'
-            + 'color:' + (isActive ? 'white' : 'rgba(255,255,255,.48)') + ';'
-            + 'transition:all .18s">' + city.displayName + '</button>';
+            + 'letter-spacing:.02em;border:1.5px solid ' + (a?'rgba(255,255,255,.75)':'rgba(255,255,255,.22)') + ';'
+            + 'background:' + (a?'rgba(255,255,255,.16)':'transparent') + ';'
+            + 'color:' + (a?'white':'rgba(255,255,255,.48)') + ';transition:all .18s">'
+            + city.displayName + '</button>';
         }).join('') + '</div>'
     : '';
 
-  // ── 5天預報面板 ────────────────────────────────
+  // ── 5天預報：所有狀態樣式寫 inline，不依賴外部 CSS ──
   var forecastHTML = '';
   if (hasForecast) {
-    forecastHTML = '<div id="weather-forecast">'
-      + '<div style="border-top:1px solid rgba(255,255,255,.14);margin-top:14px;padding-top:13px;'
+    forecastHTML =
+      '<div id="weather-forecast" style="overflow:hidden;max-height:0;opacity:0;'
+      + 'transition:max-height .4s cubic-bezier(0,.85,.2,1),opacity .3s ease">'
+      + '<div style="border-top:1px solid rgba(255,255,255,.14);margin-top:14px;padding-top:12px;'
       + 'display:grid;grid-template-columns:repeat(' + w.forecast.length + ',1fr);gap:0">';
     w.forecast.forEach(function(fc, idx) {
-      var rainHigh = fc.rain >= 60;
-      var rainMid  = fc.rain >= 30 && fc.rain < 60;
-      var rainColor = rainHigh ? '#7dd3fc' : rainMid ? 'rgba(180,220,255,.75)' : 'rgba(255,255,255,.32)';
-      var isToday   = (idx === 0);
-      var colBg     = isToday ? 'rgba(255,255,255,.1)' : 'transparent';
+      var rainColor = fc.rain>=60?'#7dd3fc':fc.rain>=30?'rgba(180,220,255,.75)':'rgba(255,255,255,.32)';
+      var today     = (idx === 0);
       forecastHTML +=
         '<div style="display:flex;flex-direction:column;align-items:center;gap:3px;'
-        + 'padding:8px 4px;border-radius:10px;background:' + colBg + '">'
-        + '<div style="font-size:.6rem;color:' + (isToday ? 'rgba(255,255,255,.9)' : 'rgba(255,255,255,.52)') + ';font-weight:' + (isToday ? '700' : '500') + ';letter-spacing:.04em">' + fc.dow + '</div>'
+        + 'padding:8px 4px;border-radius:10px;background:' + (today?'rgba(255,255,255,.1)':'transparent') + '">'
+        + '<div style="font-size:.6rem;color:' + (today?'rgba(255,255,255,.9)':'rgba(255,255,255,.52)') + ';'
+        + 'font-weight:' + (today?'700':'500') + ';letter-spacing:.04em">' + fc.dow + '</div>'
         + '<div style="font-size:1.2rem;line-height:1.15;margin:1px 0">' + fc.icon + '</div>'
         + '<div style="font-size:.56rem;font-weight:700;color:' + rainColor + ';letter-spacing:.03em">' + fc.rain + '%</div>'
         + '<div style="font-size:.64rem;font-weight:600;color:rgba(255,255,255,.88);margin-top:1px">' + fc.hi + '°</div>'
@@ -3540,49 +3526,48 @@ function renderWeatherCard(weatherList, activeIdx) {
     forecastHTML += '</div></div>';
   }
 
-  // ── ▼ 箭頭提示 ────────────────────────────────
+  // ── 箭頭：所有定位 / 視覺樣式全部寫 inline ──────────
+  // position:absolute 的 containing block 是 #weather-card-inner (position:relative)
   var chevronHTML = hasForecast
-    ? '<div id="weather-chevron">&#9660;</div>'
+    ? '<div id="weather-chevron" style="'
+      + 'position:absolute;top:12px;right:12px;'           // ← 定位 inline，不依賴 CSS
+      + 'width:22px;height:22px;border-radius:50%;'
+      + 'background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);'
+      + 'display:flex;align-items:center;justify-content:center;'
+      + 'font-size:.6rem;color:rgba(255,255,255,.8);'
+      + 'transition:transform .3s cubic-bezier(.4,0,.2,1);'
+      + 'pointer-events:none">&#9660;</div>'
     : '';
 
-  // ── 主卡片 HTML ────────────────────────────────
-  var innerAttrs = hasForecast
-    ? ' id="weather-card-inner" class="clickable" onclick="toggleWeatherForecast()" style="cursor:pointer;position:relative"'
-    : ' id="weather-card-inner" style="position:relative"';
-
   content.innerHTML =
-    '<div' + innerAttrs + '>'
-    + chevronHTML
+    '<div id="weather-card-inner"'
+    + (hasForecast
+        ? ' onclick="toggleWeatherForecast()" style="cursor:pointer;position:relative"'
+        : ' style="position:relative"')
+    + '>'
+    + chevronHTML          // absolute → 不佔 flow，永遠釘在右上角
     + tabsHTML
-    // 溫度主區
-    + '<div class="weather-main-row" style="display:flex;align-items:flex-end;gap:18px">'
-    + '<div>'
-    + '<div style="font-size:.64rem;opacity:.68;letter-spacing:.14em;text-transform:uppercase;color:white;margin-bottom:8px">'
-      + w.displayName.toUpperCase() + '</div>'
-    + '<div style="font-family:var(--font-display);font-size:2.8rem;font-weight:300;color:white;line-height:1">'
-      + w.temp + '°</div>'
-    + '<div style="font-size:.72rem;color:rgba(255,255,255,.6);margin-top:4px">'
-      + w.tempMin + '° – ' + w.tempMax + '°</div>'
-    + '<div style="font-size:.8rem;color:rgba(255,255,255,.88);margin-top:3px;font-weight:500">'
-      + w.desc + '</div>'
+    + '<div style="display:flex;align-items:flex-end;gap:18px">'
+    +   '<div>'
+    +     '<div style="font-size:.64rem;opacity:.68;letter-spacing:.14em;text-transform:uppercase;color:white;margin-bottom:8px">' + w.displayName.toUpperCase() + '</div>'
+    +     '<div style="font-family:var(--font-display);font-size:2.8rem;font-weight:300;color:white;line-height:1">' + w.temp + '°</div>'
+    +     '<div style="font-size:.72rem;color:rgba(255,255,255,.6);margin-top:4px">' + w.tempMin + '° – ' + w.tempMax + '°</div>'
+    +     '<div style="font-size:.8rem;color:rgba(255,255,255,.88);margin-top:3px;font-weight:500">' + w.desc + '</div>'
+    +   '</div>'
+    +   '<div style="font-size:3rem;margin-bottom:6px;line-height:1">' + w.icon + '</div>'
     + '</div>'
-    + '<div style="font-size:3rem;margin-bottom:6px;line-height:1">' + w.icon + '</div>'
-    + '</div>'
-    // 預報面板
     + forecastHTML
-    // SYNC 列
     + '<div style="display:flex;align-items:center;gap:6px;margin-top:12px">'
-    + '<div style="width:6px;height:6px;border-radius:50%;background:#4ade80;animation:pulse 2s ease infinite"></div>'
-    + '<span style="font-size:.6rem;color:rgba(255,255,255,.45);letter-spacing:.06em">SYNC · ' + timeStr + '</span>'
-    + (hasForecast ? '<span style="font-size:.58rem;color:rgba(255,255,255,.3);margin-left:auto;letter-spacing:.04em">點擊查看預報</span>' : '')
+    +   '<div style="width:6px;height:6px;border-radius:50%;background:#4ade80;animation:pulse 2s ease infinite"></div>'
+    +   '<span style="font-size:.6rem;color:rgba(255,255,255,.45);letter-spacing:.06em">SYNC · ' + timeStr + '</span>'
     + '</div>'
     + '</div>';
 
-  // 若之前是展開狀態，維持展開
+  // 城市切換時若已展開，恢復展開狀態
   if (weatherExpanded && hasForecast) {
     var fc2 = document.getElementById('weather-forecast');
     var ch2 = document.getElementById('weather-chevron');
-    if (fc2) { fc2.style.maxHeight = '300px'; fc2.classList.add('expanded'); }
+    if (fc2) { fc2.style.maxHeight = '300px'; fc2.style.opacity = '1'; }
     if (ch2) ch2.style.transform = 'rotate(180deg)';
   }
 }
@@ -3590,27 +3575,18 @@ function renderWeatherCard(weatherList, activeIdx) {
 function toggleWeatherForecast() {
   var fc = document.getElementById('weather-forecast');
   var ch = document.getElementById('weather-chevron');
-  var hint = document.querySelector('#weather-card-inner > div:last-child > span:last-child');
   if (!fc) return;
   weatherExpanded = !weatherExpanded;
-  if (weatherExpanded) {
-    fc.style.maxHeight = '300px';
-    fc.classList.add('expanded');
-    if (hint) hint.style.opacity = '0';
-  } else {
-    fc.style.maxHeight = '0';
-    fc.classList.remove('expanded');
-    if (hint) hint.style.opacity = '1';
-  }
+  // inline style 直接控制，不依賴 CSS class
+  fc.style.maxHeight = weatherExpanded ? '300px' : '0';
+  fc.style.opacity   = weatherExpanded ? '1'     : '0';
   if (ch) ch.style.transform = weatherExpanded ? 'rotate(180deg)' : '';
 }
 
 function switchWeatherCity(idx) {
   var list = weatherTargets.map(function(t) { return weatherCache[t.city]; }).filter(Boolean);
-  if (list.length > idx) {
-    // 切城市保留展開狀態，不重置
-    renderWeatherCard(list, idx);
-  }
+  // weatherExpanded 不重置 → 切城市保留展開/收合狀態
+  if (list.length > idx) renderWeatherCard(list, idx);
 }
 
 
