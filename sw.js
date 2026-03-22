@@ -7,7 +7,7 @@
    ═══════════════════════════════════════════════════════ */
 
 // ── 版本號：每次部署改這一行即可清除舊快取 ──────────────
-const VERSION       = 'v10';
+const VERSION       = 'v8';
 const CACHE_SHELL   = `yallabi-shell-${VERSION}`;
 const CACHE_RUNTIME = `yallabi-runtime-${VERSION}`;
 
@@ -18,8 +18,6 @@ const SHELL_ASSETS = [
   './style.css',
   './manifest.json',
   './icon.png',
-  // Google Fonts（確保離線時字體不消失）
-  'https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700'&family=Noto+Serif+TC:wght@300;400;500&family=Fraunces:ital,opsz,wght@1,9..144,300&family=Caveat:wght@500;600&display=swap',
 ];
 
 // ── 不快取的請求 Pattern（Firebase、Auth、匯率 API 等）──
@@ -68,8 +66,13 @@ self.addEventListener('activate', event => {
 self.addEventListener('message', event => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting().then(() => {
-      self.clients.matchAll({ type: 'window' }).then(clients => {
-        clients.forEach(client => client.postMessage({ type: 'SW_ACTIVATED' }));
+      // includeUncontrolled: false（預設）確保只取本 SW 控制的 client
+      // 再以 origin 過濾，排除跨域 iframe，避免 postMessage 跨域警告
+      self.clients.matchAll({ type: 'window', includeUncontrolled: false }).then(clients => {
+        const swOrigin = new URL(self.location).origin;
+        clients
+          .filter(c => new URL(c.url).origin === swOrigin)
+          .forEach(c => c.postMessage({ type: 'SW_ACTIVATED' }));
       });
     });
   }
