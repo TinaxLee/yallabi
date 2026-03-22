@@ -7,7 +7,7 @@
    ═══════════════════════════════════════════════════════ */
 
 // ── 版本號：每次部署改這一行即可清除舊快取 ──────────────
-const VERSION       = 'v9';
+const VERSION       = 'v8';
 const CACHE_SHELL   = `yallabi-shell-${VERSION}`;
 const CACHE_RUNTIME = `yallabi-runtime-${VERSION}`;
 
@@ -18,6 +18,8 @@ const SHELL_ASSETS = [
   './style.css',
   './manifest.json',
   './icon.png',
+  // Google Fonts（確保離線時字體不消失）
+  'https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700'&family=Noto+Serif+TC:wght@300;400;500&family=Fraunces:ital,opsz,wght@1,9..144,300&family=Caveat:wght@500;600&display=swap',
 ];
 
 // ── 不快取的請求 Pattern（Firebase、Auth、匯率 API 等）──
