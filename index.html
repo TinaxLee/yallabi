@@ -2453,8 +2453,6 @@ function renderTripSelector() {
     container.innerHTML = '<div class="empty-state"><p>還沒有旅行<br>點下方新增</p></div>';
     return;
   }
-
-  // 判斷行程是否「已結束」（出發日 + 天數 < 今天）
   const _today = new Date(); _today.setHours(0, 0, 0, 0);
   function isEnded(t) {
     if (!t.departureDate) return false;
@@ -2463,8 +2461,6 @@ function renderTripSelector() {
     const endDate  = new Date(dep); endDate.setDate(dep.getDate() + tripDays - 1);
     return endDate < _today;
   }
-
-  // window.showArchived：掛在 window 讓 inline onclick 可以存取（ES module 隔離繞過）
   const _showAll    = !!window.showArchived;
   const _visible    = tripsData.filter(t => _showAll || !isEnded(t));
   const _endedCount = tripsData.filter(t => isEnded(t)).length;
@@ -2477,16 +2473,16 @@ function renderTripSelector() {
     const checkmark = isActive ? '<span style="color:var(--accent);font-size:.85rem;flex-shrink:0">✓</span>' : '';
     const dateStr = t.departureDate ? formatDateDisplay(t.departureDate) : '未設定出發日';
     const archivedStr = t.archived ? ' · 已封存' : '';
-    const tripName     = t.name || info.name;
-    const _endedBadge  = isEnded(t)
+    const tripName      = t.name || info.name;
+    const _endedBadge   = isEnded(t)
       ? '<span style="font-size:.58rem;background:var(--bg2);color:var(--text3);border-radius:999px;padding:2px 6px;margin-left:5px;vertical-align:middle">已結束</span>'
       : '';
-    const _rowOpacity  = isEnded(t) ? 'opacity:.6;' : '';
-    return '<div class="card mb-2" style="border:1.5px solid ' + border + ';border-radius:var(--r-md);overflow:hidden;' + _rowOpacity + "'>"
+    const _rowOpacity   = isEnded(t) ? 'opacity:.6;' : '';
+    return '<div class="card mb-2" style="border:1.5px solid ' + border + ';border-radius:var(--r-md);overflow:hidden">'
       + '<div style="display:flex;align-items:center;gap:12px;padding:13px 14px;cursor:pointer" onclick="selectTrip(\'' + t.id + '\')">'
       + '<span style="font-size:1.5rem;flex-shrink:0">' + info.flag + '</span>'
       + '<div style="flex:1;min-width:0">'
-      + '<div style="font-size:.9rem;font-weight:600;color:var(--text)">' + tripName + _endedBadge + '</div>'
+      + '<div style="font-size:.9rem;font-weight:600;color:var(--text)">' + tripName + '</div>'
       + '<div style="font-size:.68rem;color:var(--text3);margin-top:2px">' + dateStr + archivedStr + '</div>'
       + '</div>' + checkmark + '</div>'
       + '<div style="display:flex;border-top:1px solid var(--border);background:var(--bg2)">'
@@ -2495,9 +2491,7 @@ function renderTripSelector() {
       + '<button onclick="deleteTripById(\'' + t.id + '\')" style="flex:1;padding:9px;font-size:.72rem;color:var(--danger);font-weight:500">✕ 刪除</button>'
       + '</div></div>';
   }).join('');
-}  }).join('');
 
-  // 切換按鈕 — onclick 使用 window.toggleArchivedTrips() 穿透 ES module 隔離
   const _toggleBtn = _endedCount > 0
     ? '<button onclick="window.toggleArchivedTrips()" style="'
       + 'width:100%;padding:10px;margin-top:4px;border-radius:var(--r-md);'
@@ -2534,15 +2528,17 @@ async function selectTrip(tripId) {
   const days = currentTrip.days || ['Day 1'];
   currentDayFilter = days[0];
 
-  // ⑤ 切換到行程 tab + 骨架屏佔位
+  // ⑤ 切換到行程 tab + 骨架屏過渡
   switchTab('itinerary');
   window.scrollTo(0, 0);
-  // 骨架屏：在 onSnapshot 拿到資料前顯示閃爍佔位卡片
   (function(){
     var _el = document.getElementById('itinerary-list');
     if (!_el) return;
-    var _card = '<div class="skeleton-card">'+'<div style="display:flex;align-items:center;gap:12px">'+'<div class="skeleton-circle"></div>'+'<div style="flex:1">'+'<div class="skeleton-line skeleton-line-lg"></div>'+'<div class="skeleton-line skeleton-line-sm"></div></div></div></div>';
-    _el.innerHTML = _card + _card + _card;
+    var _sk = '<div class="skeleton-card"><div style="display:flex;align-items:center;gap:12px">'
+      + '<div class="skeleton-circle"></div><div style="flex:1">'
+      + '<div class="skeleton-line skeleton-line-lg"></div>'
+      + '<div class="skeleton-line skeleton-line-sm"></div></div></div></div>';
+    _el.innerHTML = _sk + _sk + _sk;
   })();
 
   // ⑥ 取消舊旅行所有 Firestore 監聽
@@ -3499,7 +3495,6 @@ window.quickAddExpenseFromPhoto = quickAddExpenseFromPhoto;
 window.sendPhotoResultToChat = sendPhotoResultToChat;
 window.resetBibiPhoto = resetBibiPhoto;
 window.archiveTrip = archiveTrip;
-// 封存行程切換狀態 — 掛在 window 讓 inline onclick 可以存取
 window.showArchived = false;
 window.toggleArchivedTrips = function() {
   window.showArchived = !window.showArchived;
