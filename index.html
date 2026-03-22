@@ -2419,32 +2419,78 @@ async function deletePackItem(id) {
 // ════════════════════════════════════════
 // 🌍 TRIP MANAGEMENT
 // ════════════════════════════════════════
+// ════════════════════════════════════════
+// 🗂️  TRIP STATUS ENGINE
+// ════════════════════════════════════════
+function processTrips(trips) {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  function getEndDate(t) {
+    if (!t.departureDate) return null;
+    const dep = new Date(t.departureDate);
+    const d   = (t.days && t.days.length) || 1;
+    const end = new Date(dep); end.setDate(dep.getDate() + d - 1);
+    return end;
+  }
+  function tripStatus(t) {
+    if (t.isArchived || t.archived) return 'archived';
+    if (!t.departureDate)           return 'upcoming';
+    const dep = new Date(t.departureDate); dep.setHours(0, 0, 0, 0);
+    const end = getEndDate(t);
+    if (end && end < today) return 'archived';
+    if (dep > today)        return 'upcoming';
+    return 'current';
+  }
+  const current = [], upcoming = [], archived = [];
+  trips.forEach(t => {
+    const s = tripStatus(t);
+    if      (s === 'current')  current.push(t);
+    else if (s === 'upcoming') upcoming.push(t);
+    else                       archived.push(t);
+  });
+  const byDep = (a, b) =>
+    new Date(a.departureDate || '9999').getTime() - new Date(b.departureDate || '9999').getTime();
+  current.sort(byDep); upcoming.sort(byDep);
+  archived.sort((a, b) => {
+    const ea = getEndDate(a) || new Date(0);
+    const eb = getEndDate(b) || new Date(0);
+    return eb.getTime() - ea.getTime();
+  });
+  return { current, upcoming, archived };
+}
+
 async function loadTrips() {
   const q = query(collection(db, 'trips'), orderBy('createdAt','desc'));
   const snap = await getDocs(q);
   tripsData = snap.docs.filter(d => {
-    var data = d.data();
+    const data = d.data();
     return data && data.members && data.members.includes(currentUser.uid);
-  }).map(d => ({ id:d.id, ...d.data() }));
+  }).map(d => ({ id: d.id, ...d.data() }));
+
   renderTripSelector();
+
   if (tripsData.length > 0 && !currentTripId) {
-    selectTrip((function(){var _t=tripsData.find(t => !t.archived);return _t?_t.id:null;})() || tripsData[0].id);
+    let targetId = null;
+    try {
+      const saved = localStorage.getItem('last_trip_id');
+      if (saved && tripsData.find(t => t.id === saved)) targetId = saved;
+    } catch(e) {}
+    if (!targetId) {
+      const { current, upcoming } = processTrips(tripsData);
+      targetId = current.length  ? current[0].id
+               : upcoming.length ? upcoming[0].id
+               : tripsData[0].id;
+    }
+    selectTrip(targetId);
   } else if (tripsData.length === 0) {
-    // 沒有旅行 → 觸發空狀態
-    currentTripId = null;
-    currentTrip = null;
-    renderHero(null);
-    renderItinerary();
-    renderExpenses();
-    renderDepart();
-    renderJournal();
-    // 清空 header
+    currentTripId = null; currentTrip = null;
+    renderHero(null); renderItinerary(); renderExpenses(); renderDepart(); renderJournal();
     const flag = document.getElementById('country-flag');
     const name = document.getElementById('country-name');
     if (flag) flag.textContent = '🌍';
     if (name) name.textContent = '選擇旅行';
   }
 }
+
 
 function renderTripSelector() {
   const container = document.getElementById('trip-list');
@@ -2453,99 +2499,86 @@ function renderTripSelector() {
     container.innerHTML = '<div class="empty-state"><p>還沒有旅行<br>點下方新增</p></div>';
     return;
   }
-  const _today = new Date(); _today.setHours(0, 0, 0, 0);
-  function isEnded(t) {
-    if (!t.departureDate) return false;
-    const dep = new Date(t.departureDate); dep.setHours(0, 0, 0, 0);
-    const tripDays = (t.days && t.days.length) || 1;
-    const endDate  = new Date(dep); endDate.setDate(dep.getDate() + tripDays - 1);
-    return endDate < _today;
-  }
-  const _showAll    = !!window.showArchived;
-  const _visible    = tripsData.filter(t => _showAll || !isEnded(t));
-  const _endedCount = tripsData.filter(t => isEnded(t)).length;
+  const { current, upcoming, archived } = processTrips(tripsData);
+  const _show = !!window.showArchivedSection;
 
-  const _cards = _visible.map(t => {
-    const info = COUNTRY_THEMES[t.country] || { flag:'🌍', name: t.countryName || t.country };
-    const isActive = t.id === currentTripId;
-    const border = isActive ? 'var(--accent)' : 'var(--border)';
-    const archiveLabel = t.archived ? '📂 取消封存' : '🗂️ 封存';
-    const checkmark = isActive ? '<span style="color:var(--accent);font-size:.85rem;flex-shrink:0">✓</span>' : '';
+  function cardHTML(t, badge, extra) {
+    const info    = COUNTRY_THEMES[t.country] || { flag:'🌍', name: t.countryName || t.country };
+    const active  = t.id === currentTripId;
+    const border  = active ? 'var(--accent)' : 'var(--border)';
+    const archLbl = (t.isArchived || t.archived) ? '📂 取消封存' : '🗂️ 封存';
+    const check   = active ? '<span style="color:var(--accent);font-size:.85rem;flex-shrink:0">✓</span>' : '';
     const dateStr = t.departureDate ? formatDateDisplay(t.departureDate) : '未設定出發日';
-    const archivedStr = t.archived ? ' · 已封存' : '';
-    const tripName      = t.name || info.name;
-    const _endedBadge   = isEnded(t)
-      ? '<span style="font-size:.58rem;background:var(--bg2);color:var(--text3);border-radius:999px;padding:2px 6px;margin-left:5px;vertical-align:middle">已結束</span>'
+    const name_   = t.name || info.name;
+    const badgeEl = badge
+      ? '<span style="font-size:.58rem;padding:2px 6px;border-radius:999px;margin-left:5px;vertical-align:middle;background:var(--accent);color:#fff">' + badge + '</span>'
       : '';
-    const _rowOpacity   = isEnded(t) ? 'opacity:.6;' : '';
-    return '<div class="card mb-2" style="border:1.5px solid ' + border + ';border-radius:var(--r-md);overflow:hidden">'
+    return '<div class="card mb-2" style="border:1.5px solid ' + border + ';border-radius:var(--r-md);overflow:hidden' + (extra || '') + '">'
       + '<div style="display:flex;align-items:center;gap:12px;padding:13px 14px;cursor:pointer" onclick="selectTrip(\'' + t.id + '\')">'
       + '<span style="font-size:1.5rem;flex-shrink:0">' + info.flag + '</span>'
       + '<div style="flex:1;min-width:0">'
-      + '<div style="font-size:.9rem;font-weight:600;color:var(--text)">' + tripName + '</div>'
-      + '<div style="font-size:.68rem;color:var(--text3);margin-top:2px">' + dateStr + archivedStr + '</div>'
-      + '</div>' + checkmark + '</div>'
+      + '<div style="font-size:.9rem;font-weight:600;color:var(--text)">' + name_ + badgeEl + '</div>'
+      + '<div style="font-size:.68rem;color:var(--text3);margin-top:2px">' + dateStr + '</div>'
+      + '</div>' + check + '</div>'
       + '<div style="display:flex;border-top:1px solid var(--border);background:var(--bg2)">'
       + '<button onclick="openEditTrip(\'' + t.id + '\')" style="flex:1;padding:9px;font-size:.72rem;color:var(--text2);font-weight:500;border-right:1px solid var(--border)">✏️ 編輯</button>'
-      + '<button onclick="archiveTripById(\'' + t.id + '\')" style="flex:1;padding:9px;font-size:.72rem;color:var(--text2);font-weight:500;border-right:1px solid var(--border)">' + archiveLabel + '</button>'
+      + '<button onclick="archiveTripById(\'' + t.id + '\')" style="flex:1;padding:9px;font-size:.72rem;color:var(--text2);font-weight:500;border-right:1px solid var(--border)">' + archLbl + '</button>'
       + '<button onclick="deleteTripById(\'' + t.id + '\')" style="flex:1;padding:9px;font-size:.72rem;color:var(--danger);font-weight:500">✕ 刪除</button>'
       + '</div></div>';
-  }).join('');
+  }
 
-  const _toggleBtn = _endedCount > 0
-    ? '<button onclick="window.toggleArchivedTrips()" style="'
-      + 'width:100%;padding:10px;margin-top:4px;border-radius:var(--r-md);'
-      + 'background:transparent;border:1.5px dashed var(--border2);'
-      + 'font-size:.72rem;color:var(--text3);cursor:pointer;'
-      + '-webkit-tap-highlight-color:transparent">'
-      + (_showAll ? '\u25b2 隱藏已結束行程' : '\u25bc 顯示已結束行程（' + _endedCount + ' 個）')
-      + '</button>'
-    : '';
+  let out = '';
 
-  container.innerHTML = _cards + _toggleBtn;
+  if (current.length > 0) {
+    const c = current[0];
+    const cName = c.name || (COUNTRY_THEMES[c.country] && COUNTRY_THEMES[c.country].name) || '';
+    out += '<div style="background:linear-gradient(135deg,var(--primary),var(--accent));border-radius:var(--r-lg);padding:14px 16px;margin-bottom:10px;color:white">'
+      + '<div style="font-size:.72rem;font-weight:600;letter-spacing:.08em;opacity:.8;margin-bottom:4px">✨ 旅行進行中</div>'
+      + '<div style="font-size:1rem;font-weight:700;margin-bottom:2px">' + cName + '</div>'
+      + '<div style="font-size:.72rem;opacity:.75">' + (c.departureDate ? formatDateDisplay(c.departureDate) : '') + '</div>'
+      + '<button onclick="selectTrip(\'' + c.id + '\')" style="margin-top:10px;background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.5);color:white;border-radius:var(--r-xl);padding:7px 18px;font-size:.8rem;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent">進入行程 →</button>'
+      + '</div>';
+    current.slice(1).forEach(t => { out += cardHTML(t, '進行中', ''); });
+  }
+
+  if (upcoming.length > 0) {
+    if (current.length > 0) out += '<div style="font-size:.7rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin:10px 0 6px">即將出發</div>';
+    upcoming.forEach(t => { out += cardHTML(t, '', ''); });
+  }
+
+  if (current.length === 0 && upcoming.length === 0) {
+    out += '<div class="empty-state"><p style="color:var(--text3);font-size:.85rem">還沒有進行中或即將出發的旅行</p></div>';
+  }
+
+  if (archived.length > 0) {
+    out += '<button onclick="window.toggleArchivedSection()" style="width:100%;padding:10px 14px;margin-top:6px;border-radius:var(--r-md);background:transparent;border:1.5px dashed var(--border2);display:flex;align-items:center;justify-content:space-between;font-size:.78rem;font-weight:500;color:var(--text3);cursor:pointer;-webkit-tap-highlight-color:transparent">'
+      + '<span>📁 已封存行程（' + archived.length + ' 個）</span>'
+      + '<span>' + (_show ? '▲' : '▼') + '</span></button>';
+    if (_show) {
+      out += '<div style="margin-top:6px">';
+      archived.forEach(t => { out += cardHTML(t, '已封存', ';filter:grayscale(1);opacity:.7'); });
+      out += '</div>';
+    }
+  }
+
+  container.innerHTML = out;
 }
 
 
 async function selectTrip(tripId) {
   currentTripId = tripId;
-  currentTrip = tripsData.find(t => t.id === tripId);
+  currentTrip   = tripsData.find(t => t.id === tripId);
   if (!currentTrip) return;
-
-  // ① 關閉旅行清單 Modal（統一在函式內控制）
   closeModal('modal-trips');
-
-  // ② 記憶最後選取的旅行
   try { localStorage.setItem('last_trip_id', tripId); } catch(e) {}
-
-  // ③ 清空舊旅行資料，防止切換時舊卡片閃爍
-  itineraryData = []; missionsData  = []; packingData = [];
-  expensesData  = []; flightsData  = []; hotelsData  = [];
-  journalData   = [];
-
-  // ④ 立即套用新旅行主題色 + 重設 Day filter
+  itineraryData = []; missionsData = []; packingData = [];
+  expensesData  = []; flightsData = []; hotelsData  = []; journalData = [];
   updateCountryBadge(currentTrip);
   renderHero(currentTrip);
-  const days = currentTrip.days || ['Day 1'];
-  currentDayFilter = days[0];
-
-  // ⑤ 切換到行程 tab + 骨架屏過渡
+  currentDayFilter = (currentTrip.days || ['Day 1'])[0];
   switchTab('itinerary');
   window.scrollTo(0, 0);
-  (function(){
-    var _el = document.getElementById('itinerary-list');
-    if (!_el) return;
-    var _sk = '<div class="skeleton-card"><div style="display:flex;align-items:center;gap:12px">'
-      + '<div class="skeleton-circle"></div><div style="flex:1">'
-      + '<div class="skeleton-line skeleton-line-lg"></div>'
-      + '<div class="skeleton-line skeleton-line-sm"></div></div></div></div>';
-    _el.innerHTML = _sk + _sk + _sk;
-  })();
-
-  // ⑥ 取消舊旅行所有 Firestore 監聽
-  unsubscribers.forEach(u => u());
-  unsubscribers = [];
-
-  // ⑦ 訂閱新旅行所有 collection
+  unsubscribers.forEach(u => u()); unsubscribers = [];
   const collections = ['itinerary','missions','packing','expenses','flights','hotels','journal'];
   collections.forEach(col => {
     const unsub = onSnapshot(tripCol(col), snap => {
@@ -2564,8 +2597,6 @@ async function selectTrip(tripId) {
     });
     unsubscribers.push(unsub);
   });
-
-  // ⑧ 載入旅伴資料
   const memberUids = currentTrip.members || [currentUser.uid];
   membersData = await Promise.all(memberUids.map(async uid => {
     try { const d = await getDoc(doc(db,'users',uid)); return { uid, ...d.data() }; }
@@ -2573,9 +2604,9 @@ async function selectTrip(tripId) {
   }));
   renderMemberAvatars();
   fetchWeather(currentTrip);
-
   console.log('[Yallabi] selectTrip:', tripId, currentTrip.name || '');
 }
+
 
 function getMemberAvatar(m) {
   // 三層優先順序：自訂照片 → emoji → Google 首字
@@ -2662,11 +2693,11 @@ async function archiveTripById(tripId) {
   if (!trip) return;
   if (trip.archived) {
     if (!confirm('取消封存這個旅行？')) return;
-    await updateDoc(doc(db,'trips',tripId), { archived: false });
+    await updateDoc(doc(db,'trips',tripId), { archived: false, isArchived: false });
     showToast('已取消封存');
   } else {
     if (!confirm('封存這個旅行？封存後會獲得護照印章！')) return;
-    await updateDoc(doc(db,'trips',tripId), { archived: true, archivedAt: Date.now() });
+    await updateDoc(doc(db,'trips',tripId), { archived: true, isArchived: true, archivedAt: Date.now() });
     showToast('旅行已封存 🛂');
   }
   await loadTrips();
@@ -3495,11 +3526,12 @@ window.quickAddExpenseFromPhoto = quickAddExpenseFromPhoto;
 window.sendPhotoResultToChat = sendPhotoResultToChat;
 window.resetBibiPhoto = resetBibiPhoto;
 window.archiveTrip = archiveTrip;
-window.showArchived = false;
-window.toggleArchivedTrips = function() {
-  window.showArchived = !window.showArchived;
+window.showArchivedSection = false;
+window.toggleArchivedSection = function() {
+  window.showArchivedSection = !window.showArchivedSection;
   renderTripSelector();
 };
+window.processTrips = processTrips;
 window.renderTripSelector = renderTripSelector;
 window.selectTrip = selectTrip;
 window.archiveTripById = archiveTripById;
