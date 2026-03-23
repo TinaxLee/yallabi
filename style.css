@@ -218,7 +218,7 @@ body{font-family:var(--font-body);font-size:1rem;font-weight:500;line-height:1.6
    首選值用 vw 讓字體跟螢幕比例走，避免安卓小螢幕字太小
 ════════════════════════════════════════════════════════ */
 :root {
-  /* 字體尺寸 ─ 基準 17px, 純 rem，標題 600 */
+  /* 字體尺寸 — 基準 17px (html font-size), 純 rem */
   --fs-xs:   .706rem;  /* ≈12px */
   --fs-sm:   .765rem;  /* ≈13px */
   --fs-base: .882rem;  /* ≈15px */
@@ -240,7 +240,6 @@ a{color:inherit;text-decoration:none;}
 
 /* TYPOGRAPHY */
 h1,h2,h3,h4,h5,h6{font-weight:600;line-height:1.4;color:var(--text);}
-.text-lg{font-size:var(--fs-xl);font-weight:600;line-height:1.4;color:var(--text);}
 
 .font-display{font-family:var(--font-display);}
 .font-hand{font-family:var(--font-hand);}

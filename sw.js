@@ -7,7 +7,7 @@
    ═══════════════════════════════════════════════════════ */
 
 // ── 版本號：每次部署改這一行即可清除舊快取 ──────────────
-const VERSION       = 'v14';
+const VERSION       = 'v15';
 const CACHE_SHELL   = `yallabi-shell-${VERSION}`;
 const CACHE_RUNTIME = `yallabi-runtime-${VERSION}`;
 
@@ -66,13 +66,8 @@ self.addEventListener('activate', event => {
 self.addEventListener('message', event => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting().then(() => {
-      // includeUncontrolled: false（預設）確保只取本 SW 控制的 client
-      // 再以 origin 過濾，排除跨域 iframe，避免 postMessage 跨域警告
-      self.clients.matchAll({ type: 'window', includeUncontrolled: false }).then(clients => {
-        const swOrigin = new URL(self.location).origin;
-        clients
-          .filter(c => new URL(c.url).origin === swOrigin)
-          .forEach(c => c.postMessage({ type: 'SW_ACTIVATED' }));
+      self.clients.matchAll({ type: 'window' }).then(clients => {
+        clients.forEach(client => client.postMessage({ type: 'SW_ACTIVATED' }));
       });
     });
   }

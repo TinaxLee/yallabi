@@ -139,18 +139,31 @@ function updateCountryBadge(trip) {
 }
 
 // ════════════════════════════════════════
-// 🎨 applyTripTheme — 全域動態主題
+// 🎨 applyTripTheme — 全域主題 + meta sync
 // ════════════════════════════════════════
 function applyTripTheme(country) {
   const info = COUNTRY_THEMES[country] || { theme: 'default' };
   applyTheme(info.theme || 'default');
-  // sync meta theme-color after CSS variables settle
-  requestAnimationFrame(() => {
-    const colors = getComputedStyle(document.documentElement);
-    const metaEl = document.querySelector('meta[name="theme-color"]');
+  requestAnimationFrame(function() {
+    var colors  = getComputedStyle(document.documentElement);
+    var metaEl  = document.querySelector('meta[name="theme-color"]');
     if (metaEl) metaEl.content = colors.getPropertyValue('--bg').trim() || '#F5F2EC';
   });
 }
+
+// ════════════════════════════════════════
+// 🏠 view-home 控制
+// ════════════════════════════════════════
+// The app uses a modal-based trip list. 
+// goHome opens that list so users can pick a trip.
+function goHome() {
+  // de-select active nav
+  document.querySelectorAll('.nav-btn').forEach(function(b) { b.classList.remove('active'); });
+  var nh = document.getElementById('nav-home');
+  if (nh) nh.classList.add('active');
+  openModal('modal-trips');
+}
+
 
 // ════════════════════════════════════════
 // 📅 DATE & COUNTDOWN
@@ -2433,17 +2446,18 @@ async function deletePackItem(id) {
 // ════════════════════════════════════════
 // 🌍 TRIP MANAGEMENT
 // ════════════════════════════════════════
+
 // ════════════════════════════════════════
-// 🗂️  processTrips — 行程分類 + 排序
+// 🗂️  processTrips — 行程分類 + 排序引擎
 // ════════════════════════════════════════
 function processTrips(trips) {
-  const today = new Date(); today.setHours(0, 0, 0, 0);
+  var today = new Date(); today.setHours(0,0,0,0);
 
   function getEndDate(t) {
     if (!t.departureDate) return null;
-    const dep  = new Date(t.departureDate);
-    const days = (t.days && t.days.length) || 1;
-    const end  = new Date(dep);
+    var dep  = new Date(t.departureDate);
+    var days = (t.days && t.days.length) || 1;
+    var end  = new Date(dep);
     end.setDate(dep.getDate() + days - 1);
     return end;
   }
@@ -2451,36 +2465,37 @@ function processTrips(trips) {
   function tripStatus(t) {
     if (t.isArchived || t.archived) return 'archived';
     if (!t.departureDate)           return 'upcoming';
-    const dep = new Date(t.departureDate); dep.setHours(0, 0, 0, 0);
-    const end = getEndDate(t);
-    if (end && end < today)  return 'archived'; // 已結束
-    if (dep <= today)        return 'current';  // 進行中（含今天）
+    var dep = new Date(t.departureDate); dep.setHours(0,0,0,0);
+    var end = getEndDate(t);
+    if (end && end < today) return 'archived'; // 已結束
+    if (dep <= today)       return 'current';  // 含今天
     return 'upcoming';
   }
 
-  const current = [], upcoming = [], archived = [];
-  trips.forEach(t => {
-    const s = tripStatus(t);
+  var current = [], upcoming = [], archived = [];
+  trips.forEach(function(t) {
+    var s = tripStatus(t);
     if      (s === 'current')  current.push(t);
     else if (s === 'upcoming') upcoming.push(t);
     else                       archived.push(t);
   });
 
-  // Active: 按 departureDate 升序（new Date 比較，非字串）
-  const byDepAsc = (a, b) =>
-    new Date(a.departureDate || '9999-12-31').getTime() -
-    new Date(b.departureDate || '9999-12-31').getTime();
+  // Active 群組：按出發日升序（new Date 比較，非字串）
+  function byDepAsc(a, b) {
+    return new Date(a.departureDate || '9999-12-31').getTime() -
+           new Date(b.departureDate || '9999-12-31').getTime();
+  }
   current.sort(byDepAsc);
   upcoming.sort(byDepAsc);
 
-  // Archived: 按結束日降序（最近結束的排最上）
-  archived.sort((a, b) => {
-    const ea = getEndDate(a) || new Date(0);
-    const eb = getEndDate(b) || new Date(0);
+  // Archived 群組：按結束日降序（最近結束的排最前）
+  archived.sort(function(a, b) {
+    var ea = getEndDate(a) || new Date(0);
+    var eb = getEndDate(b) || new Date(0);
     return eb.getTime() - ea.getTime();
   });
 
-  return { current, upcoming, archived };
+  return { current: current, upcoming: upcoming, archived: archived };
 }
 
 async function loadTrips() {
@@ -2496,33 +2511,28 @@ async function loadTrips() {
   if (tripsData.length > 0 && !currentTripId) {
     const { current, upcoming } = processTrips(tripsData);
 
-    // ── 第一順位：進行中行程（優先於 localStorage）──────────
+    // ① 第一順位：進行中行程（含今天）─ 最高權限
     if (current.length > 0) {
       selectTrip(current[0].id);
       return;
     }
 
-    // ── 第二順位：localStorage 記憶 ────────────────────────
+    // ② 第二順位：localStorage 記憶（僅在無進行中時有效）
     let savedId = null;
     try { savedId = localStorage.getItem('yallabi_last_id'); } catch(e) {}
-    if (savedId && tripsData.find(t => t.id === savedId)) {
+    if (savedId && tripsData.find(t => t.id === savedId && !t.isArchived && !t.archived)) {
       selectTrip(savedId);
       return;
     }
 
-    // ── 第三順位：最近即將出發 ──────────────────────────────
+    // ③ 第三順位：最近即將出發
     if (upcoming.length > 0) {
       selectTrip(upcoming[0].id);
       return;
     }
 
-    // ── 最後備援：第一筆（不強制跳出 home view 時靜默預載）─
-    // 僅預設主題與 badge，不呼叫 selectTrip 切換 tab
-    const fallback = tripsData[0];
-    currentTripId = fallback.id;
-    currentTrip   = fallback;
-    updateCountryBadge(fallback);
-    renderHero(fallback);
+    // ④ 備援：有行程但全部已封存 → 打開大廳讓使用者選
+    goHome();
 
   } else if (tripsData.length === 0) {
     currentTripId = null;
@@ -2536,6 +2546,8 @@ async function loadTrips() {
     const name = document.getElementById('country-name');
     if (flag) flag.textContent = '🌍';
     if (name) name.textContent = '選擇旅行';
+    // 打開大廳讓使用者新增
+    setTimeout(function() { openModal('modal-trips'); }, 600);
   }
 }
 
@@ -2551,23 +2563,21 @@ function renderTripSelector() {
 
   const { current, upcoming, archived } = processTrips(tripsData);
 
-  // ── 共用卡片 HTML（onclick 跳脫保持原始格式）─────────────
-  function cardHTML(t, badgeTxt, badgeColor, extraStyle) {
-    const info     = COUNTRY_THEMES[t.country] || { flag:'🌍', name: t.countryName || t.country };
+  // ── 共用卡片渲染（onclick 字串與原始完全相同）────────
+  function cardHTML(t, badge, badgeColor, extraStyle) {
+    const info     = COUNTRY_THEMES[t.country] || { flag:'\ud83c\udf0d', name: t.countryName || t.country };
     const isActive = t.id === currentTripId;
     const border   = isActive ? 'var(--accent)' : 'var(--border)';
-    const archLbl  = (t.isArchived || t.archived) ? '📂 取消封存' : '🗂️ 封存';
+    const archLbl  = (t.isArchived || t.archived) ? '\ud83d\udcc2 取消封存' : '\ud83d\uddc2\ufe0f 封存';
     const check    = isActive ? '<span style="color:var(--accent);font-size:.85rem;flex-shrink:0">✓</span>' : '';
     const dateStr  = t.departureDate ? formatDateDisplay(t.departureDate) : '未設定出發日';
     const tripName = t.name || info.name;
-    const badge    = badgeTxt
-      ? '<span style="font-size:.56rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:999px;margin-left:6px;vertical-align:middle;background:' + badgeColor + ';color:#fff">' + badgeTxt + '</span>'
-      : '';
+    const badgeEl  = badge ? '<span style="font-size:.56rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:999px;margin-left:6px;vertical-align:middle;background:' + badgeColor + ';color:#fff">' + badge + '</span>' : '';
     return '<div class="card mb-2" style="border:1.5px solid ' + border + ';border-radius:var(--r-md);overflow:hidden' + (extraStyle || '') + '">'
       + '<div style="display:flex;align-items:center;gap:12px;padding:13px 14px;cursor:pointer" onclick="selectTrip(\'' + t.id + '\')">'
       + '<span style="font-size:1.5rem;flex-shrink:0">' + info.flag + '</span>'
       + '<div style="flex:1;min-width:0">'
-      + '<div style="font-size:.9rem;font-weight:600;color:var(--text)">' + tripName + badge + '</div>'
+      + '<div style="font-size:.9rem;font-weight:600;color:var(--text)">' + tripName + badgeEl + '</div>'
       + '<div style="font-size:.68rem;color:var(--text3);margin-top:2px">' + dateStr + '</div>'
       + '</div>' + check + '</div>'
       + '<div style="display:flex;border-top:1px solid var(--border);background:var(--bg2)">'
@@ -2584,9 +2594,7 @@ function renderTripSelector() {
   let out = '';
 
   // ⑴ 進行中
-  if (current.length > 0) {
-    current.forEach(t => { out += cardHTML(t, '進行中', 'var(--primary)', ''); });
-  }
+  current.forEach(t => { out += cardHTML(t, '進行中', 'var(--primary)', ''); });
 
   // ⑵ 即將到來（依 departureDate 升序，已由 processTrips 排序）
   if (upcoming.length > 0) {
@@ -2601,7 +2609,7 @@ function renderTripSelector() {
   // ⑶ 已封存（摺疊）
   if (archived.length > 0) {
     out += '<button onclick="window._toggleRsArchived()" style="width:100%;padding:10px 14px;margin-top:6px;border-radius:var(--r-md);background:transparent;border:1.5px dashed var(--border2);display:flex;align-items:center;justify-content:space-between;font-size:.72rem;font-weight:500;color:var(--text3);cursor:pointer;-webkit-tap-highlight-color:transparent">'
-      + '<span>📁 已封存（' + archived.length + ' 個）</span>'
+      + '<span>\ud83d\udcc1 已封存（' + archived.length + ' 個）</span>'
       + '<span id="rs-arch-chev">▼</span></button>'
       + '<div id="rs-arch-list" style="overflow:hidden;max-height:0;opacity:0;transition:max-height .38s ease,opacity .28s ease;margin-top:4px">';
     archived.forEach(t => { out += cardHTML(t, '已封存', 'var(--text3)', ';filter:grayscale(.5);opacity:.75'); });
@@ -2614,33 +2622,36 @@ function renderTripSelector() {
 
 async function selectTrip(tripId) {
   currentTripId = tripId;
-  currentTrip   = tripsData.find(t => t.id === tripId);
+  currentTrip = tripsData.find(t => t.id === tripId);
   if (!currentTrip) return;
 
-  // 關閉 modal
+  // ① 關閉旅行清單 Modal（統一在函式內控制）
   closeModal('modal-trips');
 
-  // 記憶（使用統一 key yallabi_last_id）
+  // ② 記憶選取（key: yallabi_last_id）
   try { localStorage.setItem('yallabi_last_id', tripId); } catch(e) {}
 
-  // 全域主題切換
+  // ③ 清空舊旅行資料，防止切換時舊卡片閃爍
+  itineraryData = []; missionsData  = []; packingData = [];
+  expensesData  = []; flightsData  = []; hotelsData  = [];
+  journalData   = [];
+
+  // ④ 立即套用新旅行主題色 + 重設 Day filter
   applyTripTheme(currentTrip.country);
   updateCountryBadge(currentTrip);
   renderHero(currentTrip);
+  const days = currentTrip.days || ['Day 1'];
+  currentDayFilter = days[0];
 
-  // 清空舊資料
-  itineraryData = []; missionsData = []; packingData = [];
-  expensesData  = []; flightsData = []; hotelsData  = []; journalData = [];
-
-  // Day filter reset
-  currentDayFilter = (currentTrip.days || ['Day 1'])[0];
-
-  // 切換 tab
+  // ⑤ 切換到行程 tab（資料已清空，先顯示空狀態）
   switchTab('itinerary');
   window.scrollTo(0, 0);
 
-  // 取消舊監聽，訂閱新 collection
-  unsubscribers.forEach(u => u()); unsubscribers = [];
+  // ⑥ 取消舊旅行所有 Firestore 監聽
+  unsubscribers.forEach(u => u());
+  unsubscribers = [];
+
+  // ⑦ 訂閱新旅行所有 collection
   const collections = ['itinerary','missions','packing','expenses','flights','hotels','journal'];
   collections.forEach(col => {
     const unsub = onSnapshot(tripCol(col), snap => {
@@ -2660,7 +2671,7 @@ async function selectTrip(tripId) {
     unsubscribers.push(unsub);
   });
 
-  // 旅伴資料
+  // ⑧ 載入旅伴資料
   const memberUids = currentTrip.members || [currentUser.uid];
   membersData = await Promise.all(memberUids.map(async uid => {
     try { const d = await getDoc(doc(db,'users',uid)); return { uid, ...d.data() }; }
@@ -2668,9 +2679,9 @@ async function selectTrip(tripId) {
   }));
   renderMemberAvatars();
   fetchWeather(currentTrip);
+
   console.log('[Yallabi] selectTrip:', tripId, currentTrip.name || '');
 }
-
 
 function getMemberAvatar(m) {
   // 三層優先順序：自訂照片 → emoji → Google 首字
@@ -3595,7 +3606,8 @@ window.archiveTripById = archiveTripById;
 window.applyTripTheme = applyTripTheme;
 window.processTrips = processTrips;
 window.renderTripSelector = renderTripSelector;
-// 已封存摺疊
+window.goHome = goHome;
+// 已封存清單摺疊
 window._rsArchOpen = false;
 window._toggleRsArchived = function() {
   window._rsArchOpen = !window._rsArchOpen;
@@ -3605,21 +3617,7 @@ window._toggleRsArchived = function() {
     list.style.maxHeight = window._rsArchOpen ? list.scrollHeight + 'px' : '0';
     list.style.opacity   = window._rsArchOpen ? '1' : '0';
   }
-  if (chev) chev.textContent = window._rsArchOpen ? '▲' : '▼';
-};
-// 大廳返回——若有 view-home overlay 則顯示，否則打開旅行清單
-window.goHome = function() {
-  var vh = document.getElementById('view-home');
-  if (vh) {
-    if (window.renderHomeView) renderHomeView();
-    vh.classList.remove('hidden');
-  } else {
-    openModal('modal-trips');
-  }
-  // 更新 nav 狀態
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  var nh = document.getElementById('nav-home');
-  if (nh) nh.classList.add('active');
+  if (chev) chev.textContent = window._rsArchOpen ? '\u25b2' : '\u25bc';
 };
 window.deleteTripById = deleteTripById;
 window.openEditTrip = openEditTrip;
@@ -4111,7 +4109,7 @@ window.toggleWeatherForecast = toggleWeatherForecast;
 
   <!-- BOTTOM NAV - 5 tabs: Home + 4 original -->
   <nav class="bottom-nav">
-    <button class="nav-btn" id="nav-home" onclick="window.goHome && window.goHome()" title="大廳">
+    <button class="nav-btn" id="nav-home" onclick="goHome()" title="大廳">
       <div class="nav-icon" style="color:rgba(255,255,255,.38)">
         <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
       </div>
