@@ -81,54 +81,51 @@ const COUNTRY_THEMES = {
 };
 
 // ════════════════════════════════════════
-// 🌏 GEOGRAPHY_DATA — 國家地理資料庫
-//    包含熱門城市供 UI 快速選取
+// 🌏 GEOGRAPHY_DATA — 國家地理資料庫 (20 國)
 // ════════════════════════════════════════
 const GEOGRAPHY_DATA = {
-  default:   { key:'default',   flag:'🌍', name:'全球',      nameEn:'Global',       theme:'default',   currency:'TWD', cities:[] },
-  thailand:  { key:'thailand',  flag:'🇹🇭', name:'泰國',     nameEn:'Thailand',     theme:'thailand',  currency:'THB',
+  default:    { key:'default',    flag:'🌍', name:'全球',      nameEn:'Global',       theme:'default',   currency:'TWD', cities:[] },
+  thailand:   { key:'thailand',   flag:'🇹🇭', name:'泰國',     nameEn:'Thailand',     theme:'thailand',  currency:'THB',
     cities:['曼谷','清邁','普吉島','芭提雅','蘇美島','清萊','華欣','喀比','大城','拜縣'] },
-  japan:     { key:'japan',     flag:'🇯🇵', name:'日本',     nameEn:'Japan',        theme:'japan',     currency:'JPY',
+  japan:      { key:'japan',      flag:'🇯🇵', name:'日本',     nameEn:'Japan',        theme:'japan',     currency:'JPY',
     cities:['東京','大阪','京都','沖繩','北海道','名古屋','福岡','奈良','神戶','箱根','鎌倉','廣島'] },
-  france:    { key:'france',    flag:'🇫🇷', name:'法國',     nameEn:'France',       theme:'france',    currency:'EUR',
+  france:     { key:'france',     flag:'🇫🇷', name:'法國',     nameEn:'France',       theme:'france',    currency:'EUR',
     cities:['巴黎','尼斯','馬賽','里昂','波爾多','史特拉斯堡','蒙彼利埃','凡爾賽','聖托佩'] },
-  italy:     { key:'italy',     flag:'🇮🇹', name:'義大利',   nameEn:'Italy',        theme:'italy',     currency:'EUR',
+  italy:      { key:'italy',      flag:'🇮🇹', name:'義大利',   nameEn:'Italy',        theme:'italy',     currency:'EUR',
     cities:['羅馬','米蘭','佛羅倫斯','威尼斯','那不勒斯','都靈','波隆那','阿馬爾菲','西西里'] },
-  greece:    { key:'greece',    flag:'🇬🇷', name:'希臘',     nameEn:'Greece',       theme:'greece',    currency:'EUR',
+  greece:     { key:'greece',     flag:'🇬🇷', name:'希臘',     nameEn:'Greece',       theme:'greece',    currency:'EUR',
     cities:['雅典','聖托里尼','米克諾斯','羅德島','克里特','科孚島','帕特拉'] },
-  morocco:   { key:'morocco',   flag:'🇲🇦', name:'摩洛哥',   nameEn:'Morocco',      theme:'morocco',   currency:'TWD',
+  morocco:    { key:'morocco',    flag:'🇲🇦', name:'摩洛哥',   nameEn:'Morocco',      theme:'morocco',   currency:'TWD',
     cities:['馬拉喀什','菲斯','卡薩布蘭卡','拉巴特','舍夫沙萬','梅克內斯','阿加迪爾'] },
-  maldives:  { key:'maldives',  flag:'🇲🇻', name:'馬爾地夫', nameEn:'Maldives',     theme:'maldives',  currency:'TWD',
+  maldives:   { key:'maldives',   flag:'🇲🇻', name:'馬爾地夫', nameEn:'Maldives',     theme:'maldives',  currency:'TWD',
     cities:['馬列','北馬列環礁','南馬列環礁','阿里環礁','巴環礁','胡瓦杜環礁'] },
-  korea:     { key:'korea',     flag:'🇰🇷', name:'韓國',     nameEn:'Korea',        theme:'korea',     currency:'KRW',
+  korea:      { key:'korea',      flag:'🇰🇷', name:'韓國',     nameEn:'Korea',        theme:'korea',     currency:'KRW',
     cities:['首爾','釜山','濟州島','仁川','大邱','光州','大田','全州','慶州','江原道'] },
-  singapore: { key:'singapore', flag:'🇸🇬', name:'新加坡',   nameEn:'Singapore',    theme:'singapore', currency:'SGD',
+  singapore:  { key:'singapore',  flag:'🇸🇬', name:'新加坡',   nameEn:'Singapore',    theme:'singapore', currency:'SGD',
     cities:['濱海灣','烏節路','聖淘沙','小印度','牛車水','樟宜'] },
-  usa:       { key:'usa',       flag:'🇺🇸', name:'美國',     nameEn:'USA',          theme:'usa',       currency:'USD',
+  usa:        { key:'usa',        flag:'🇺🇸', name:'美國',     nameEn:'USA',          theme:'usa',       currency:'USD',
     cities:['紐約','洛杉磯','舊金山','拉斯維加斯','邁阿密','芝加哥','西雅圖','波士頓','夏威夷','奧蘭多'] },
-  australia: { key:'australia', flag:'🇦🇺', name:'澳洲',     nameEn:'Australia',    theme:'australia', currency:'AUD',
+  australia:  { key:'australia',  flag:'🇦🇺', name:'澳洲',     nameEn:'Australia',    theme:'australia', currency:'AUD',
     cities:['雪梨','墨爾本','布里斯本','黃金海岸','凱恩斯','珀斯','阿德萊德','大堡礁','烏魯魯'] },
-  uk:        { key:'uk',        flag:'🇬🇧', name:'英國',     nameEn:'UK',           theme:'default',   currency:'GBP',
+  uk:         { key:'uk',         flag:'🇬🇧', name:'英國',     nameEn:'UK',           theme:'default',   currency:'GBP',
     cities:['倫敦','愛丁堡','曼徹斯特','利物浦','牛津','劍橋','巴斯','約克','湖區'] },
-  vietnam:   { key:'vietnam',   flag:'🇻🇳', name:'越南',     nameEn:'Vietnam',      theme:'default',   currency:'TWD',
+  vietnam:    { key:'vietnam',    flag:'🇻🇳', name:'越南',     nameEn:'Vietnam',      theme:'default',   currency:'TWD',
     cities:['河內','胡志明市','峴港','會安','芽莊','下龍灣','沙壩','富國島','順化'] },
-  indonesia: { key:'indonesia', flag:'🇮🇩', name:'印尼',     nameEn:'Indonesia',    theme:'default',   currency:'TWD',
+  indonesia:  { key:'indonesia',  flag:'🇮🇩', name:'印尼',     nameEn:'Indonesia',    theme:'default',   currency:'TWD',
     cities:['峇里島','雅加達','日惹','龍目島','科莫多島','萬鴉老','蘇拉巴亞'] },
-  spain:     { key:'spain',     flag:'🇪🇸', name:'西班牙',   nameEn:'Spain',        theme:'default',   currency:'EUR',
+  spain:      { key:'spain',      flag:'🇪🇸', name:'西班牙',   nameEn:'Spain',        theme:'default',   currency:'EUR',
     cities:['巴塞隆納','馬德里','塞維亞','格拉納達','畢爾包','瓦倫西亞','馬拉加','托萊多','龍達'] },
-  turkey:    { key:'turkey',    flag:'🇹🇷', name:'土耳其',   nameEn:'Turkey',       theme:'default',   currency:'TWD',
+  turkey:     { key:'turkey',     flag:'🇹🇷', name:'土耳其',   nameEn:'Turkey',       theme:'default',   currency:'TWD',
     cities:['伊斯坦堡','安塔利亞','卡帕多奇亞','以弗所','棉花堡','博德魯姆','安卡拉'] },
-  egypt:     { key:'egypt',     flag:'🇪🇬', name:'埃及',     nameEn:'Egypt',        theme:'default',   currency:'TWD',
+  egypt:      { key:'egypt',      flag:'🇪🇬', name:'埃及',     nameEn:'Egypt',        theme:'default',   currency:'TWD',
     cities:['開羅','盧克索','亞斯文','亞歷山大港','紅海','西奈半島','沙姆沙伊赫'] },
-  newzealand:{ key:'newzealand',flag:'🇳🇿', name:'紐西蘭',   nameEn:'New Zealand',  theme:'default',   currency:'AUD',
+  newzealand: { key:'newzealand', flag:'🇳🇿', name:'紐西蘭',   nameEn:'New Zealand',  theme:'default',   currency:'AUD',
     cities:['奧克蘭','皇后鎮','基督城','羅托魯阿','惠靈頓','但尼丁','瓦納卡','福克斯冰川'] },
-  canada:    { key:'canada',    flag:'🇨🇦', name:'加拿大',   nameEn:'Canada',       theme:'default',   currency:'USD',
+  canada:     { key:'canada',     flag:'🇨🇦', name:'加拿大',   nameEn:'Canada',       theme:'default',   currency:'USD',
     cities:['溫哥華','多倫多','班夫','魁北克城','蒙特婁','維多利亞','卡加利','惠斯勒'] },
-  portugal:  { key:'portugal',  flag:'🇵🇹', name:'葡萄牙',   nameEn:'Portugal',     theme:'default',   currency:'EUR',
+  portugal:   { key:'portugal',   flag:'🇵🇹', name:'葡萄牙',   nameEn:'Portugal',     theme:'default',   currency:'EUR',
     cities:['里斯本','波爾圖','辛特拉','法羅','阿爾加維','馬德拉島','科英布拉'] },
 };
-
-// Flat searchable list for autocomplete
 const GEO_LIST = Object.values(GEOGRAPHY_DATA).filter(g => g.key !== 'default');
 
 // AI generates theme for unknown countries
@@ -145,6 +142,11 @@ let currentTripId = null;
 let currentTrip = null;
 let currentDayFilter = null;
 let currentNavTab = 'itinerary';
+
+// ── 視圖狀態機 ─────────────────────────────────────────────
+// 'lobby'  → 大廳（所有行程，預設米色調）
+// 'detail' → 行程詳情（國家主題色）
+let currentView = 'lobby';
 
 // Data stores
 let tripsData = [];
@@ -174,15 +176,18 @@ const userDoc    = () => doc(db, 'users', currentUser.uid);
 function applyTheme(themeKey) {
   const root = document.documentElement;
   root.setAttribute('data-theme', themeKey || 'default');
-  // 觸發 CSS transition：讓所有 CSS 變數驅動的顏色絲滑過渡
   root.classList.add('theme-switching');
   setTimeout(() => root.classList.remove('theme-switching'), 600);
-  // 同步 meta theme-color（需等 CSS 變數生效後讀取）
   requestAnimationFrame(() => {
     const bg = getComputedStyle(root).getPropertyValue('--bg').trim();
-    const metaEl = document.querySelector('meta[name="theme-color"]');
-    if (metaEl && bg) metaEl.content = bg;
+    const m  = document.querySelector('meta[name="theme-color"]');
+    if (m && bg) m.content = bg;
   });
+}
+
+function applyTripTheme(country) {
+  const info = COUNTRY_THEMES[country] || { theme: 'default' };
+  applyTheme(info.theme || 'default');
 }
 
 function updateCountryBadge(trip) {
@@ -2478,95 +2483,124 @@ async function deletePackItem(id) {
 // ════════════════════════════════════════
 // 🌍 TRIP MANAGEMENT
 // ════════════════════════════════════════
+// ════════════════════════════════════════
+// 🗂️  processTrips — 行程分類 + 排序
+//     距今越近排越前
+// ════════════════════════════════════════
+function processTrips(trips) {
+  var today = new Date(); today.setHours(0,0,0,0);
+
+  function getEndDate(t) {
+    if (!t.departureDate) return null;
+    var dep  = new Date(t.departureDate);
+    var days = (t.days && t.days.length) || 1;
+    var end  = new Date(dep);
+    end.setDate(dep.getDate() + days - 1);
+    return end;
+  }
+
+  function tripStatus(t) {
+    if (t.isArchived || t.archived) return 'archived';
+    if (!t.departureDate)           return 'upcoming';
+    var dep = new Date(t.departureDate); dep.setHours(0,0,0,0);
+    var end = getEndDate(t);
+    if (end && end < today) return 'archived';
+    if (dep <= today)       return 'current';   // 含今天 = 進行中
+    return 'upcoming';
+  }
+
+  var current = [], upcoming = [], archived = [];
+  trips.forEach(function(t) {
+    var s = tripStatus(t);
+    if      (s === 'current')  current.push(t);
+    else if (s === 'upcoming') upcoming.push(t);
+    else                       archived.push(t);
+  });
+
+  // 距今越近排越前（new Date 比較，非字串排序）
+  function byDepAsc(a, b) {
+    return new Date(a.departureDate || '9999-12-31').getTime()
+         - new Date(b.departureDate || '9999-12-31').getTime();
+  }
+  current.sort(byDepAsc); upcoming.sort(byDepAsc);
+
+  // 封存：結束日降序（最近結束排最前）
+  archived.sort(function(a,b){
+    var ea = getEndDate(a) || new Date(0);
+    var eb = getEndDate(b) || new Date(0);
+    return eb.getTime() - ea.getTime();
+  });
+
+  return { current: current, upcoming: upcoming, archived: archived };
+}
+
 async function loadTrips() {
   const q = query(collection(db, 'trips'), orderBy('createdAt','desc'));
   const snap = await getDocs(q);
   tripsData = snap.docs.filter(d => {
-    var data = d.data();
+    const data = d.data();
     return data && data.members && data.members.includes(currentUser.uid);
-  }).map(d => ({ id:d.id, ...d.data() }));
+  }).map(d => ({ id: d.id, ...d.data() }));
+
   renderTripSelector();
+  renderLobby();   // 同步更新大廳內容
+
   if (tripsData.length > 0 && !currentTripId) {
-    selectTrip((function(){var _t=tripsData.find(t => !t.archived);return _t?_t.id:null;})() || tripsData[0].id);
+    const { current, upcoming } = processTrips(tripsData);
+
+    // ① 進行中行程 → 最高優先，直接進詳情
+    if (current.length > 0) {
+      selectTrip(current[0].id);
+      return;
+    }
+
+    // ② localStorage 記憶（yallabi_last_id）
+    let savedId = null;
+    try { savedId = localStorage.getItem('yallabi_last_id'); } catch(e) {}
+    if (savedId && tripsData.find(t => t.id === savedId && !t.isArchived && !t.archived)) {
+      const saved = tripsData.find(t => t.id === savedId);
+      currentTripId = savedId; currentTrip = saved;
+      updateCountryBadge(saved);
+      renderHero(saved);
+      currentDayFilter = (saved.days || ['Day 1'])[0];
+      _subscribeTrip(savedId);
+      fetchWeather(saved);
+      showLobby();   // 停留大廳，背景已預載
+      return;
+    }
+
+    // ③ 最近即將出發
+    if (upcoming.length > 0) {
+      const up = upcoming[0];
+      currentTripId = up.id; currentTrip = up;
+      updateCountryBadge(up);
+      renderHero(up);
+      currentDayFilter = (up.days || ['Day 1'])[0];
+      _subscribeTrip(up.id);
+      fetchWeather(up);
+      showLobby();
+      return;
+    }
+
+    // ④ 全部封存 → 大廳
+    showLobby();
+
   } else if (tripsData.length === 0) {
-    // 沒有旅行 → 觸發空狀態
-    currentTripId = null;
-    currentTrip = null;
-    renderHero(null);
-    renderItinerary();
-    renderExpenses();
-    renderDepart();
-    renderJournal();
-    // 清空 header
+    currentTripId = null; currentTrip = null;
+    renderHero(null); renderItinerary(); renderExpenses(); renderDepart(); renderJournal();
     const flag = document.getElementById('country-flag');
     const name = document.getElementById('country-name');
     if (flag) flag.textContent = '🌍';
     if (name) name.textContent = '選擇旅行';
+    showLobby();
   }
 }
 
-function renderTripSelector() {
-  const container = document.getElementById('trip-list');
-  if (!container) return;
-  if (tripsData.length === 0) {
-    container.innerHTML = '<div class="empty-state"><p>還沒有旅行<br>點下方新增</p></div>';
-    return;
-  }
-  container.innerHTML = tripsData.map(t => {
-    const info = COUNTRY_THEMES[t.country] || { flag:'🌍', name: t.countryName || t.country };
-    const isActive = t.id === currentTripId;
-    const border = isActive ? 'var(--accent)' : 'var(--border)';
-    const archiveLabel = t.archived ? '📂 取消封存' : '🗂️ 封存';
-    const checkmark = isActive ? '<span style="color:var(--accent);font-size:.85rem;flex-shrink:0">✓</span>' : '';
-    const dateStr = t.departureDate ? formatDateDisplay(t.departureDate) : '未設定出發日';
-    const archivedStr = t.archived ? ' · 已封存' : '';
-    const tripName = t.name || info.name;
-    return '<div class="card mb-2" style="border:1.5px solid ' + border + ';border-radius:var(--r-md);overflow:hidden">'
-      + '<div style="display:flex;align-items:center;gap:12px;padding:13px 14px;cursor:pointer" onclick="selectTrip(\'' + t.id + '\')">'
-      + '<span style="font-size:1.5rem;flex-shrink:0">' + info.flag + '</span>'
-      + '<div style="flex:1;min-width:0">'
-      + '<div style="font-size:.9rem;font-weight:600;color:var(--text)">' + tripName + '</div>'
-      + '<div style="font-size:.68rem;color:var(--text3);margin-top:2px">' + dateStr + archivedStr + '</div>'
-      + '</div>' + checkmark + '</div>'
-      + '<div style="display:flex;border-top:1px solid var(--border);background:var(--bg2)">'
-      + '<button onclick="openEditTrip(\'' + t.id + '\')" style="flex:1;padding:9px;font-size:.72rem;color:var(--text2);font-weight:500;border-right:1px solid var(--border)">✏️ 編輯</button>'
-      + '<button onclick="archiveTripById(\'' + t.id + '\')" style="flex:1;padding:9px;font-size:.72rem;color:var(--text2);font-weight:500;border-right:1px solid var(--border)">' + archiveLabel + '</button>'
-      + '<button onclick="deleteTripById(\'' + t.id + '\')" style="flex:1;padding:9px;font-size:.72rem;color:var(--danger);font-weight:500">✕ 刪除</button>'
-      + '</div></div>';
-  }).join('');
-}
-
-async function selectTrip(tripId) {
-  currentTripId = tripId;
-  currentTrip = tripsData.find(t => t.id === tripId);
-  if (!currentTrip) return;
-
-  // ① 關閉旅行清單 Modal（統一在函式內控制）
-  closeModal('modal-trips');
-
-  // ② 記憶最後選取的旅行
-  try { localStorage.setItem('last_trip_id', tripId); } catch(e) {}
-
-  // ③ 清空舊旅行資料，防止切換時舊卡片閃爍
-  itineraryData = []; missionsData  = []; packingData = [];
-  expensesData  = []; flightsData  = []; hotelsData  = [];
-  journalData   = [];
-
-  // ④ 立即套用新旅行主題色 + 重設 Day filter
-  updateCountryBadge(currentTrip);
-  renderHero(currentTrip);
-  const days = currentTrip.days || ['Day 1'];
-  currentDayFilter = days[0];
-
-  // ⑤ 切換到行程 tab（資料已清空，先顯示空狀態）
-  switchTab('itinerary');
-  window.scrollTo(0, 0);
-
-  // ⑥ 取消舊旅行所有 Firestore 監聽
-  unsubscribers.forEach(u => u());
-  unsubscribers = [];
-
-  // ⑦ 訂閱新旅行所有 collection
+// ── 共用：訂閱 Firestore collections ─────────────────────
+function _subscribeTrip(tripId) {
+  unsubscribers.forEach(u => u()); unsubscribers = [];
+  itineraryData = []; missionsData = []; packingData = [];
+  expensesData  = []; flightsData = []; hotelsData  = []; journalData = [];
   const collections = ['itinerary','missions','packing','expenses','flights','hotels','journal'];
   collections.forEach(col => {
     const unsub = onSnapshot(tripCol(col), snap => {
@@ -2585,6 +2619,98 @@ async function selectTrip(tripId) {
     });
     unsubscribers.push(unsub);
   });
+}
+
+
+function renderTripSelector() {
+  const container = document.getElementById('trip-list');
+  if (!container) return;
+  if (tripsData.length === 0) {
+    container.innerHTML = '<div class="empty-state"><p>還沒有旅行<br>點下方新增</p></div>';
+    return;
+  }
+
+  const { current, upcoming, archived } = processTrips(tripsData);
+
+  function cardHTML(t, badgeTxt, badgeColor, extraStyle) {
+    const info     = COUNTRY_THEMES[t.country] || { flag:'🌍', name: t.countryName || t.country };
+    const isActive = t.id === currentTripId;
+    const border   = isActive ? 'var(--accent)' : 'var(--border)';
+    const archLbl  = (t.isArchived || t.archived) ? '📂 取消封存' : '🗂️ 封存';
+    const check    = isActive ? '<span style="color:var(--accent);font-size:.85rem;flex-shrink:0">✓</span>' : '';
+    const dateStr  = t.departureDate ? formatDateDisplay(t.departureDate) : '未設定出發日';
+    const tripName = t.name || info.name;
+    const badge    = badgeTxt ? '<span style="font-size:.56rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:999px;margin-left:6px;vertical-align:middle;background:' + badgeColor + ';color:#fff">' + badgeTxt + '</span>' : '';
+    return '<div class="card mb-2" style="border:1.5px solid ' + border + ';border-radius:var(--r-md);overflow:hidden' + (extraStyle||'') + '">'
+      + '<div style="display:flex;align-items:center;gap:12px;padding:13px 14px;cursor:pointer" onclick="selectTrip(\'' + t.id + '\')">'
+      + '<span style="font-size:1.5rem;flex-shrink:0">' + info.flag + '</span>'
+      + '<div style="flex:1;min-width:0">'
+      + '<div style="font-size:.9rem;font-weight:600;color:var(--text)">' + tripName + badge + '</div>'
+      + '<div style="font-size:.68rem;color:var(--text3);margin-top:2px">' + dateStr + '</div>'
+      + '</div>' + check + '</div>'
+      + '<div style="display:flex;border-top:1px solid var(--border);background:var(--bg2)">'
+      + '<button onclick="openEditTrip(\'' + t.id + '\')" style="flex:1;padding:9px;font-size:.72rem;color:var(--text2);font-weight:500;border-right:1px solid var(--border)">✏️ 編輯</button>'
+      + '<button onclick="archiveTripById(\'' + t.id + '\')" style="flex:1;padding:9px;font-size:.72rem;color:var(--text2);font-weight:500;border-right:1px solid var(--border)">' + archLbl + '</button>'
+      + '<button onclick="deleteTripById(\'' + t.id + '\')" style="flex:1;padding:9px;font-size:.72rem;color:var(--danger);font-weight:500">✕ 刪除</button>'
+      + '</div></div>';
+  }
+
+  function divider(label) {
+    return '<div style="font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);padding:8px 2px 6px">' + label + '</div>';
+  }
+
+  let out = '';
+  current.forEach(t => { out += cardHTML(t, '進行中', 'var(--primary)', ''); });
+  if (upcoming.length > 0) {
+    if (current.length > 0) out += divider('即將出發');
+    upcoming.forEach(t => { out += cardHTML(t, '', '', ''); });
+  }
+  if (current.length === 0 && upcoming.length === 0) {
+    out += '<div style="padding:12px 0;font-size:.82rem;color:var(--text3);text-align:center">沒有進行中或即將出發的旅行</div>';
+  }
+  if (archived.length > 0) {
+    out += '<button onclick="window._toggleRsArchived()" style="width:100%;padding:10px 14px;margin-top:6px;border-radius:var(--r-md);background:transparent;border:1.5px dashed var(--border2);display:flex;align-items:center;justify-content:space-between;font-size:.72rem;font-weight:500;color:var(--text3);cursor:pointer;-webkit-tap-highlight-color:transparent">'
+      + '<span>📁 已封存（' + archived.length + ' 個）</span>'
+      + '<span id="rs-arch-chev">▼</span></button>'
+      + '<div id="rs-arch-list" style="overflow:hidden;max-height:0;opacity:0;transition:max-height .38s ease,opacity .28s ease;margin-top:4px">';
+    archived.forEach(t => { out += cardHTML(t, '已封存', 'var(--text3)', ';filter:grayscale(.5);opacity:.75'); });
+    out += '</div>';
+  }
+  container.innerHTML = out;
+}
+
+
+async function selectTrip(tripId) {
+  currentTripId = tripId;
+  currentTrip = tripsData.find(t => t.id === tripId);
+  if (!currentTrip) return;
+
+  // ① 進入 detail 視圖 + 關閉 modal
+  currentView = 'detail';
+  closeModal('modal-trips');
+  hideLobby();
+
+  // ② 記憶（統一 key: yallabi_last_id）
+  try { localStorage.setItem('yallabi_last_id', tripId); } catch(e) {}
+
+  // ③ 清空舊旅行資料，防止切換時舊卡片閃爍
+  itineraryData = []; missionsData  = []; packingData = [];
+  expensesData  = []; flightsData  = []; hotelsData  = [];
+  journalData   = [];
+
+  // ④ 立即套用新旅行主題色 + 重設 Day filter
+  applyTripTheme(currentTrip.country);
+  updateCountryBadge(currentTrip);
+  renderHero(currentTrip);
+  const days = currentTrip.days || ['Day 1'];
+  currentDayFilter = days[0];
+
+  // ⑤ 切換到行程 tab（資料已清空，先顯示空狀態）
+  switchTab('itinerary');
+  window.scrollTo(0, 0);
+
+  // ⑥+⑦ 取消舊監聽 + 訂閱新行程
+  _subscribeTrip(tripId);
 
   // ⑧ 載入旅伴資料
   const memberUids = currentTrip.members || [currentUser.uid];
@@ -2625,8 +2751,8 @@ async function createNewTrip() {
   const form = document.getElementById('form-new-trip');
   const country = form.querySelector('#nt-country').value;
   const countryName = country === 'other'
-    ? ((form.querySelector('#nt-country-name')||{value:''}).value.trim() || '')
-    : ((GEOGRAPHY_DATA[country] || COUNTRY_THEMES[country] || {}).name || '');
+    ? ((function(){var _e=form.querySelector('#nt-country-name');return _e?_e.value:''})() .trim() || '')
+    : ((COUNTRY_THEMES[country] && COUNTRY_THEMES[country].name) || '');
   const departure = form.querySelector('#nt-departure').value;
   const name = getAutoName();
 
@@ -2668,6 +2794,128 @@ async function createNewTrip() {
       if (confirm('旅行建立成功！\n要邀請旅伴一起規劃嗎？')) openInvite();
     }, 400);
   } catch(e) { showToast('建立失敗，請重試'); }
+}
+
+// ════════════════════════════════════════
+// 🏠  LOBBY — 大廳視圖管理
+//     currentView = 'lobby'  → 米色 + 行程卡片列表
+//     currentView = 'detail' → 國家主題色 + 行程詳情
+// ════════════════════════════════════════
+
+function showLobby() {
+  currentView = 'lobby';
+  // 恢復預設 Morandi 米色調
+  applyTheme('default');
+  // 更新 header badge
+  const flagEl = document.getElementById('country-flag');
+  const nameEl = document.getElementById('country-name');
+  if (flagEl) flagEl.textContent = '🌍';
+  if (nameEl) nameEl.textContent = '我的旅行';
+  // 顯示大廳 overlay
+  const lobby = document.getElementById('view-lobby');
+  if (lobby) {
+    lobby.classList.remove('lobby-hidden');
+    renderLobby();
+  } else {
+    openModal('modal-trips');  // fallback
+  }
+  // 隱藏「返回大廳」按鈕
+  const btnBack = document.getElementById('btn-back-lobby');
+  if (btnBack) btnBack.style.display = 'none';
+  // 大廳 nav 高亮
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  const nb = document.getElementById('nav-lobby');
+  if (nb) nb.classList.add('active');
+}
+
+function hideLobby() {
+  const lobby = document.getElementById('view-lobby');
+  if (lobby) lobby.classList.add('lobby-hidden');
+  // 顯示「返回大廳」按鈕
+  const btnBack = document.getElementById('btn-back-lobby');
+  if (btnBack) btnBack.style.display = 'inline-flex';
+}
+
+function renderLobby() {
+  const area = document.getElementById('lobby-trips-area');
+  if (!area) return;
+
+  if (tripsData.length === 0) {
+    area.innerHTML = '<div style="padding:40px 24px;text-align:center">'
+      + '<div style="font-size:3rem;margin-bottom:16px">✈️</div>'
+      + '<div style="font-size:.92rem;font-weight:600;color:var(--text);margin-bottom:8px">還沒有旅行計畫</div>'
+      + '<div style="font-size:.78rem;color:var(--text3);margin-bottom:24px">點擊右上角新增你的第一趟旅行</div>'
+      + '<button class="btn btn-primary btn-pill" onclick="openModal(\'modal-new-trip\')">  ＋ 新增旅行</button>'
+      + '</div>';
+    return;
+  }
+
+  const { current, upcoming, archived } = processTrips(tripsData);
+
+  function lobbyCard(t, statusLabel, statusColor) {
+    const geoInfo = (typeof GEOGRAPHY_DATA !== 'undefined' && GEOGRAPHY_DATA[t.country]) || null;
+    const ctInfo  = COUNTRY_THEMES[t.country] || null;
+    const info    = geoInfo || ctInfo || { flag:'🌍', name: t.countryName || t.country };
+    const name_   = t.name || info.name;
+    const date_   = t.departureDate ? formatDateDisplay(t.departureDate) : '未設定出發日';
+    const badge   = statusLabel
+      ? '<span style="font-size:.56rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;'
+        + 'padding:2px 8px;border-radius:999px;margin-left:6px;vertical-align:middle;'
+        + 'background:' + statusColor + ';color:#fff">' + statusLabel + '</span>'
+      : '';
+    const isAct = t.id === currentTripId;
+    const bdr   = isAct ? 'var(--accent)' : 'var(--border)';
+    const grey  = (t.isArchived || t.archived) ? ';filter:grayscale(.5);opacity:.7' : '';
+    return '<div class="lobby-card" style="border:1.5px solid ' + bdr + grey + '"'
+      + ' onclick="selectTrip(\'' + t.id + '\')">'
+      + '<div style="display:flex;align-items:center;gap:14px;padding:14px 16px">'
+      + '<span style="font-size:2rem;flex-shrink:0">' + info.flag + '</span>'
+      + '<div style="flex:1;min-width:0">'
+      + '<div style="font-size:.95rem;font-weight:700;color:var(--text)">' + name_ + badge + '</div>'
+      + '<div style="font-size:.72rem;color:var(--text3);margin-top:3px">' + date_ + '</div>'
+      + '</div>'
+      + (isAct ? '<span style="color:var(--accent);font-size:.85rem;flex-shrink:0">✓</span>' : '')
+      + '</div></div>';
+  }
+
+  let out = '';
+
+  // ⑴ 進行中
+  if (current.length > 0) {
+    current.forEach(t => { out += lobbyCard(t, '進行中', 'var(--primary)'); });
+  }
+
+  // ⑵ 即將出發（距今最近在前）
+  if (upcoming.length > 0) {
+    if (current.length > 0) {
+      out += '<div style="font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;'
+           + 'color:var(--text3);padding:8px 2px 6px">即將出發</div>';
+    }
+    upcoming.forEach(t => { out += lobbyCard(t, '', ''); });
+  }
+
+  if (current.length === 0 && upcoming.length === 0) {
+    out += '<div style="padding:16px 0;font-size:.82rem;color:var(--text3);text-align:center">'
+         + '目前沒有進行中或即將出發的旅行</div>';
+  }
+
+  // ⑶ 已封存（摺疊）
+  if (archived.length > 0) {
+    out += '<button onclick="window._toggleLobbyArchived()" '
+         + 'style="width:100%;padding:10px 14px;margin-top:6px;border-radius:var(--r-md);'
+         + 'background:transparent;border:1.5px dashed var(--border2);'
+         + 'display:flex;align-items:center;justify-content:space-between;'
+         + 'font-size:.74rem;font-weight:500;color:var(--text3);cursor:pointer;'
+         + '-webkit-tap-highlight-color:transparent">'
+         + '<span>📁 已封存行程（' + archived.length + ' 個）</span>'
+         + '<span id="lobby-arch-chev">▼</span></button>'
+         + '<div id="lobby-arch-list" style="overflow:hidden;max-height:0;opacity:0;'
+         + 'transition:max-height .38s ease,opacity .28s ease;margin-top:4px">';
+    archived.forEach(t => { out += lobbyCard(t, '已封存', 'var(--text3)'); });
+    out += '</div>';
+  }
+
+  area.innerHTML = out;
 }
 
 async function archiveTrip() {
@@ -3267,6 +3515,7 @@ onAuthStateChanged(auth, async user => {
     splashDebug('載入旅行資料...');
     await loadTrips();
     splashDebug('完成！');
+    if (currentView === 'lobby') showLobby();
     await checkJoinTrip();
     fetchExchangeRates();
 
@@ -3397,22 +3646,52 @@ window.handleCountrySearch = handleCountrySearch;
 window.selectCountry = selectCountry;
 window.renderCitySuggestions = renderCitySuggestions;
 window.addCity = addCity;
+window.showLobby = showLobby;
+window.hideLobby = hideLobby;
+window.renderLobby = renderLobby;
+window.processTrips = processTrips;
+window.renderTripSelector = renderTripSelector;
+// Archive toggles
+window._rsArchOpen = false;
+window._toggleRsArchived = function() {
+  window._rsArchOpen = !window._rsArchOpen;
+  var l = document.getElementById('rs-arch-list'), c = document.getElementById('rs-arch-chev');
+  if (l) { l.style.maxHeight = window._rsArchOpen ? l.scrollHeight + 'px' : '0'; l.style.opacity = window._rsArchOpen ? '1' : '0'; }
+  if (c) c.textContent = window._rsArchOpen ? '▲' : '▼';
+};
+window._lobbyArchOpen = false;
+window._toggleLobbyArchived = function() {
+  window._lobbyArchOpen = !window._lobbyArchOpen;
+  var l = document.getElementById('lobby-arch-list'), c = document.getElementById('lobby-arch-chev');
+  if (l) { l.style.maxHeight = window._lobbyArchOpen ? l.scrollHeight + 'px' : '0'; l.style.opacity = window._lobbyArchOpen ? '1' : '0'; }
+  if (c) c.textContent = window._lobbyArchOpen ? '▲' : '▼';
+};
+// Wrap selectTrip to show back button
+(function(){
+  var _orig = window.selectTrip;
+  if (!_orig) return;
+  window.selectTrip = function(id) {
+    _orig(id);
+    var btn = document.getElementById('btn-back-lobby');
+    if (btn) btn.style.display = 'inline-flex';
+  };
+})();
 // ════════════════════════════════════════
 // 🏙️ CITY TAGS INPUT
 // ════════════════════════════════════════
 // ════════════════════════════════════════
-// 🏙️ CITY TAGS + COUNTRY AUTOCOMPLETE
+// 🏙️  CITY TAGS + COUNTRY AUTOCOMPLETE
 // ════════════════════════════════════════
-let ntCities = []; // 已選城市陣列
+let ntCities = [];
+let _ntCountryKey = 'default';
 
-// ── 城市標籤 ──────────────────────────────────────────────
+// ── 城市 ──────────────────────────────────────────────────
 function handleCityInput(e) {
   const input = document.getElementById('nt-city-input');
-  const val = input.value;
+  const val   = input.value;
   if (e.key === 'Enter' || val.endsWith(',') || val.endsWith('，')) {
     e.preventDefault();
-    const city = val.replace(/[,，]$/, '').trim();
-    addCity(city);
+    addCity(val.replace(/[,，]$/, '').trim());
     input.value = '';
     updateAutoName();
   }
@@ -3422,29 +3701,25 @@ function addCity(city) {
   if (!city || ntCities.includes(city)) return;
   ntCities.push(city);
   renderCityTags();
+  renderCitySuggestions(_ntCountryKey);
   updateAutoName();
 }
 
 function renderCityTags() {
   const container = document.getElementById('nt-city-tags');
-  const input = document.getElementById('nt-city-input');
+  const input     = document.getElementById('nt-city-input');
   if (!container) return;
-  // 移除舊標籤，保留 input
   container.querySelectorAll('.city-tag-chip').forEach(el => el.remove());
-  // 插入城市標籤（帶入場動畫）
   ntCities.forEach(city => {
     const tag = document.createElement('div');
     tag.className = 'city-tag-chip';
     tag.style.cssText = 'display:inline-flex;align-items:center;gap:5px;'
       + 'background:color-mix(in srgb,var(--accent) 18%,var(--surface));'
       + 'border:1.5px solid color-mix(in srgb,var(--accent) 30%,var(--border));'
-      + 'border-radius:999px;padding:4px 10px;font-size:.78rem;'
-      + 'color:var(--text);font-weight:500;cursor:default;'
+      + 'border-radius:999px;padding:4px 10px;font-size:.78rem;color:var(--text);font-weight:500;'
       + 'animation:chipIn .2s cubic-bezier(.34,1.56,.64,1)';
-    tag.innerHTML = `${city}<button type="button" onclick="removeCity('${city}')" `
-      + `style="background:none;border:none;color:var(--text3);font-size:.7rem;`
-      + `cursor:pointer;margin-left:3px;line-height:1;padding:0;`
-      + `transition:color .15s">✕</button>`;
+    tag.innerHTML = city + '<button type="button" onclick="removeCity(\' + city + \')" '
+      + 'style="background:none;border:none;color:var(--text3);font-size:.7rem;cursor:pointer;margin-left:3px;padding:0">✕</button>';
     container.insertBefore(tag, input);
   });
   input.placeholder = ntCities.length > 0 ? '再新增城市...' : '輸入城市後按 Enter...';
@@ -3453,157 +3728,126 @@ function renderCityTags() {
 function removeCity(city) {
   ntCities = ntCities.filter(c => c !== city);
   renderCityTags();
+  renderCitySuggestions(_ntCountryKey);
   updateAutoName();
 }
 
-// ── 城市推薦 Chips（根據選定國家顯示）──────────────────────
 function renderCitySuggestions(countryKey) {
   const wrap  = document.getElementById('city-suggestions-wrap');
   const chips = document.getElementById('city-suggestion-chips');
   if (!wrap || !chips) return;
-
-  const geo = GEOGRAPHY_DATA[countryKey];
-  if (!geo || !geo.cities || geo.cities.length === 0) {
-    wrap.style.display = 'none';
-    return;
-  }
-
-  const available = geo.cities.filter(c => !ntCities.includes(c));
-  if (available.length === 0) { wrap.style.display = 'none'; return; }
-
-  chips.innerHTML = available.map(c =>
-    `<button type="button" onclick="addCity('${c}')" class="city-suggest-chip">${c}</button>`
-  ).join('');
+  const geo = typeof GEOGRAPHY_DATA !== 'undefined' ? GEOGRAPHY_DATA[countryKey] : null;
+  if (!geo || !geo.cities || geo.cities.length === 0) { wrap.style.display = 'none'; return; }
+  const avail = geo.cities.filter(c => !ntCities.includes(c));
+  if (avail.length === 0) { wrap.style.display = 'none'; return; }
+  chips.innerHTML = avail.map(c => '<button type="button" onclick="addCity(\' + c + \')" class="city-suggest-chip">' + c + '</button>').join('');
   wrap.style.display = 'block';
 }
 
 // ── 國家自動完成 ───────────────────────────────────────────
-let _currentCountryKey = 'default';
-
 function handleCountrySearch(query) {
   const dropdown = document.getElementById('country-autocomplete');
   if (!dropdown) return;
-
   const q = query.trim().toLowerCase();
-
-  // 顯示所有（空字串時）或過濾
-  const results = q === ''
-    ? GEO_LIST
-    : GEO_LIST.filter(g =>
-        g.name.includes(q) ||
-        g.nameEn.toLowerCase().includes(q) ||
-        (g.key === 'uk' && q.includes('英')) ||
-        g.cities.some(c => c.includes(q))
-      );
+  const list = typeof GEO_LIST !== 'undefined' ? GEO_LIST : [];
+  const results = q === '' ? list
+    : list.filter(g => g.name.includes(q) || g.nameEn.toLowerCase().includes(q) || g.cities.some(c => c.includes(q)));
 
   if (results.length === 0) {
-    // 自訂國家 fallback
-    dropdown.innerHTML = `<div class="country-ac-item" onclick="selectCountry('other','${query}','✏️')">
-      <span style="font-size:1.1rem">✏️</span>
-      <div><div style="font-size:.88rem;font-weight:600">${query}</div>
-      <div style="font-size:.68rem;color:var(--text3)">自訂國家</div></div></div>`;
-    dropdown.style.display = 'block';
-    return;
+    var item0 = document.createElement('div');
+    item0.className = 'country-ac-item';
+    item0.dataset.countryKey  = 'other';
+    item0.dataset.countryName = query;
+    item0.dataset.countryFlag = '✏️';
+    item0.onclick = function() { selectCountry(this.dataset.countryKey, this.dataset.countryName, this.dataset.countryFlag); };
+    item0.innerHTML = '<span style="font-size:1.1rem">✏️</span>'
+      + '<div><div style="font-size:.88rem;font-weight:600">' + query + '</div>'
+      + '<div style="font-size:.68rem;color:var(--text3)">自訂國家</div></div>';
+    dropdown.innerHTML = '';
+    dropdown.appendChild(item0);
+  } else {
+    // Build dropdown items using DOM (avoids all onclick string-nesting issues)
+    dropdown.innerHTML = '';
+    results.forEach(function(g) {
+      var item = document.createElement('div');
+      item.className = 'country-ac-item';
+      item.dataset.countryKey  = g.key;
+      item.dataset.countryName = g.name;
+      item.dataset.countryFlag = g.flag;
+      item.onclick = function() { selectCountry(this.dataset.countryKey, this.dataset.countryName, this.dataset.countryFlag); };
+      item.innerHTML = '<span style="font-size:1.3rem;flex-shrink:0">' + g.flag + '</span>'
+        + '<div><div style="font-size:.88rem;font-weight:600;color:var(--text)">' + g.name + '</div>'
+        + '<div style="font-size:.68rem;color:var(--text3)">' + g.nameEn + '</div></div>';
+      dropdown.appendChild(item);
+    });
   }
-
-  dropdown.innerHTML = results.map(g =>
-    `<div class="country-ac-item" onclick="selectCountry('${g.key}','${g.name}','${g.flag}')">
-      <span style="font-size:1.3rem;flex-shrink:0">${g.flag}</span>
-      <div style="min-width:0">
-        <div style="font-size:.88rem;font-weight:600;color:var(--text)">${g.name}</div>
-        <div style="font-size:.68rem;color:var(--text3)">${g.nameEn}</div>
-      </div>
-    </div>`
-  ).join('');
   dropdown.style.display = 'block';
 }
 
 function selectCountry(key, name, flag) {
-  _currentCountryKey = key;
-
-  // 更新顯示
-  const flagEl  = document.getElementById('nt-country-flag');
-  const searchEl = document.getElementById('nt-country-search');
-  const hiddenEl = document.getElementById('nt-country');
-  const dropdown = document.getElementById('country-autocomplete');
-  const customGrp= document.getElementById('custom-country-group');
-
+  _ntCountryKey = key;
+  var flagEl  = document.getElementById('nt-country-flag');
+  var srchEl  = document.getElementById('nt-country-search');
+  var hiddenEl= document.getElementById('nt-country');
+  var dropdown= document.getElementById('country-autocomplete');
+  var custGrp = document.getElementById('custom-country-group');
   if (flagEl)   flagEl.textContent  = flag || '🌍';
-  if (searchEl) searchEl.value      = key === 'other' ? '' : name;
+  if (srchEl)   srchEl.value        = key === 'other' ? '' : name;
   if (hiddenEl) hiddenEl.value      = key;
   if (dropdown) dropdown.style.display = 'none';
-
-  // 自訂國家顯示輸入框
-  if (customGrp) customGrp.style.display = key === 'other' ? 'block' : 'none';
-
+  if (custGrp)  custGrp.style.display  = key === 'other' ? 'block' : 'none';
   // 即時預覽主題色
-  const theme = (GEOGRAPHY_DATA[key] || {}).theme || 'default';
-  applyTheme(theme);
-
-  // 更新幣別建議
-  const geo = GEOGRAPHY_DATA[key];
+  var geo = typeof GEOGRAPHY_DATA !== 'undefined' ? GEOGRAPHY_DATA[key] : null;
+  applyTheme((geo && geo.theme) || (COUNTRY_THEMES[key] && COUNTRY_THEMES[key].theme) || 'default');
+  // 幣別建議
   if (geo && geo.currency) {
-    const currSel = document.getElementById('nt-currency');
-    if (currSel) currSel.value = geo.currency;
+    var curr = document.getElementById('nt-currency');
+    if (curr) curr.value = geo.currency;
   }
-
-  // 更新城市推薦
   renderCitySuggestions(key);
   updateAutoName();
 }
 
-// 點外側關閉 autocomplete
 document.addEventListener('click', function(e) {
-  const dropdown = document.getElementById('country-autocomplete');
-  const display  = document.getElementById('nt-country-display');
-  if (dropdown && display && !display.contains(e.target)) {
-    dropdown.style.display = 'none';
-  }
+  var dropdown = document.getElementById('country-autocomplete');
+  var display  = document.getElementById('nt-country-display');
+  if (dropdown && display && !display.contains(e.target)) dropdown.style.display = 'none';
 }, true);
 
+// ── 自動命名 ───────────────────────────────────────────────
 function updateAutoName() {
   const nameInput = document.getElementById('nt-name');
   const autoEl    = document.getElementById('nt-auto-name');
   const autoText  = document.getElementById('nt-auto-name-text');
   if (!autoEl || !autoText) return;
-
   if ((nameInput && nameInput.value).trim()) { autoEl.style.display = 'none'; return; }
 
-  const country    = (document.getElementById('nt-country')||{value:''}).value || 'default';
-  const customName = (document.getElementById('nt-country-name')||{value:''}).value.trim();
-  const countryName = country === 'other'
-    ? customName
-    : ((GEOGRAPHY_DATA[country] || COUNTRY_THEMES[country] || {}).name || customName || '');
-  const departure  = (document.getElementById('nt-departure')||{value:''}).value;
-  const year = departure ? new Date(departure).getFullYear() : new Date().getFullYear();
+  const country     = (document.getElementById('nt-country')||{value:''}).value || 'default';
+  const customName  = (document.getElementById('nt-country-name')||{value:''}).value.trim();
+  const geoName     = typeof GEOGRAPHY_DATA !== 'undefined' && GEOGRAPHY_DATA[country] ? GEOGRAPHY_DATA[country].name : null;
+  const countryName = country === 'other' ? customName : (geoName || (COUNTRY_THEMES[country] && COUNTRY_THEMES[country].name) || customName || '');
+  const departure   = (document.getElementById('nt-departure')||{value:''}).value;
+  const year        = departure ? new Date(departure).getFullYear() : new Date().getFullYear();
 
-  let suggested = '';
-  if (country === 'default' || !countryName) {
-    suggested = `旅行 ${year}`;
-  } else if (ntCities.length === 0) {
-    suggested = `${countryName}之旅 ${year}`;
-  } else if (ntCities.length === 1) {
-    suggested = `${countryName} · ${ntCities[0]} ${year}`;
-  } else {
-    suggested = `${countryName} · ${ntCities.slice(0,3).join('、')} ${year}`;
-  }
+  let sug = '';
+  if (!countryName || country === 'default') sug = `旅行 ${year}`;
+  else if (ntCities.length === 0)            sug = `${countryName}之旅 ${year}`;
+  else if (ntCities.length === 1)            sug = `${countryName} · ${ntCities[0]} ${year}`;
+  else                                       sug = `${countryName} · ${ntCities.slice(0,3).join('、')} ${year}`;
 
-  autoText.textContent = `自動命名：${suggested}`;
+  autoText.textContent = `自動命名：${sug}`;
   autoEl.style.display = 'flex';
 }
 
 function getAutoName() {
   const nameInput = document.getElementById('nt-name');
   if ((nameInput && nameInput.value).trim()) return nameInput.value.trim();
-
-  const country    = (document.getElementById('nt-country')||{value:''}).value || 'default';
-  const customName = (document.getElementById('nt-country-name')||{value:''}).value.trim();
-  const countryName = country === 'other'
-    ? customName
-    : ((GEOGRAPHY_DATA[country] || COUNTRY_THEMES[country] || {}).name || customName || '');
-  const departure  = (document.getElementById('nt-departure')||{value:''}).value;
-  const year = departure ? new Date(departure).getFullYear() : new Date().getFullYear();
-
+  const country     = (document.getElementById('nt-country')||{value:''}).value || 'default';
+  const customName  = (document.getElementById('nt-country-name')||{value:''}).value.trim();
+  const geoName     = typeof GEOGRAPHY_DATA !== 'undefined' && GEOGRAPHY_DATA[country] ? GEOGRAPHY_DATA[country].name : null;
+  const countryName = country === 'other' ? customName : (geoName || (COUNTRY_THEMES[country] && COUNTRY_THEMES[country].name) || customName || '');
+  const departure   = (document.getElementById('nt-departure')||{value:''}).value;
+  const year        = departure ? new Date(departure).getFullYear() : new Date().getFullYear();
   if (!countryName || country === 'default') return `旅行 ${year}`;
   if (ntCities.length === 0) return `${countryName}之旅 ${year}`;
   if (ntCities.length === 1) return `${countryName} · ${ntCities[0]} ${year}`;
@@ -3615,7 +3859,6 @@ function resetCityTags() {
   renderCityTags();
   const autoEl = document.getElementById('nt-auto-name');
   if (autoEl) autoEl.style.display = 'none';
-  // 重置國家選擇
   selectCountry('default', '全球', '🌍');
 }
 
@@ -3903,7 +4146,7 @@ window.toggleWeatherForecast = toggleWeatherForecast;
     <div class="header-inner">
       <!-- 左：Logo + 旅行選擇 -->
       <div class="flex items-center gap-2">
-        <button onclick="openModal('modal-trips')" style="font-family:'Noto Sans TC',sans-serif;font-size:1.1rem;font-weight:300;letter-spacing:.14em;text-transform:uppercase;color:var(--text)"><em style="font-style:normal;color:var(--accent);font-weight:700">Y</em>allabi</button>
+        <button onclick="showLobby()" style="font-family:'Noto Sans TC',sans-serif;font-size:1.1rem;font-weight:300;letter-spacing:.14em;text-transform:uppercase;color:var(--text)"><em style="font-style:normal;color:var(--accent);font-weight:700">Y</em>allabi</button><button id="btn-back-lobby" onclick="showLobby()" style="display:none;align-items:center;gap:4px;font-size:.76rem;font-weight:600;color:var(--text3);background:var(--bg2);border:1px solid var(--border);border-radius:999px;padding:4px 10px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s">← 大廳</button>
         <button class="country-badge" onclick="openModal('modal-trips')">
           <span class="flag" id="country-flag" style="filter:grayscale(.4);opacity:.85">🌍</span>
           <span id="country-name">選擇旅行</span>
@@ -3916,6 +4159,15 @@ window.toggleWeatherForecast = toggleWeatherForecast;
       </div>
     </div>
   </header>
+
+  <!-- ══ VIEW-LOBBY — 大廳 ══ -->
+  <div id="view-lobby" class="view-lobby">
+    <div class="view-lobby-header">
+      <span class="view-lobby-title">我的旅行計畫</span>
+      <button onclick="openModal('modal-new-trip')" style="display:inline-flex;align-items:center;gap:5px;font-size:.8rem;font-weight:600;color:var(--accent);background:var(--accent-soft);border-radius:999px;padding:7px 14px;border:none;cursor:pointer;-webkit-tap-highlight-color:transparent">＋ 新增旅行</button>
+    </div>
+    <div id="lobby-trips-area" style="padding:0 16px 32px"></div>
+  </div>
 
   <!-- ══ PAGE: ITINERARY ══ -->
   <div id="page-itinerary" class="page active">
@@ -4135,8 +4387,14 @@ window.toggleWeatherForecast = toggleWeatherForecast;
     </div>
   </div>
 
-  <!-- BOTTOM NAV - 4 tabs, Bibi 改成浮動按鈕 -->
+  <!-- BOTTOM NAV - 5 tabs: Lobby + 4 original -->
   <nav class="bottom-nav">
+    <button class="nav-btn" id="nav-lobby" onclick="showLobby()">
+      <div class="nav-icon" style="color:rgba(255,255,255,.38)">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+      </div>
+      <div class="nav-label">大廳</div>
+    </button>
     <button class="nav-btn active" id="nav-itinerary" onclick="switchTab('itinerary')">
       <div class="nav-icon" style="color:rgba(255,255,255,.38)">
         <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M19 4h-2V2h-2v2H9V2H7v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8c.13 0 .26-.03.38-.08s.23-.12.33-.22l7-7c.09-.09.15-.19.2-.29l.03-.09c.03-.08.05-.17.05-.26 0-.02.01-.04.01-.06V6c0-1.1-.9-2-2-2m0 9h-6c-.55 0-1 .45-1 1v6H5V8h14z"/></svg>
@@ -4488,18 +4746,13 @@ window.toggleWeatherForecast = toggleWeatherForecast;
           <!-- 國家自動完成 -->
           <div class="form-group" style="position:relative">
             <label class="form-label">目的地</label>
-            <div style="position:relative">
-              <div id="nt-country-display" style="display:flex;align-items:center;gap:8px;padding:0 12px;border-radius:var(--r-md);border:1.5px solid var(--border);background:var(--surface);min-height:46px;cursor:pointer" onclick="document.getElementById('nt-country-search').focus()">
-                <span id="nt-country-flag" style="font-size:1.4rem;flex-shrink:0">🌍</span>
-                <input id="nt-country-search" type="text" autocomplete="off" placeholder="搜尋國家... (如：日本、France)" style="border:none;outline:none;font-size:.9rem;color:var(--text);background:transparent;flex:1;padding:4px 0;min-width:80px" oninput="handleCountrySearch(this.value)" onfocus="handleCountrySearch(this.value)">
-              </div>
-              <!-- 隱藏的 select 保持後端兼容 -->
-              <input type="hidden" id="nt-country" value="default">
-              <!-- 自動完成下拉 -->
-              <div id="country-autocomplete" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r-md);box-shadow:0 8px 24px var(--shadow);z-index:200;max-height:220px;overflow-y:auto;-webkit-overflow-scrolling:touch"></div>
+            <div id="nt-country-display" style="display:flex;align-items:center;gap:8px;padding:0 12px;border-radius:var(--r-md);border:1.5px solid var(--border);background:var(--surface);min-height:46px;cursor:pointer" onclick="document.getElementById('nt-country-search').focus()">
+              <span id="nt-country-flag" style="font-size:1.4rem;flex-shrink:0">🌍</span>
+              <input id="nt-country-search" type="text" autocomplete="off" placeholder="搜尋國家... (如：日本、France)" style="border:none;outline:none;font-size:.9rem;color:var(--text);background:transparent;flex:1;padding:4px 0;min-width:80px" oninput="handleCountrySearch(this.value)" onfocus="handleCountrySearch(this.value)">
             </div>
+            <input type="hidden" id="nt-country" value="default">
+            <div id="country-autocomplete" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r-md);box-shadow:0 8px 24px var(--shadow);z-index:200;max-height:220px;overflow-y:auto"></div>
           </div>
-          <!-- 自訂國家（用於 other）-->
           <div class="form-group" id="custom-country-group" style="display:none">
             <label class="form-label">國家名稱</label>
             <input id="nt-country-name" type="text" class="form-input" placeholder="建議英文，如：Iceland、Turkey、Bali" oninput="updateAutoName()">
@@ -4508,7 +4761,6 @@ window.toggleWeatherForecast = toggleWeatherForecast;
           <div class="form-group">
             <label class="form-label">城市 / 地區（選填，可多個）</label>
             <div id="nt-city-tags" style="display:flex;flex-wrap:wrap;gap:6px;padding:9px 12px;border-radius:var(--r-md);border:1.5px solid var(--border);background:var(--surface);min-height:46px;align-items:center;cursor:text" onclick="document.getElementById('nt-city-input').focus()">
-              <!-- tags rendered here by JS -->
               <input id="nt-city-input" type="text" placeholder="輸入城市後按 Enter..." style="border:none;outline:none;font-size:15px;color:var(--text);background:transparent;min-width:100px;flex:1;padding:1px 0" onkeydown="handleCityInput(event)" oninput="updateAutoName()">
             </div>
             <div id="city-suggestions-wrap" style="display:none;margin-top:8px">
