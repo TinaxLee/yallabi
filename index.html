@@ -128,38 +128,71 @@ let currentNavTab = 'itinerary';
 // 'detail' → 行程詳情（國家主題色）
 let currentView = 'lobby';
 
-// ── 深色模式 ────────────────────────────────────────────
-function initDarkMode() {
+// ════════════════════════════════════════
+// 🌙 DARK MODE — 時間自動 + 手動切換
+//   07:00–18:00  → light (預設)
+//   18:00–07:00  → dark  (預設)
+//   localStorage 'yallabi_mode' = 'light'|'dark'|null (手動覆蓋)
+// ════════════════════════════════════════
+
+function _isNightTime() {
+  const h = new Date().getHours();
+  return h >= 18 || h < 7;  // 18:00–07:00 = 夜晚
+}
+
+function _currentlyDark() {
   const saved = localStorage.getItem('yallabi_mode');
-  if (saved) {
-    document.documentElement.setAttribute('data-mode', saved);
-  }
-  // 更新 meta color-scheme
-  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  const isDark = saved === 'dark' || (!saved && prefersDark);
+  if (saved === 'dark')  return true;
+  if (saved === 'light') return false;
+  // auto: 由時間決定
+  return _isNightTime();
+}
+
+function initDarkMode() {
+  const root = document.documentElement;
+  const isDark = _currentlyDark();
+  // 套用模式
+  root.setAttribute('data-mode', isDark ? 'dark' : 'light');
+  root.setAttribute('color-scheme', isDark ? 'dark' : 'light');
   updateDarkModeBtn(isDark);
+
+  // 每分鐘自動檢查（若沒有手動覆蓋才調整）
+  setInterval(function() {
+    if (!localStorage.getItem('yallabi_mode')) {
+      const nowDark = _isNightTime();
+      const curMode = document.documentElement.getAttribute('data-mode');
+      if ((nowDark && curMode !== 'dark') || (!nowDark && curMode !== 'light')) {
+        document.documentElement.setAttribute('data-mode', nowDark ? 'dark' : 'light');
+        updateDarkModeBtn(nowDark);
+      }
+    }
+  }, 60000);
 }
 
 function toggleDarkMode() {
-  const html = document.documentElement;
-  const current = html.getAttribute('data-mode');
-  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  // cycle: auto → light → dark → auto
-  let next;
-  if (!current) next = prefersDark ? 'light' : 'dark';
-  else if (current === 'light') next = 'dark';
-  else next = null; // back to auto
-  html.classList.add('theme-switching');
-  setTimeout(() => html.classList.remove('theme-switching'), 500);
-  if (next) { html.setAttribute('data-mode', next); localStorage.setItem('yallabi_mode', next); }
-  else       { html.removeAttribute('data-mode'); localStorage.removeItem('yallabi_mode'); }
-  updateDarkModeBtn(next === 'dark' || (!next && prefersDark));
+  const root    = document.documentElement;
+  const isDark  = root.getAttribute('data-mode') === 'dark';
+  const next    = isDark ? 'light' : 'dark';
+
+  root.classList.add('theme-switching');
+  setTimeout(() => root.classList.remove('theme-switching'), 500);
+
+  root.setAttribute('data-mode', next);
+  localStorage.setItem('yallabi_mode', next);  // 記住手動選擇
+  updateDarkModeBtn(next === 'dark');
 }
 
 function updateDarkModeBtn(isDark) {
-  const btns = document.querySelectorAll('.dark-mode-btn');
-  btns.forEach(b => { b.textContent = isDark ? '☀️' : '🌙'; });
+  // 🌙 = 目前亮色（點擊切換到深色）
+  // ☀️ = 目前深色（點擊切換到亮色）
+  const icon = isDark ? '🌙' : '☀️';
+  const tip  = isDark ? '切換到亮色模式' : '切換到深色模式';
+  document.querySelectorAll('.dark-mode-btn').forEach(b => {
+    b.textContent = icon;
+    b.title = tip;
+  });
 }
+
 window.toggleDarkMode = toggleDarkMode;
 
 // Data stores
@@ -190,6 +223,9 @@ const userDoc    = () => doc(db, 'users', currentUser.uid);
 function applyTheme(themeKey) {
   const root = document.documentElement;
   root.setAttribute('data-theme', themeKey || 'default');
+  // 保留已設定的深/淺色模式（不受國家主題影響）
+  const isDark = _currentlyDark();
+  root.setAttribute('data-mode', isDark ? 'dark' : 'light');
   root.classList.add('theme-switching');
   setTimeout(() => root.classList.remove('theme-switching'), 500);
   requestAnimationFrame(() => {
@@ -2777,7 +2813,7 @@ async function createNewTrip() {
 // ════════════════════════════════════════
 function showLobby() {
   currentView = 'lobby';
-  applyTheme('default');
+  applyTheme('default');  // applyTheme 內部已保留 data-mode
   const flag=document.getElementById('country-flag'), name=document.getElementById('country-name');
   if(flag) flag.textContent='🌍'; if(name) name.textContent='我的旅行';
   const el=document.getElementById('lobby-overlay');
@@ -4104,18 +4140,20 @@ window.toggleWeatherForecast = toggleWeatherForecast;
   <!-- HEADER -->
   <header class="main-header">
     <div class="header-inner">
-      <!-- 左：Logo + 旅行選擇 -->
-      <div class="flex items-center gap-2">
-        <button onclick="showLobby()" style="font-family:'Noto Sans TC',sans-serif;font-size:1.1rem;font-weight:300;letter-spacing:.14em;text-transform:uppercase;color:var(--text)"><em style="font-style:normal;color:var(--accent);font-weight:700">Y</em>allabi</button><button class="btn-back-lobby" onclick="showLobby()">← 大廳</button>
+      <!-- 左：Logo / 返回 + 國家徽章 -->
+      <div class="header-left">
+        <button onclick="showLobby()" class="header-logo"><em>Y</em>allabi</button>
+        <button class="btn-back-lobby" onclick="showLobby()">← 大廳</button>
         <button class="country-badge" onclick="openModal('modal-trips')">
           <span class="flag" id="country-flag" style="filter:grayscale(.4);opacity:.85">🌍</span>
-          <span id="country-name">選擇旅行</span>
+          <span id="country-name" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:72px">選擇旅行</span>
         </button>
       </div>
-      <!-- 右：成員頭像 + 設定 -->
-      <div class="flex items-center" style="gap:6px">
-        <div id="member-avatars" class="flex items-center" style="gap:4px"></div>
-        <button class="dark-mode-btn" onclick="toggleDarkMode()" title="深色模式">🌙</button><button onclick="openSettings()" style="width:32px;height:32px;border-radius:50%;background:transparent;border:1.5px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:.82rem;color:var(--text3);transition:all .15s" onmouseenter="this.style.background='var(--bg2)'" onmouseleave="this.style.background='transparent'">⚙️</button>
+      <!-- 右：頭像 + 深色切換 + 設定（邀請移入設定） -->
+      <div class="header-right">
+        <div id="member-avatars" class="flex items-center" style="gap:3px"></div>
+        <button class="dark-mode-btn" onclick="toggleDarkMode()">🌙</button>
+        <button class="settings-btn" onclick="openSettings()">⚙️</button>
       </div>
     </div>
   </header>
