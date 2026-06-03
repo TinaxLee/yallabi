@@ -121,8 +121,44 @@ body { transition: background-color .4s cubic-bezier(.4,0,.2,1), color .4s cubic
 }
 .lobby-add-btn:active { transform: scale(.93); }
 
-/* ── 行程卡片（大廳）──────────────────────────────────── */
-.lobby-trip-card {
+/* ── 新版大廳卡片 ────────────────────────────────────── */
+.lobby-trip-card2 {
+  margin: 0 16px 10px;
+  border-radius: 14px;
+  background: var(--surface);
+  border: 0.5px solid var(--border);
+  box-shadow: 0 1px 8px var(--shadow);
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
+  -webkit-tap-highlight-color: transparent;
+}
+.lobby-trip-card2:active { transform: scale(.975); box-shadow: 0 1px 4px var(--shadow); }
+.lobby-trip-card2.is-archived2 { filter: grayscale(.4); opacity: .75; }
+
+/* ── 大廳 section header ─────────────────────────────── */
+.lobby-section-hdr {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 4px 20px 6px;
+}
+.lobby-collapsible { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.lobby-section-count {
+  font-size: .65rem; color: var(--text3);
+  background: var(--bg2); padding: 1px 7px; border-radius: 10px;
+}
+
+/* ── 新增旅行虛線卡片 ────────────────────────────────── */
+.lobby-new-card {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  width: 100%; padding: 16px;
+  border-radius: 14px; border: 1.5px dashed var(--border2);
+  background: none; color: var(--text3); font-size: .85rem;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+  transition: background .15s, color .15s;
+}
+.lobby-new-card:active { background: var(--bg2); color: var(--text2); }
+
+
   margin: 0 16px 12px;
   border-radius: var(--r-lg);
   background: var(--surface);

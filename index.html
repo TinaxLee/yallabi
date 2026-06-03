@@ -80,6 +80,34 @@ const COUNTRY_THEMES = {
   australia: { flag:'🇦🇺', name:'澳洲',      nameEn:'Australia',  theme:'australia' },
 };
 
+// ════════════════════════════════════════
+// 🌏 GEOGRAPHY_DATA — 20 國地理資料庫
+// ════════════════════════════════════════
+const GEOGRAPHY_DATA = {
+  default:    { key:'default',    flag:'🌍', name:'全球',      nameEn:'Global',       theme:'default',   currency:'TWD', cities:[] },
+  thailand:   { key:'thailand',   flag:'🇹🇭', name:'泰國',     nameEn:'Thailand',     theme:'thailand',  currency:'THB', cities:['曼谷','清邁','普吉島','芭提雅','蘇美島','清萊','華欣','喀比','大城','拜縣'] },
+  japan:      { key:'japan',      flag:'🇯🇵', name:'日本',     nameEn:'Japan',        theme:'japan',     currency:'JPY', cities:['東京','大阪','京都','沖繩','北海道','名古屋','福岡','奈良','神戶','箱根','鎌倉','廣島'] },
+  france:     { key:'france',     flag:'🇫🇷', name:'法國',     nameEn:'France',       theme:'france',    currency:'EUR', cities:['巴黎','尼斯','馬賽','里昂','波爾多','史特拉斯堡','凡爾賽'] },
+  italy:      { key:'italy',      flag:'🇮🇹', name:'義大利',   nameEn:'Italy',        theme:'italy',     currency:'EUR', cities:['羅馬','米蘭','佛羅倫斯','威尼斯','那不勒斯','都靈','波隆那','阿馬爾菲'] },
+  greece:     { key:'greece',     flag:'🇬🇷', name:'希臘',     nameEn:'Greece',       theme:'greece',    currency:'EUR', cities:['雅典','聖托里尼','米克諾斯','羅德島','克里特','科孚島'] },
+  morocco:    { key:'morocco',    flag:'🇲🇦', name:'摩洛哥',   nameEn:'Morocco',      theme:'morocco',   currency:'TWD', cities:['馬拉喀什','菲斯','卡薩布蘭卡','拉巴特','舍夫沙萬'] },
+  maldives:   { key:'maldives',   flag:'🇲🇻', name:'馬爾地夫', nameEn:'Maldives',     theme:'maldives',  currency:'TWD', cities:['馬列','北馬列環礁','南馬列環礁','阿里環礁'] },
+  korea:      { key:'korea',      flag:'🇰🇷', name:'韓國',     nameEn:'Korea',        theme:'korea',     currency:'KRW', cities:['首爾','釜山','濟州島','仁川','大邱','光州','全州','慶州'] },
+  singapore:  { key:'singapore',  flag:'🇸🇬', name:'新加坡',   nameEn:'Singapore',    theme:'singapore', currency:'SGD', cities:['濱海灣','烏節路','聖淘沙','小印度','牛車水','樟宜'] },
+  usa:        { key:'usa',        flag:'🇺🇸', name:'美國',     nameEn:'USA',          theme:'usa',       currency:'USD', cities:['紐約','洛杉磯','舊金山','拉斯維加斯','邁阿密','芝加哥','西雅圖','夏威夷'] },
+  australia:  { key:'australia',  flag:'🇦🇺', name:'澳洲',     nameEn:'Australia',    theme:'australia', currency:'AUD', cities:['雪梨','墨爾本','布里斯本','黃金海岸','凱恩斯','珀斯','大堡礁'] },
+  uk:         { key:'uk',         flag:'🇬🇧', name:'英國',     nameEn:'UK',           theme:'default',   currency:'GBP', cities:['倫敦','愛丁堡','曼徹斯特','利物浦','牛津','劍橋','巴斯','約克'] },
+  vietnam:    { key:'vietnam',    flag:'🇻🇳', name:'越南',     nameEn:'Vietnam',      theme:'default',   currency:'TWD', cities:['河內','胡志明市','峴港','會安','芽莊','下龍灣','沙壩','富國島'] },
+  indonesia:  { key:'indonesia',  flag:'🇮🇩', name:'印尼',     nameEn:'Indonesia',    theme:'default',   currency:'TWD', cities:['峇里島','雅加達','日惹','龍目島','科莫多島'] },
+  spain:      { key:'spain',      flag:'🇪🇸', name:'西班牙',   nameEn:'Spain',        theme:'default',   currency:'EUR', cities:['巴塞隆納','馬德里','塞維亞','格拉納達','畢爾包','瓦倫西亞'] },
+  turkey:     { key:'turkey',     flag:'🇹🇷', name:'土耳其',   nameEn:'Turkey',       theme:'default',   currency:'TWD', cities:['伊斯坦堡','安塔利亞','卡帕多奇亞','以弗所','棉花堡'] },
+  egypt:      { key:'egypt',      flag:'🇪🇬', name:'埃及',     nameEn:'Egypt',        theme:'default',   currency:'TWD', cities:['開羅','盧克索','亞斯文','亞歷山大港','紅海'] },
+  newzealand: { key:'newzealand', flag:'🇳🇿', name:'紐西蘭',   nameEn:'New Zealand',  theme:'default',   currency:'AUD', cities:['奧克蘭','皇后鎮','基督城','羅托魯阿','惠靈頓'] },
+  canada:     { key:'canada',     flag:'🇨🇦', name:'加拿大',   nameEn:'Canada',       theme:'default',   currency:'USD', cities:['溫哥華','多倫多','班夫','魁北克城','蒙特婁','惠斯勒'] },
+  portugal:   { key:'portugal',   flag:'🇵🇹', name:'葡萄牙',   nameEn:'Portugal',     theme:'default',   currency:'EUR', cities:['里斯本','波爾圖','辛特拉','法羅','馬德拉島','科英布拉'] },
+};
+const GEO_LIST = Object.values(GEOGRAPHY_DATA).filter(g => g.key !== 'default');
+
 // AI generates theme for unknown countries
 function getAITheme(countryName) {
   // fallback to default morandi
@@ -94,6 +122,78 @@ let currentTripId = null;
 let currentTrip = null;
 let currentDayFilter = null;
 let currentNavTab = 'itinerary';
+
+// ── 視圖狀態機 ──────────────────────────────────────────
+// 'lobby'  → 大廳（米色，所有行程卡片）
+// 'detail' → 行程詳情（國家主題色）
+let currentView = 'lobby';
+
+// ════════════════════════════════════════
+// 🌙 DARK MODE — 時間自動 + 手動切換
+//   07:00–18:00  → light (預設)
+//   18:00–07:00  → dark  (預設)
+//   localStorage 'yallabi_mode' = 'light'|'dark'|null (手動覆蓋)
+// ════════════════════════════════════════
+
+function _isNightTime() {
+  const h = new Date().getHours();
+  return h >= 18 || h < 7;  // 18:00–07:00 = 夜晚
+}
+
+function _currentlyDark() {
+  const saved = localStorage.getItem('yallabi_mode');
+  if (saved === 'dark')  return true;
+  if (saved === 'light') return false;
+  // auto: 由時間決定
+  return _isNightTime();
+}
+
+function initDarkMode() {
+  const root = document.documentElement;
+  const isDark = _currentlyDark();
+  // 套用模式
+  root.setAttribute('data-mode', isDark ? 'dark' : 'light');
+  root.setAttribute('color-scheme', isDark ? 'dark' : 'light');
+  updateDarkModeBtn(isDark);
+
+  // 每分鐘自動檢查（若沒有手動覆蓋才調整）
+  setInterval(function() {
+    if (!localStorage.getItem('yallabi_mode')) {
+      const nowDark = _isNightTime();
+      const curMode = document.documentElement.getAttribute('data-mode');
+      if ((nowDark && curMode !== 'dark') || (!nowDark && curMode !== 'light')) {
+        document.documentElement.setAttribute('data-mode', nowDark ? 'dark' : 'light');
+        updateDarkModeBtn(nowDark);
+      }
+    }
+  }, 60000);
+}
+
+function toggleDarkMode() {
+  const root    = document.documentElement;
+  const isDark  = root.getAttribute('data-mode') === 'dark';
+  const next    = isDark ? 'light' : 'dark';
+
+  root.classList.add('theme-switching');
+  setTimeout(() => root.classList.remove('theme-switching'), 500);
+
+  root.setAttribute('data-mode', next);
+  localStorage.setItem('yallabi_mode', next);  // 記住手動選擇
+  updateDarkModeBtn(next === 'dark');
+}
+
+function updateDarkModeBtn(isDark) {
+  // 🌙 = 目前亮色（點擊切換到深色）
+  // ☀️ = 目前深色（點擊切換到亮色）
+  const icon = isDark ? '🌙' : '☀️';
+  const tip  = isDark ? '切換到亮色模式' : '切換到深色模式';
+  document.querySelectorAll('.dark-mode-btn').forEach(b => {
+    b.textContent = icon;
+    b.title = tip;
+  });
+}
+
+window.toggleDarkMode = toggleDarkMode;
 
 // Data stores
 let tripsData = [];
@@ -121,9 +221,22 @@ const userDoc    = () => doc(db, 'users', currentUser.uid);
 // 🎨 THEME SYSTEM
 // ════════════════════════════════════════
 function applyTheme(themeKey) {
-  document.documentElement.setAttribute('data-theme', themeKey || 'default');
-  document.documentElement.classList.add('theme-switching');
-  setTimeout(() => document.documentElement.classList.remove('theme-switching'), 500);
+  const root = document.documentElement;
+  root.setAttribute('data-theme', themeKey || 'default');
+  // 保留已設定的深/淺色模式（不受國家主題影響）
+  const isDark = _currentlyDark();
+  root.setAttribute('data-mode', isDark ? 'dark' : 'light');
+  root.classList.add('theme-switching');
+  setTimeout(() => root.classList.remove('theme-switching'), 500);
+  requestAnimationFrame(() => {
+    const bg = getComputedStyle(root).getPropertyValue('--bg').trim();
+    const m = document.querySelector('meta[name="theme-color"]');
+    if (m && bg) m.content = bg;
+  });
+}
+function applyTripTheme(country) {
+  const info = COUNTRY_THEMES[country] || { theme:'default' };
+  applyTheme(info.theme || 'default');
 }
 
 function updateCountryBadge(trip) {
@@ -636,122 +749,18 @@ function getDisplayRate() {
   return exchangeRates[tripCurrency] / (exchangeRates['TWD'] || 1);
 }
 
-// ════════════════════════════════════════
-// 💱 CURRENCY_MAP — ISO 4217 (150+ 種)
-// ════════════════════════════════════════
-const CURRENCY_MAP = {
-  AED:{symbol:'د.إ',name:'阿聯酋迪拉姆'},AFK:{symbol:'؋',name:'阿富汗尼'},ALL:{symbol:'L',name:'阿爾巴尼列克'},AMD:{symbol:'֏',name:'亞美尼亞德拉姆'},
-  ANG:{symbol:'ƒ',name:'荷屬安地列斯盾'},AOA:{symbol:'Kz',name:'安哥拉寬扎'},ARS:{symbol:'$',name:'阿根廷披索'},AUD:{symbol:'A$',name:'澳幣'},
-  AWG:{symbol:'ƒ',name:'阿魯巴弗羅林'},AZN:{symbol:'₼',name:'亞塞拜然馬納特'},BAM:{symbol:'KM',name:'波士尼亞可兌換馬克'},BBD:{symbol:'$',name:'巴巴多斯元'},
-  BDT:{symbol:'৳',name:'孟加拉塔卡'},BGN:{symbol:'лв',name:'保加利亞列弗'},BHD:{symbol:'.د.ب',name:'巴林第納爾'},BMD:{symbol:'$',name:'百慕達元'},
-  BND:{symbol:'$',name:'汶萊元'},BOB:{symbol:'Bs.',name:'玻利維亞諾'},BRL:{symbol:'R$',name:'巴西雷亞爾'},BSD:{symbol:'$',name:'巴哈馬元'},
-  BTN:{symbol:'Nu',name:'不丹努爾特魯姆'},BWP:{symbol:'P',name:'波札那普拉'},BYN:{symbol:'Br',name:'白俄羅斯盧布'},BZD:{symbol:'BZ$',name:'貝里斯元'},
-  CAD:{symbol:'C$',name:'加幣'},CDF:{symbol:'Fr',name:'剛果法郎'},CHF:{symbol:'CHF',name:'瑞士法郎'},CLP:{symbol:'$',name:'智利披索'},
-  CNY:{symbol:'¥',name:'人民幣'},COP:{symbol:'$',name:'哥倫比亞披索'},CRC:{symbol:'₡',name:'哥斯大黎加科朗'},CUP:{symbol:'$',name:'古巴披索'},
-  CVE:{symbol:'$',name:'維德角埃斯庫多'},CZK:{symbol:'Kč',name:'捷克克朗'},DJF:{symbol:'Fr',name:'吉布提法郎'},DKK:{symbol:'kr',name:'丹麥克朗'},
-  DOP:{symbol:'$',name:'多明尼加披索'},DZD:{symbol:'دج',name:'阿爾及利亞第納爾'},EGP:{symbol:'£',name:'埃及鎊'},ETB:{symbol:'Br',name:'衣索比亞比爾'},
-  EUR:{symbol:'€',name:'歐元'},FJD:{symbol:'$',name:'斐濟元'},GBP:{symbol:'£',name:'英鎊'},GEL:{symbol:'₾',name:'喬治亞拉里'},
-  GHS:{symbol:'₵',name:'迦納塞地'},GMD:{symbol:'D',name:'甘比亞達拉西'},GTQ:{symbol:'Q',name:'瓜地馬拉格查爾'},GYD:{symbol:'$',name:'蓋亞那元'},
-  HKD:{symbol:'HK$',name:'港幣'},HNL:{symbol:'L',name:'宏都拉斯倫皮拉'},HRK:{symbol:'kn',name:'克羅埃西亞庫納'},HTG:{symbol:'G',name:'海地古德'},
-  HUF:{symbol:'Ft',name:'匈牙利福林'},IDR:{symbol:'Rp',name:'印尼盾'},ILS:{symbol:'₪',name:'以色列謝克爾'},INR:{symbol:'₹',name:'印度盧比'},
-  IQD:{symbol:'ع.د',name:'伊拉克第納爾'},IRR:{symbol:'﷼',name:'伊朗里亞爾'},ISK:{symbol:'kr',name:'冰島克朗'},JMD:{symbol:'$',name:'牙買加元'},
-  JOD:{symbol:'JD',name:'約旦第納爾'},JPY:{symbol:'¥',name:'日圓'},KES:{symbol:'KSh',name:'肯亞先令'},KGS:{symbol:'сом',name:'吉爾吉斯索姆'},
-  KHR:{symbol:'៛',name:'柬埔寨瑞爾'},KMF:{symbol:'Fr',name:'葛摩法郎'},KRW:{symbol:'₩',name:'韓圜'},KWD:{symbol:'د.ك',name:'科威特第納爾'},
-  KYD:{symbol:'$',name:'開曼群島元'},KZT:{symbol:'₸',name:'哈薩克堅戈'},LAK:{symbol:'₭',name:'寮國基普'},LBP:{symbol:'ل.ل',name:'黎巴嫩鎊'},
-  LKR:{symbol:'₨',name:'斯里蘭卡盧比'},LRD:{symbol:'$',name:'賴比瑞亞元'},LSL:{symbol:'L',name:'賴索托洛蒂'},LYD:{symbol:'ل.د',name:'利比亞第納爾'},
-  MAD:{symbol:'MAD',name:'摩洛哥迪拉姆'},MDL:{symbol:'L',name:'摩爾多瓦列伊'},MGA:{symbol:'Ar',name:'馬達加斯加阿里亞里'},MKD:{symbol:'ден',name:'北馬其頓代納爾'},
-  MMK:{symbol:'K',name:'緬甸緬元'},MNT:{symbol:'₮',name:'蒙古圖格里克'},MOP:{symbol:'P',name:'澳門元'},MRU:{symbol:'UM',name:'茅利塔尼亞奧吉亞'},
-  MUR:{symbol:'₨',name:'模里西斯盧比'},MVR:{symbol:'Rf',name:'馬爾地夫盧菲亞'},MWK:{symbol:'MK',name:'馬拉威克瓦查'},MXN:{symbol:'$',name:'墨西哥披索'},
-  MYR:{symbol:'RM',name:'馬來西亞林吉特'},MZN:{symbol:'MT',name:'莫三比克梅蒂卡爾'},NAD:{symbol:'$',name:'納米比亞元'},NGN:{symbol:'₦',name:'奈及利亞奈拉'},
-  NIO:{symbol:'C$',name:'尼加拉瓜科多巴'},NOK:{symbol:'kr',name:'挪威克朗'},NPR:{symbol:'₨',name:'尼泊爾盧比'},NZD:{symbol:'NZ$',name:'紐西蘭元'},
-  OMR:{symbol:'﷼',name:'阿曼里亞爾'},PAB:{symbol:'B/.',name:'巴拿馬巴波亞'},PEN:{symbol:'S/.',name:'秘魯索爾'},PGK:{symbol:'K',name:'巴布亞新幾內亞基那'},
-  PHP:{symbol:'₱',name:'菲律賓披索'},PKR:{symbol:'₨',name:'巴基斯坦盧比'},PLN:{symbol:'zł',name:'波蘭茲羅提'},PYG:{symbol:'₲',name:'巴拉圭瓜拉尼'},
-  QAR:{symbol:'﷼',name:'卡達里亞爾'},RON:{symbol:'lei',name:'羅馬尼亞列伊'},RSD:{symbol:'дин',name:'塞爾維亞第納爾'},RUB:{symbol:'₽',name:'俄羅斯盧布'},
-  RWF:{symbol:'Fr',name:'盧安達法郎'},SAR:{symbol:'﷼',name:'沙烏地阿拉伯里亞爾'},SBD:{symbol:'$',name:'索羅門群島元'},SCR:{symbol:'₨',name:'塞席爾盧比'},
-  SDG:{symbol:'ج.س.',name:'蘇丹鎊'},SEK:{symbol:'kr',name:'瑞典克朗'},SGD:{symbol:'S$',name:'新加坡元'},SHP:{symbol:'£',name:'聖赫勒拿鎊'},
-  SLL:{symbol:'Le',name:'獅子山利昂'},SOS:{symbol:'Sh',name:'索馬利亞先令'},SRD:{symbol:'$',name:'蘇利南元'},STN:{symbol:'Db',name:'聖多美多布拉'},
-  SVC:{symbol:'¢',name:'薩爾瓦多科朗'},SYP:{symbol:'£',name:'敘利亞鎊'},SZL:{symbol:'L',name:'史瓦帝尼里拉吉尼'},THB:{symbol:'฿',name:'泰銖'},
-  TJS:{symbol:'SM',name:'塔吉克索莫尼'},TMT:{symbol:'T',name:'土庫曼馬納特'},TND:{symbol:'د.ت',name:'突尼西亞第納爾'},TOP:{symbol:'T$',name:'東加潘加'},
-  TRY:{symbol:'₺',name:'土耳其里拉'},TTD:{symbol:'TT$',name:'千里達及托巴哥元'},TWD:{symbol:'NT$',name:'台幣'},TZS:{symbol:'Sh',name:'坦尚尼亞先令'},
-  UAH:{symbol:'₴',name:'烏克蘭格里夫納'},UGX:{symbol:'Sh',name:'烏干達先令'},USD:{symbol:'$',name:'美金'},UYU:{symbol:'$',name:'烏拉圭披索'},
-  UZS:{symbol:'лв',name:'烏茲別克蘇姆'},VEF:{symbol:'Bs.F',name:'委內瑞拉玻利瓦'},VND:{symbol:'₫',name:'越南盾'},VUV:{symbol:'Vt',name:'萬那杜瓦圖'},
-  WST:{symbol:'T',name:'薩摩亞塔拉'},XAF:{symbol:'Fr',name:'中非法郎'},XCD:{symbol:'$',name:'東加勒比元'},XOF:{symbol:'Fr',name:'西非法郎'},
-  XPF:{symbol:'Fr',name:'太平洋法郎'},YER:{symbol:'﷼',name:'葉門里亞爾'},ZAR:{symbol:'R',name:'南非蘭特'},ZMW:{symbol:'ZK',name:'尚比亞克瓦查'},
-  ZWL:{symbol:'$',name:'辛巴威元'},
-  MXV:{symbol:'MXV',name:'墨西哥計價單位'},
-  CLF:{symbol:'UF',name:'智利計息單位'},
-};
 function getCurrencySymbol(cur) {
-  return (CURRENCY_MAP[cur] && CURRENCY_MAP[cur].symbol) ? CURRENCY_MAP[cur].symbol + ' ' : (cur ? cur + ' ' : '');
+  if (cur === 'TWD') return 'NT$';
+  if (cur === 'THB') return 'THB ';
+  if (cur === 'JPY') return 'JPY ';
+  if (cur === 'EUR') return 'EUR ';
+  if (cur === 'USD') return '$';
+  if (cur === 'KRW') return 'KRW ';
+  if (cur === 'SGD') return 'S$';
+  if (cur === 'AUD') return 'A$';
+  if (cur === 'GBP') return 'GBP ';
+  return cur + ' ';
 }
-
-// ════════════════════════════════════════
-// ⭐ 常用幣別釘選系統
-// ════════════════════════════════════════
-const DEFAULT_PINNED_CURRENCIES = ['TWD','THB','JPY','USD','EUR','KRW','SGD','GBP'];
-let pinnedCurrencies = DEFAULT_PINNED_CURRENCIES;
-(function() {
-  try {
-    const saved = localStorage.getItem('yallabi_pinned_currencies');
-    if (saved) pinnedCurrencies = JSON.parse(saved);
-  } catch(e) {}
-})();
-
-function savePinnedCurrencies() {
-  try { localStorage.setItem('yallabi_pinned_currencies', JSON.stringify(pinnedCurrencies)); } catch(e) {}
-}
-
-function buildCurrencyOptions(selectedValue) {
-  const allCodes = Object.keys(CURRENCY_MAP).sort();
-  const pinned = pinnedCurrencies.filter(c => CURRENCY_MAP[c]);
-  const rest   = allCodes.filter(c => !pinnedCurrencies.includes(c));
-  const makeOpt = c => {
-    const info = CURRENCY_MAP[c];
-    const sel  = c === selectedValue ? ' selected' : '';
-    return '<option value="' + c + '"' + sel + '>' + c + ' ' + info.name + '</option>';
-  };
-  return '<optgroup label="⭐ 常用幣別">' + pinned.map(makeOpt).join('') + '</optgroup>'
-       + '<optgroup label="全球幣別">'    + rest.map(makeOpt).join('')   + '</optgroup>';
-}
-
-function openPinCurrenciesModal() {
-  const body = document.getElementById('pin-currencies-body');
-  if (!body) return;
-  const all = Object.keys(CURRENCY_MAP).sort();
-  body.innerHTML = all.map(c => {
-    const info = CURRENCY_MAP[c];
-    const pinned = pinnedCurrencies.includes(c);
-    return '<div class="pin-currency-row" id="pcrow-' + c + '">'
-      + '<span style="font-size:.88rem;font-weight:500;color:var(--text)">' + c + '</span>'
-      + '<span style="font-size:.78rem;color:var(--text3);flex:1;margin-left:8px">' + info.name + '</span>'
-      + '<button onclick="togglePinCurrency(\'' + c + '\')" style="font-size:1.1rem;background:none;border:none;cursor:pointer;padding:4px;-webkit-tap-highlight-color:transparent" id="pinbtn-' + c + '">'
-      + (pinned ? '★' : '☆') + '</button>'
-      + '</div>';
-  }).join('');
-  openModal('modal-pin-currencies');
-}
-window.openPinCurrenciesModal = openPinCurrenciesModal;
-
-function togglePinCurrency(code) {
-  const idx = pinnedCurrencies.indexOf(code);
-  if (idx >= 0) { pinnedCurrencies.splice(idx, 1); }
-  else          { pinnedCurrencies.push(code); }
-  savePinnedCurrencies();
-  const btn = document.getElementById('pinbtn-' + code);
-  if (btn) btn.textContent = pinnedCurrencies.includes(code) ? '★' : '☆';
-}
-window.togglePinCurrency = togglePinCurrency;
-
-function closePinCurrenciesModal() {
-  savePinnedCurrencies();
-  closeModal('modal-pin-currencies');
-  // 重新渲染換算卡片的下拉選單（保持當前選中值）
-  const fromSel = document.getElementById('convert-from');
-  const toSel   = document.getElementById('convert-to');
-  if (fromSel) { const v=fromSel.value; fromSel.innerHTML=buildCurrencyOptions(v); }
-  if (toSel)   { const v=toSel.value;   toSel.innerHTML=buildCurrencyOptions(v); }
-}
-window.closePinCurrenciesModal = closePinCurrenciesModal;
 
 function convertCurrency(amount, from, to) {
   if (from === to) return amount;
@@ -800,13 +809,6 @@ function renderExpenseSummary() {
       members.forEach(m => { if (totals[m.uid]) totals[m.uid].owed += share; });
     } else if (exp.splitType === 'personal') {
       if (totals[payer]) totals[payer].owed += converted;
-    } else if (exp.splitType === 'custom' && exp.customSplits) {
-      // 自訂分攤：每人依 customSplits 金額，先換算幣別
-      members.forEach(m => {
-        const rawAmt = parseFloat(exp.customSplits[m.uid] || 0);
-        const convAmt = convertCurrency(rawAmt, exp.currency || tripCurrency, baseCurrency);
-        if (totals[m.uid] !== undefined) totals[m.uid].owed += convAmt;
-      });
     }
     // treat = payer covers all, others owe nothing
   });
@@ -923,61 +925,8 @@ function renderExpenseList() {
 }
 
 function getSplitLabel(type) {
-  return { equal:'平均分攤', personal:'個人', treat:'請客', custom:'自訂' }[type] || '平均分攤';
+  return { equal:'平均分攤', personal:'個人', treat:'請客' }[type] || '平均分攤';
 }
-
-function renderCustomSplitInputs(splitType, existingCustomSplits) {
-  const area = document.getElementById('custom-split-area');
-  if (!area) return;
-  if (splitType !== 'custom') { area.style.display = 'none'; area.innerHTML = ''; return; }
-  area.style.display = '';
-
-  const mems = membersData.length > 0
-    ? membersData
-    : [{ uid: (window.currentUser && window.currentUser.uid) || 'me', name: '我' }];
-
-  const amountEl = document.getElementById('exp-amount');
-  const totalAmt = parseFloat((amountEl && amountEl.value) || 0) || 0;
-
-  let rows = '';
-  mems.forEach(m => {
-    const val = (existingCustomSplits && existingCustomSplits[m.uid]) || '';
-    rows += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">'
-      + '<span style="min-width:60px;font-size:.82rem;color:var(--text)">' + (m.name || m.displayName || '我') + '</span>'
-      + '<input type="number" class="form-input" style="flex:1" placeholder="分攤金額"'
-      + ' data-uid="' + m.uid + '" value="' + val + '"'
-      + ' oninput="updateCustomSplitDiff()"'
-      + '>'
-      + '</div>';
-  });
-  area.innerHTML = '<div style="font-size:.72rem;font-weight:600;letter-spacing:.08em;color:var(--text3);margin-bottom:8px">自訂各成員分攤金額</div>'
-    + rows
-    + '<div id="custom-split-diff" style="font-size:.78rem;margin-top:4px;text-align:right"></div>';
-  updateCustomSplitDiff();
-}
-window.renderCustomSplitInputs = renderCustomSplitInputs;
-
-function updateCustomSplitDiff() {
-  const area = document.getElementById('custom-split-area');
-  const diff = document.getElementById('custom-split-diff');
-  if (!area || !diff) return;
-  const inputs = area.querySelectorAll('input[data-uid]');
-  const total  = parseFloat((document.getElementById('exp-amount') && document.getElementById('exp-amount').value) || 0) || 0;
-  let assigned = 0;
-  inputs.forEach(inp => { assigned += parseFloat(inp.value) || 0; });
-  const remaining = total - assigned;
-  if (Math.abs(remaining) < 0.01) {
-    diff.textContent = '✓ 分配完畢';
-    diff.style.color = 'var(--success, #5a9e6a)';
-  } else if (remaining > 0) {
-    diff.textContent = '還剩 ' + remaining.toLocaleString() + ' 未分配';
-    diff.style.color = 'var(--text3)';
-  } else {
-    diff.textContent = '超出 ' + Math.abs(remaining).toLocaleString();
-    diff.style.color = 'var(--danger, #cc4444)';
-  }
-}
-window.updateCustomSplitDiff = updateCustomSplitDiff;
 
 function renderExpenseChart() {
   const canvas = document.getElementById('expense-chart');
@@ -1006,35 +955,26 @@ function openAddExpense(editId = null) {
   if (!currentTripId) { showToast('請先建立或選擇一個旅行'); return; }
   const modal = document.getElementById('modal-expense');
   const form = document.getElementById('form-expense');
-  // 先填入幣別選單
-  const expCurSel = form.querySelector('#exp-currency');
-  if (expCurSel) expCurSel.innerHTML = buildCurrencyOptions(tripCurrency);
-
   if (editId) {
     const item = expensesData.find(e => e.id === editId);
     if (!item) return;
     form.querySelector('#exp-name').value = item.name || '';
     form.querySelector('#exp-amount').value = item.amount || '';
-    if (expCurSel) expCurSel.innerHTML = buildCurrencyOptions(item.currency || tripCurrency);
+    form.querySelector('#exp-currency').value = item.currency || tripCurrency;
     form.querySelector('#exp-category').value = item.category || 'food';
     form.querySelector('#exp-payer').value = item.payerUid || currentUser.uid;
-    const splitSel = form.querySelector('#exp-split');
-    if (splitSel) { splitSel.value = item.splitType || 'equal'; }
+    form.querySelector('#exp-split').value = item.splitType || 'equal';
     form.querySelector('#exp-date').value = item.date || '';
     form.querySelector('#exp-note').value = item.note || '';
     form.dataset.editId = editId;
-    form.dataset.customSplits = item.customSplits ? JSON.stringify(item.customSplits) : '';
     document.getElementById('modal-expense-title').textContent = '修改記帳';
-    renderCustomSplitInputs(item.splitType, item.customSplits || {});
   } else {
     form.reset();
-    if (expCurSel) expCurSel.innerHTML = buildCurrencyOptions(tripCurrency);
+    form.querySelector('#exp-currency').value = tripCurrency;
     form.querySelector('#exp-date').valueAsDate = new Date();
     form.querySelector('#exp-payer').value = (currentUser && currentUser.uid) || '';
     delete form.dataset.editId;
-    delete form.dataset.customSplits;
     document.getElementById('modal-expense-title').textContent = '記下一筆花費';
-    renderCustomSplitInputs('equal', {});
   }
   renderPayerOptions();
   openModal('modal-expense');
@@ -1054,29 +994,16 @@ async function saveExpense() {
   const form = document.getElementById('form-expense');
   const amount = parseFloat(form.querySelector('#exp-amount').value);
   if (!amount || isNaN(amount)) { showToast('請輸入金額'); return; }
-  const splitType = form.querySelector('#exp-split').value;
-  let customSplits = null;
-  if (splitType === 'custom') {
-    customSplits = {};
-    const area = document.getElementById('custom-split-area');
-    if (area) {
-      area.querySelectorAll('input[data-uid]').forEach(inp => {
-        const v = parseFloat(inp.value);
-        if (!isNaN(v)) customSplits[inp.dataset.uid] = v;
-      });
-    }
-  }
   const data = {
     name: form.querySelector('#exp-name').value.trim() || '花費',
     amount, currency: form.querySelector('#exp-currency').value,
     category: form.querySelector('#exp-category').value,
     payerUid: form.querySelector('#exp-payer').value,
-    splitType,
+    splitType: form.querySelector('#exp-split').value,
     date: form.querySelector('#exp-date').value,
     note: form.querySelector('#exp-note').value.trim(),
     updatedAt: Date.now()
   };
-  if (customSplits) data.customSplits = customSplits;
   try {
     const editId = form.dataset.editId;
     if (editId) {
@@ -1088,7 +1015,6 @@ async function saveExpense() {
       showToast('已記帳 ✓');
     }
     closeModal('modal-expense');
-    renderExpenseSummary();
   } catch(e) {
     console.error('saveExpense error:', e);
     if (e.code === 'permission-denied') {
@@ -1103,7 +1029,6 @@ async function deleteExpense(id) {
   if (!confirm('確定刪除這筆記帳？')) return;
   await deleteDoc(tripDoc('expenses', id));
   showToast('已刪除');
-  renderExpenseSummary();
 }
 
 async function settleExpenses() {
@@ -2607,74 +2532,141 @@ async function deletePackItem(id) {
 // ════════════════════════════════════════
 // 🌍 TRIP MANAGEMENT
 // ════════════════════════════════════════
+// ════════════════════════════════════════
+// 🗂️  processTrips — 排序引擎
+// ════════════════════════════════════════
+function processTrips(trips) {
+  const today = new Date(); today.setHours(0,0,0,0);
+  function getEnd(t) {
+    if (!t.departureDate) return null;
+    const d = new Date(t.departureDate), days = (t.days&&t.days.length)||1, e = new Date(d);
+    e.setDate(d.getDate()+days-1); return e;
+  }
+  function status(t) {
+    if (t.isArchived||t.archived) return 'archived';
+    if (!t.departureDate) return 'upcoming';
+    const d = new Date(t.departureDate); d.setHours(0,0,0,0);
+    const e = getEnd(t);
+    if (e && e < today) return 'archived';
+    if (d <= today) return 'current';
+    return 'upcoming';
+  }
+  const current=[],upcoming=[],archived=[];
+  trips.forEach(t => { const s=status(t); if(s==='current')current.push(t); else if(s==='upcoming')upcoming.push(t); else archived.push(t); });
+  const byDep = (a,b) => new Date(a.departureDate||'9999').getTime()-new Date(b.departureDate||'9999').getTime();
+  current.sort(byDep); upcoming.sort(byDep);
+  archived.sort((a,b)=>{ const ea=getEnd(a)||new Date(0),eb=getEnd(b)||new Date(0); return eb-ea; });
+  return { current, upcoming, archived, getEnd };
+}
+
 async function loadTrips() {
-  const q = query(collection(db, 'trips'), orderBy('createdAt','desc'));
+  const q = query(collection(db,'trips'), orderBy('createdAt','desc'));
   const snap = await getDocs(q);
   tripsData = snap.docs.filter(d => {
-    var data = d.data();
+    const data = d.data();
     return data && data.members && data.members.includes(currentUser.uid);
   }).map(d => ({ id:d.id, ...d.data() }));
+
   renderTripSelector();
+  renderLobby();
+
   if (tripsData.length > 0 && !currentTripId) {
-    selectTrip((function(){var _t=tripsData.find(t => !t.archived);return _t?_t.id:null;})() || tripsData[0].id);
+    // 永遠先顯示大廳，讓使用者自己選擇行程
+    showLobby();
   } else if (tripsData.length === 0) {
-    // 沒有旅行 → 觸發空狀態
-    currentTripId = null;
-    currentTrip = null;
-    renderHero(null);
-    renderItinerary();
-    renderExpenses();
-    renderDepart();
-    renderJournal();
-    // 清空 header
-    const flag = document.getElementById('country-flag');
-    const name = document.getElementById('country-name');
-    if (flag) flag.textContent = '🌍';
-    if (name) name.textContent = '選擇旅行';
+    currentTripId=null; currentTrip=null;
+    renderHero(null); renderItinerary(); renderExpenses(); renderDepart(); renderJournal();
+    const flag=document.getElementById('country-flag'), name=document.getElementById('country-name');
+    if(flag) flag.textContent='🌍'; if(name) name.textContent='選擇旅行';
+    showLobby();
   }
 }
 
-function renderTripSelector() {
-  const container = document.getElementById('trip-list');
-  if (!container) return;
-  if (tripsData.length === 0) {
-    container.innerHTML = '<div class="empty-state"><p>還沒有旅行<br>點下方新增</p></div>';
-    return;
-  }
-  container.innerHTML = tripsData.map(t => {
-    const info = COUNTRY_THEMES[t.country] || { flag:'🌍', name: t.countryName || t.country };
-    const isActive = t.id === currentTripId;
-    const border = isActive ? 'var(--accent)' : 'var(--border)';
-    const archiveLabel = t.archived ? '📂 取消封存' : '🗂️ 封存';
-    const checkmark = isActive ? '<span style="color:var(--accent);font-size:.85rem;flex-shrink:0">✓</span>' : '';
-    const dateStr = t.departureDate ? formatDateDisplay(t.departureDate) : '未設定出發日';
-    const archivedStr = t.archived ? ' · 已封存' : '';
-    const tripName = t.name || info.name;
-    return '<div class="card mb-2" style="border:1.5px solid ' + border + ';border-radius:var(--r-md);overflow:hidden">'
-      + '<div style="display:flex;align-items:center;gap:12px;padding:13px 14px;cursor:pointer" onclick="selectTrip(\'' + t.id + '\')">'
-      + '<span style="font-size:1.5rem;flex-shrink:0">' + info.flag + '</span>'
-      + '<div style="flex:1;min-width:0">'
-      + '<div style="font-size:.9rem;font-weight:600;color:var(--text)">' + tripName + '</div>'
-      + '<div style="font-size:.68rem;color:var(--text3);margin-top:2px">' + dateStr + archivedStr + '</div>'
-      + '</div>' + checkmark + '</div>'
-      + '<div style="display:flex;border-top:1px solid var(--border);background:var(--bg2)">'
-      + '<button onclick="openEditTrip(\'' + t.id + '\')" style="flex:1;padding:9px;font-size:.72rem;color:var(--text2);font-weight:500;border-right:1px solid var(--border)">✏️ 編輯</button>'
-      + '<button onclick="archiveTripById(\'' + t.id + '\')" style="flex:1;padding:9px;font-size:.72rem;color:var(--text2);font-weight:500;border-right:1px solid var(--border)">' + archiveLabel + '</button>'
-      + '<button onclick="deleteTripById(\'' + t.id + '\')" style="flex:1;padding:9px;font-size:.72rem;color:var(--danger);font-weight:500">✕ 刪除</button>'
-      + '</div></div>';
-  }).join('');
+// 靜默預載（不切換視圖）
+function _preloadTrip(tripId) {
+  currentTripId = tripId;
+  currentTrip   = tripsData.find(t => t.id===tripId);
+  if (!currentTrip) return;
+  updateCountryBadge(currentTrip);
+  renderHero(currentTrip);
+  currentDayFilter = (currentTrip.days||['Day 1'])[0];
+  unsubscribers.forEach(u=>u()); unsubscribers=[];
+  const cols=['itinerary','missions','packing','expenses','flights','hotels','journal'];
+  cols.forEach(col => {
+    const unsub = onSnapshot(tripCol(col), snap => {
+      const data=snap.docs.map(d=>({id:d.id,...d.data()}));
+      if(col==='itinerary') itineraryData=data; if(col==='missions') missionsData=data;
+      if(col==='packing')   packingData=data;   if(col==='expenses') expensesData=data;
+      if(col==='flights')   flightsData=data;   if(col==='hotels')   hotelsData=data;
+      if(col==='journal')   journalData=data;
+      if(currentNavTab==='itinerary') renderItinerary();
+      if(currentNavTab==='expense')   renderExpenses();
+      if(currentNavTab==='depart')    renderDepart();
+      if(currentNavTab==='passport')  renderJournal();
+    });
+    unsubscribers.push(unsub);
+  });
+  fetchWeather(currentTrip);
 }
+
+
+function renderTripSelector() {
+  const container=document.getElementById('trip-list');
+  if(!container) return;
+  if(tripsData.length===0){container.innerHTML='<div class="empty-state"><p>還沒有旅行<br>點下方新增</p></div>';return;}
+  const {current,upcoming,archived}=processTrips(tripsData);
+  function card(t,badge,bc,extra){
+    const info=COUNTRY_THEMES[t.country]||{flag:'🌍',name:t.countryName||t.country};
+    const active=t.id===currentTripId, bdr=active?'var(--accent)':'var(--border)';
+    const archLbl=(t.isArchived||t.archived)?'📂 取消封存':'🗂️ 封存';
+    const chk=active?'<span style="color:var(--accent);font-size:.85rem;flex-shrink:0">✓</span>':'';
+    const date=t.departureDate?formatDateDisplay(t.departureDate):'未設定出發日';
+    const name_=t.name||info.name;
+    const badgeEl=badge?'<span style="font-size:.56rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:999px;margin-left:6px;vertical-align:middle;background:'+bc+';color:#fff">'+badge+'</span>':'';
+    return '<div class="card mb-2" style="border:1.5px solid '+bdr+';border-radius:var(--r-md);overflow:hidden'+(extra||'')+'">'
+      +'<div style="display:flex;align-items:center;gap:12px;padding:13px 14px;cursor:pointer" onclick="selectTrip(\'' + t.id + '\')">'
+      +'<span style="font-size:1.5rem;flex-shrink:0">'+info.flag+'</span>'
+      +'<div style="flex:1;min-width:0">'
+      +'<div style="font-size:.9rem;font-weight:600;color:var(--text)">'+name_+badgeEl+'</div>'
+      +'<div style="font-size:.68rem;color:var(--text3);margin-top:2px">'+date+'</div>'
+      +'</div>'+chk+'</div>'
+      +'<div style="display:flex;border-top:1px solid var(--border);background:var(--bg2)">'
+      +'<button onclick="openEditTrip(\'' + t.id + '\')" style="flex:1;padding:9px;font-size:.72rem;color:var(--text2);font-weight:500;border-right:1px solid var(--border)">✏️ 編輯</button>'
+      +'<button onclick="archiveTripById(\'' + t.id + '\')" style="flex:1;padding:9px;font-size:.72rem;color:var(--text2);font-weight:500;border-right:1px solid var(--border)">'+archLbl+'</button>'
+      +'<button onclick="deleteTripById(\'' + t.id + '\')" style="flex:1;padding:9px;font-size:.72rem;color:var(--danger);font-weight:500">✕ 刪除</button>'
+      +'</div></div>';
+  }
+  let out='';
+  current.forEach(t=>{out+=card(t,'進行中','var(--primary)','');});
+  if(upcoming.length>0){
+    if(current.length>0) out+='<div style="font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);padding:8px 2px 6px">即將出發</div>';
+    upcoming.forEach(t=>{out+=card(t,'','','');});
+  }
+  if(current.length===0&&upcoming.length===0) out+='<div style="padding:10px 0;font-size:.82rem;color:var(--text3);text-align:center">沒有進行中或即將出發的旅行</div>';
+  if(archived.length>0){
+    out+='<button onclick="window._toggleRsArch()" style="width:100%;padding:10px 14px;margin-top:6px;border-radius:var(--r-md);background:transparent;border:1.5px dashed var(--border2);display:flex;align-items:center;justify-content:space-between;font-size:.72rem;font-weight:500;color:var(--text3);cursor:pointer;-webkit-tap-highlight-color:transparent">'
+      +'<span>📁 已封存（'+archived.length+' 個）</span>'
+      +'<span id="rs-arch-chev">▼</span></button>'
+      +'<div id="rs-arch-list" style="overflow:hidden;max-height:0;opacity:0;transition:max-height .38s ease,opacity .28s ease;margin-top:4px">';
+    archived.forEach(t=>{out+=card(t,'已封存','var(--text3)',';filter:grayscale(.5);opacity:.75');});
+    out+='</div>';
+  }
+  container.innerHTML=out;
+}
+
 
 async function selectTrip(tripId) {
   currentTripId = tripId;
   currentTrip = tripsData.find(t => t.id === tripId);
   if (!currentTrip) return;
 
-  // ① 關閉旅行清單 Modal（統一在函式內控制）
+  // ① 進入 detail 視圖
+  currentView = 'detail';
   closeModal('modal-trips');
+  hideLobby();
 
-  // ② 記憶最後選取的旅行
-  try { localStorage.setItem('last_trip_id', tripId); } catch(e) {}
+  // ② 記憶 (key: yallabi_last_id)
+  try { localStorage.setItem('yallabi_last_id', tripId); } catch(e) {}
 
   // ③ 清空舊旅行資料，防止切換時舊卡片閃爍
   itineraryData = []; missionsData  = []; packingData = [];
@@ -2682,7 +2674,10 @@ async function selectTrip(tripId) {
   journalData   = [];
 
   // ④ 立即套用新旅行主題色 + 重設 Day filter
+  applyTripTheme(currentTrip.country);
   updateCountryBadge(currentTrip);
+  // 顯示「返回大廳」按鈕
+  document.querySelectorAll('.btn-back-lobby').forEach(b => b.classList.add('visible'));
   renderHero(currentTrip);
   const days = currentTrip.days || ['Day 1'];
   currentDayFilter = days[0];
@@ -2799,6 +2794,311 @@ async function createNewTrip() {
   } catch(e) { showToast('建立失敗，請重試'); }
 }
 
+// ════════════════════════════════════════
+// 🏠 LOBBY — 大廳視圖管理
+// ════════════════════════════════════════
+function showLobby() {
+  currentView = 'lobby';
+  applyTheme('default');  // applyTheme 內部已保留 data-mode
+  const flag=document.getElementById('country-flag'), name=document.getElementById('country-name');
+  if(flag) flag.textContent='🌍'; if(name) name.textContent='我的旅行';
+  const el=document.getElementById('lobby-overlay');
+  if(el) { el.classList.remove('lobby-exit'); renderLobby(); }
+  document.querySelectorAll('.btn-back-lobby').forEach(b=>b.classList.remove('visible'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  const nb=document.getElementById('nav-lobby');
+  if(nb) nb.classList.add('active');
+}
+
+function hideLobby() {
+  const el=document.getElementById('lobby-overlay');
+  if(el) el.classList.add('lobby-exit');
+}
+
+// ── 大廳日期範圍格式：同年省略結束年，跨年兩邊顯示 ──
+function formatLobbyDateRange(t, getEnd) {
+  if (!t.departureDate) return '未設定出發日';
+  const dep = new Date(t.departureDate);
+  const end = getEnd(t);
+  const yDep = dep.getFullYear();
+  const mDep = dep.getMonth()+1;
+  const dDep = dep.getDate();
+  if (!end) return yDep+'/'+mDep+'/'+dDep;
+  const yEnd = end.getFullYear();
+  const mEnd = end.getMonth()+1;
+  const dEnd = end.getDate();
+  const endStr = (yDep===yEnd ? '' : yEnd+'/') + mEnd+'/'+dEnd;
+  return yDep+'/'+mDep+'/'+dDep+' – '+endStr;
+}
+
+// ── 大廳旅伴頭像（輕量版，用 members uid 首字）──────────
+function renderLobbyAvatars(trip) {
+  const members = trip.members || [];
+  if (members.length === 0) return '';
+  const shown = members.slice(0,3);
+  const extra = members.length - 3;
+  const colors = ['#c2d9e8','#e8dff0','#d8edd8','#f0dde0','#f0ecd8'];
+  const textColors = ['#3a5f75','#5a4070','#4a6a3a','#7a3d46','#7a6a3a'];
+  const avatars = shown.map((uid,i) => {
+    const initial = uid ? uid[0].toUpperCase() : '?';
+    const bg = colors[i % colors.length];
+    const fg = textColors[i % textColors.length];
+    const ml = i > 0 ? 'margin-left:-6px;' : '';
+    return '<div style="width:22px;height:22px;border-radius:50%;background:'+bg+';color:'+fg
+      +';display:flex;align-items:center;justify-content:center;font-size:.58rem;font-weight:700'
+      +';border:2px solid var(--bg);'+ml+'flex-shrink:0">'+initial+'</div>';
+  }).join('');
+  const extraEl = extra > 0
+    ? '<div style="width:22px;height:22px;border-radius:50%;background:var(--bg2);color:var(--text3);font-size:.55rem;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid var(--bg);margin-left:-6px;flex-shrink:0">+'+extra+'</div>'
+    : '';
+  return '<div style="display:flex;align-items:center">'+avatars+extraEl+'</div>';
+}
+
+function renderLobby() {
+  const area=document.getElementById('lobby-trips-area');
+  if(!area) return;
+
+  if(tripsData.length===0) {
+    area.innerHTML='<div class="lobby-empty">'
+      +'<div class="lobby-empty-icon">✈️</div>'
+      +'<div class="lobby-empty-title">歡迎來到 Yallabi！</div>'
+      +'<div class="lobby-empty-body">你還沒有任何旅行計畫。<br>點擊下方「＋ 新增旅行」開始你的第一趟旅程 🌟</div>'
+      +'</div>'
+      +'<div style="padding:0 16px 24px">'
+      +'<button class="lobby-new-card" onclick="openModal(\'modal-new-trip\')">＋ 新增旅行</button>'
+      +'</div>';
+    return;
+  }
+
+  const {current,upcoming,archived,getEnd}=processTrips(tripsData);
+  const today=new Date(); today.setHours(0,0,0,0);
+
+  function daysUntil(t) {
+    if(!t.departureDate) return null;
+    const d=new Date(t.departureDate); d.setHours(0,0,0,0);
+    return Math.round((d-today)/(86400000));
+  }
+  function progressPct(t) {
+    if(!t.departureDate) return 0;
+    const dep=new Date(t.departureDate); dep.setHours(0,0,0,0);
+    const end=getEnd(t);
+    if(!end) return 0;
+    const total=end-dep, elapsed=today-dep;
+    return Math.min(100, Math.max(0, Math.round(elapsed/total*100)));
+  }
+  function dayOfTrip(t) {
+    if(!t.departureDate) return null;
+    const dep=new Date(t.departureDate); dep.setHours(0,0,0,0);
+    return Math.round((today-dep)/86400000)+1;
+  }
+  function totalDays(t) {
+    return (t.days&&t.days.length)||1;
+  }
+
+  let out='';
+
+  // ── 進行中（最多一個，永遠展開）────────────────────────
+  if(current.length>0) {
+    out+='<div class="lobby-section-hdr"><span class="lobby-section-label">進行中</span>'
+      +'<span class="lobby-section-count">'+current.length+'</span></div>';
+    current.forEach(t => {
+      const info=(GEOGRAPHY_DATA&&GEOGRAPHY_DATA[t.country])||COUNTRY_THEMES[t.country]||{flag:'🌍',name:t.countryName||t.country};
+      const name_=t.name||info.name;
+      const dateRange=formatLobbyDateRange(t,getEnd);
+      const pct=progressPct(t);
+      const dayN=dayOfTrip(t); const totalN=totalDays(t);
+      const dayEl=dayN?'第 '+dayN+' 天，共 '+totalN+' 天':'';
+      const themeKey=t.country||'default';
+      const avatarsHtml=renderLobbyAvatars(t);
+      out+=lobbyCardNew(t,info,name_,dateRange,'進行中',pct,dayEl,'',avatarsHtml,themeKey,'current');
+    });
+  }
+
+  // ── 即將出發（可收合，預設展開）────────────────────────
+  if(upcoming.length>0) {
+    const upOpen=window._lobbyUpcomingOpen!==false;
+    out+='<div class="lobby-section-hdr lobby-collapsible" onclick="window._toggleLobbySection(\'upcoming\')" style="margin-top:12px">'
+      +'<span class="lobby-section-label">即將出發</span>'
+      +'<div style="display:flex;align-items:center;gap:6px">'
+      +'<span class="lobby-section-count">'+upcoming.length+'</span>'
+      +'<span class="lobby-section-chev" id="lobby-upcoming-chev" style="font-size:.7rem;color:var(--text3);transition:transform .2s;'+(upOpen?'transform:rotate(180deg)':'')+'">▼</span>'
+      +'</div></div>';
+    out+='<div id="lobby-upcoming-list" style="overflow:hidden;transition:max-height .3s ease,opacity .25s ease;'+(upOpen?'':'max-height:0;opacity:0')+'">';
+    upcoming.forEach(t=>{
+      const info=(GEOGRAPHY_DATA&&GEOGRAPHY_DATA[t.country])||COUNTRY_THEMES[t.country]||{flag:'🌍',name:t.countryName||t.country};
+      const name_=t.name||info.name;
+      const dateRange=formatLobbyDateRange(t,getEnd);
+      const days=daysUntil(t);
+      const badge=days!==null?(days===0?'今天出發':days+'天後'):'';
+      const totalN=totalDays(t);
+      const subEl='共 '+totalN+' 天';
+      const avatarsHtml=renderLobbyAvatars(t);
+      const themeKey=t.country||'default';
+      out+=lobbyCardNew(t,info,name_,dateRange,'',0,subEl,badge,avatarsHtml,themeKey,'upcoming');
+    });
+    out+='</div>';
+  }
+
+  if(current.length===0&&upcoming.length===0) {
+    out+='<div style="padding:20px;font-size:.82rem;color:var(--text3);text-align:center">目前沒有進行中或即將出發的旅行</div>';
+  }
+
+  // ── 封存（預設收合）─────────────────────────────────
+  if(archived.length>0) {
+    const archOpen=window._lobbyArchOpen===true;
+    out+='<div class="lobby-section-hdr lobby-collapsible" onclick="window._toggleLobbySection(\'arch\')" style="margin-top:12px">'
+      +'<span class="lobby-section-label">封存</span>'
+      +'<div style="display:flex;align-items:center;gap:6px">'
+      +'<span class="lobby-section-count">'+archived.length+'</span>'
+      +'<span class="lobby-section-chev" id="lobby-arch-chev2" style="font-size:.7rem;color:var(--text3);transition:transform .2s;'+(archOpen?'transform:rotate(180deg)':'')+'">▼</span>'
+      +'</div></div>';
+    out+='<div id="lobby-arch-list2" style="overflow:hidden;transition:max-height .3s ease,opacity .25s ease;'+(archOpen?'':'max-height:0;opacity:0')+'">';
+    archived.forEach(t=>{
+      const info=(GEOGRAPHY_DATA&&GEOGRAPHY_DATA[t.country])||COUNTRY_THEMES[t.country]||{flag:'🌍',name:t.countryName||t.country};
+      const name_=t.name||info.name;
+      const dateRange=formatLobbyDateRange(t,getEnd);
+      const avatarsHtml=renderLobbyAvatars(t);
+      out+=lobbyCardNew(t,info,name_,dateRange,'已封存',0,'',null,avatarsHtml,t.country||'default','archived');
+    });
+    out+='</div>';
+  }
+
+  // ── 新增旅行虛線卡片 ─────────────────────────────────
+  out+='<div style="padding:12px 16px 24px">'
+    +'<button class="lobby-new-card" onclick="openModal(\'modal-new-trip\')">＋ 新增旅行</button>'
+    +'</div>';
+
+  area.innerHTML=out;
+  // 初始化高度
+  ['upcoming','arch'].forEach(id => {
+    const el=document.getElementById('lobby-'+id+'-list'+(id==='arch'?'2':''));
+    if(el && !el.style.maxHeight) el.style.maxHeight=el.scrollHeight+'px';
+    else if(el && el.style.opacity==='1') el.style.maxHeight=el.scrollHeight+'px';
+  });
+  const upEl=document.getElementById('lobby-upcoming-list');
+  if(upEl && window._lobbyUpcomingOpen!==false) upEl.style.maxHeight=upEl.scrollHeight+'px';
+  const archEl=document.getElementById('lobby-arch-list2');
+  if(archEl && window._lobbyArchOpen===true) archEl.style.maxHeight=archEl.scrollHeight+'px';
+}
+
+function lobbyCard(t, badgeTxt, badgeColor, daysVal) {
+  const geo=(GEOGRAPHY_DATA&&GEOGRAPHY_DATA[t.country])||null;
+  const ct=COUNTRY_THEMES[t.country]||null;
+  const info=geo||ct||{flag:'🌍',name:t.countryName||t.country};
+  const name_=t.name||info.name;
+  const date_=t.departureDate?formatDateDisplay(t.departureDate):'未設定出發日';
+  const isArc=t.isArchived||t.archived;
+  const isAct=t.id===currentTripId;
+  const bdr=isAct?'var(--accent)':'var(--border)';
+  const badge=badgeTxt?'<span style="font-size:.56rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:999px;margin-left:6px;vertical-align:middle;background:'+badgeColor+';color:#fff">'+badgeTxt+'</span>':'';
+  const daysEl=daysVal!=null&&!isArc?'<span style="font-size:.68rem;color:var(--text3);margin-left:auto;flex-shrink:0;font-weight:600">'+(daysVal===0?'✈️ 今天出發':daysVal+'天後')+'</span>':'';
+  const archLbl=isArc?'📂 取消封存':'🗂️ 封存';
+  return '<div class="lobby-trip-card'+(isArc?' is-archived':'')+(isAct?' is-current':'')+'">'
+    +' <div style="display:flex;align-items:center;gap:14px;padding:14px 16px;border:1.5px solid '+bdr+';border-radius:var(--r-lg);background:var(--surface)"'
+    +' onclick="selectTrip(\'' + t.id + '\')">'
+    +'<span style="font-size:2rem;flex-shrink:0">'+info.flag+'</span>'
+    +'<div style="flex:1;min-width:0">'
+    +'<div style="font-size:.9rem;font-weight:700;color:var(--text)">'+name_+badge+'</div>'
+    +'<div style="font-size:.72rem;color:var(--text3);margin-top:3px">'+date_+'</div>'
+    +'</div>'+daysEl+(isAct?'<span style="color:var(--accent);font-size:.85rem;flex-shrink:0;margin-left:4px">✓</span>':'')
+    +'</div>'
+    +'<div class="lobby-quick-actions">'
+    +'<button class="lobby-quick-btn" onclick="event.stopPropagation();openEditTrip(\'' + t.id + '\')">✏️ 編輯</button>'
+    +'<button class="lobby-quick-btn" onclick="event.stopPropagation();archiveTripById(\'' + t.id + '\')">'+archLbl+'</button>'
+    +'<button class="lobby-quick-btn danger" onclick="event.stopPropagation();deleteTripById(\'' + t.id + '\')">✕ 刪除</button>'
+    +'</div></div>';
+}
+window.lobbyCard = lobbyCard;
+
+// ── 新版大廳卡片 ────────────────────────────────────────
+function lobbyCardNew(t, info, name_, dateRange, statusTxt, pct, subLine, badge, avatarsHtml, themeKey, state) {
+  const isArchived = state==='archived';
+  const isCurrent  = state==='current';
+  const isUpcoming = state==='upcoming';
+
+  // 取得主題色（洗白版）
+  const LOBBY_COLORS = {
+    'Thailand':    {bg:'#dce8f0',text:'#2e5268',bar:'#7aa8c2'},
+    'Japan':       {bg:'#f0dde0',text:'#6b2f3a',bar:'#c08090'},
+    'France':      {bg:'#dde3f0',text:'#2e3f6e',bar:'#7a8ec2'},
+    'Italy':       {bg:'#f0e8dd',text:'#7a4a2a',bar:'#c09070'},
+    'Greece':      {bg:'#dde8f0',text:'#2a4f72',bar:'#6a9ec5'},
+    'Morocco':     {bg:'#f0e6d8',text:'#7a4a20',bar:'#c09060'},
+    'Korea':       {bg:'#f0dde8',text:'#6e2a4f',bar:'#c07aaa'},
+    'Singapore':   {bg:'#ddf0e8',text:'#1e5a3e',bar:'#5ab88a'},
+    'Maldives':    {bg:'#d8eef5',text:'#1a5870',bar:'#5ab5d5'},
+    'USA':         {bg:'#dde5f0',text:'#2a3a6e',bar:'#7a8cc5'},
+    'Australia':   {bg:'#f0ead8',text:'#6e4a18',bar:'#c0a060'},
+    'Vietnam':     {bg:'#f0ddd8',text:'#7a3020',bar:'#c07060'},
+    'Indonesia':   {bg:'#f0e0d8',text:'#7a3a20',bar:'#c08060'},
+    'Spain':       {bg:'#f0e2d8',text:'#7a3a28',bar:'#c08070'},
+    'UK':          {bg:'#dde0f0',text:'#2a306e',bar:'#7a80c5'},
+    'Turkey':      {bg:'#f0ddd8',text:'#7a3020',bar:'#c07060'},
+    'Portugal':    {bg:'#dde8f0',text:'#2a4a6e',bar:'#7aaac5'},
+    'Canada':      {bg:'#f0ddd8',text:'#7a3020',bar:'#c07060'},
+    'New Zealand': {bg:'#d8f0e8',text:'#1a5a40',bar:'#5ac090'},
+    'Egypt':       {bg:'#f0ead8',text:'#6e4a18',bar:'#c0a060'},
+    'default':     {bg:'#e8e8e0',text:'#4a4a44',bar:'#a0a090'},
+  };
+  const clr = isArchived
+    ? {bg:'var(--bg2)',text:'var(--text3)',bar:'var(--border2)'}
+    : (LOBBY_COLORS[themeKey]||LOBBY_COLORS['default']);
+
+  const bgStyle   = isArchived ? '' : 'background:'+clr.bg+';';
+  const textStyle = isArchived ? '' : 'color:'+clr.text+';';
+
+  // 狀態 badge
+  let statusBadge='';
+  if(statusTxt) {
+    statusBadge='<span style="position:absolute;top:12px;right:12px;font-size:.6rem;font-weight:600;padding:3px 9px;border-radius:999px;'
+      +(isArchived?'background:var(--bg3,rgba(0,0,0,.06));color:var(--text3)':'background:rgba(255,255,255,.35);'+textStyle)
+      +'">'+statusTxt+'</span>';
+  }
+  if(badge) {
+    statusBadge='<span style="position:absolute;top:12px;right:12px;font-size:.6rem;font-weight:600;padding:3px 9px;border-radius:999px;background:rgba(255,255,255,.35);'+textStyle+'">'+badge+'</span>';
+  }
+
+  // 進度條（進行中才有）
+  const progressBar = isCurrent
+    ? '<div style="height:3px;background:rgba(0,0,0,.07)"><div style="height:100%;width:'+pct+'%;background:'+(isArchived?'var(--border2)':clr.bar)+';transition:width .5s ease"></div></div>'
+    : '';
+
+  // 下半部 subLine + avatars
+  const bottomRight=avatarsHtml
+    ?'<div style="display:flex;align-items:center;gap:6px">'+avatarsHtml+'</div>'
+    :'';
+
+  const card=''
+    +'<div class="lobby-trip-card2'+(isArchived?' is-archived2':'')+'" onclick="selectTrip(\''+t.id+'\')">'
+    // 上半部：主題色區域
+    +'<div style="padding:13px 14px 11px;position:relative;border-radius:14px 14px 0 0;'+bgStyle+textStyle+'min-height:72px">'
+    +statusBadge
+    +'<div style="display:flex;align-items:center;gap:9px">'
+    +'<span style="font-size:1.9rem;line-height:1;flex-shrink:0">'+info.flag+'</span>'
+    +'<div style="flex:1;min-width:0">'
+    +'<div style="font-size:.9rem;font-weight:600;'+textStyle+'white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+name_+'</div>'
+    +'<div style="font-size:.68rem;margin-top:2px;opacity:.7;'+textStyle+'">'+dateRange+'</div>'
+    +'</div>'
+    +'</div>'
+    +'</div>'
+    // 進度條
+    +progressBar
+    // 下半部：白底資訊列
+    +'<div style="padding:8px 14px 10px;background:var(--surface);display:flex;justify-content:space-between;align-items:center">'
+    +'<span style="font-size:.68rem;color:var(--text3)">'+subLine+'</span>'
+    +bottomRight
+    +'</div>'
+    // 快速操作列
+    +'<div class="lobby-quick-actions">'
+    +'<button class="lobby-quick-btn" onclick="event.stopPropagation();openEditTrip(\''+t.id+'\')">✏️ 編輯</button>'
+    +'<button class="lobby-quick-btn" onclick="event.stopPropagation();archiveTripById(\''+t.id+'\')">'+(isArchived?'📂 取消封存':'🗂️ 封存')+'</button>'
+    +'<button class="lobby-quick-btn danger" onclick="event.stopPropagation();deleteTripById(\''+t.id+'\')">✕ 刪除</button>'
+    +'</div>'
+    +'</div>';
+  return card;
+}
+window.lobbyCardNew = lobbyCardNew;
+
 async function archiveTrip() {
   if (!currentTripId) return;
   if (!confirm('確定封存這個旅行？封存後會獲得護照印章！')) return;
@@ -2810,19 +3110,19 @@ async function archiveTrip() {
 async function archiveTripById(tripId) {
   const trip = tripsData.find(t => t.id === tripId);
   if (!trip) return;
-  if (trip.archived) {
+  if (trip.isArchived || trip.archived) {
     if (!confirm('取消封存這個旅行？')) return;
-    await updateDoc(doc(db,'trips',tripId), { archived: false });
+    await updateDoc(doc(db,'trips',tripId), { archived:false, isArchived:false });
     showToast('已取消封存');
   } else {
     if (!confirm('封存這個旅行？封存後會獲得護照印章！')) return;
-    await updateDoc(doc(db,'trips',tripId), { archived: true, archivedAt: Date.now() });
+    await updateDoc(doc(db,'trips',tripId), { archived:true, isArchived:true, archivedAt:Date.now() });
     showToast('旅行已封存 🛂');
   }
   await loadTrips();
   renderTripSelector();
+  renderLobby();
 }
-
 async function deleteTripById(tripId) {
   const trip = tripsData.find(t => t.id === tripId);
   if (!trip) return;
@@ -3396,6 +3696,8 @@ onAuthStateChanged(auth, async user => {
     splashDebug('載入旅行資料...');
     await loadTrips();
     splashDebug('完成！');
+    initDarkMode();
+    if (currentView === 'lobby') showLobby();
     await checkJoinTrip();
     fetchExchangeRates();
 
@@ -3525,103 +3827,173 @@ window.toggleCustomCountry = toggleCustomCountry;
 // ════════════════════════════════════════
 // 🏙️ CITY TAGS INPUT
 // ════════════════════════════════════════
-let ntCities = []; // 城市標籤陣列
+// ════════════════════════════════════════
+// 🏙️ CITY + COUNTRY INPUT
+// ════════════════════════════════════════
+let ntCities = [];
+let _ntCountryKey = 'default';
 
 function handleCityInput(e) {
   const input = document.getElementById('nt-city-input');
   const val = input.value;
   if (e.key === 'Enter' || val.endsWith(',') || val.endsWith('，')) {
     e.preventDefault();
-    const city = val.replace(/[,，]$/, '').trim();
-    if (city && !ntCities.includes(city)) {
-      ntCities.push(city);
-      renderCityTags();
-    }
-    input.value = '';
-    updateAutoName();
+    addCity(val.replace(/[,，]$/, '').trim());
+    input.value = ''; updateAutoName();
   }
+}
+
+function addCity(city) {
+  if (!city || ntCities.includes(city)) return;
+  ntCities.push(city); renderCityTags(); renderCitySuggestions(_ntCountryKey); updateAutoName();
 }
 
 function renderCityTags() {
   const container = document.getElementById('nt-city-tags');
   const input = document.getElementById('nt-city-input');
-  // 移除舊的標籤
+  if (!container) return;
   container.querySelectorAll('.city-tag-chip').forEach(el => el.remove());
-  // 重新插入標籤（在 input 前面）
   ntCities.forEach(city => {
     const tag = document.createElement('div');
     tag.className = 'city-tag-chip';
-    tag.style.cssText = 'display:inline-flex;align-items:center;gap:5px;background:var(--bg2);border:1px solid var(--border2);border-radius:999px;padding:4px 10px;font-size:.78rem;color:var(--text2);font-weight:500;cursor:default';
-    tag.innerHTML = `${city}<span onclick="removeCity('${city}')" style="color:var(--text3);font-size:.7rem;cursor:pointer;margin-left:2px;line-height:1">✕</span>`;
+    tag.style.cssText = 'display:inline-flex;align-items:center;gap:5px;background:color-mix(in srgb,var(--accent) 18%,var(--surface));border:1.5px solid color-mix(in srgb,var(--accent) 30%,var(--border));border-radius:999px;padding:4px 10px;font-size:.78rem;color:var(--text);font-weight:500;cursor:default';
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.style.cssText = 'background:none;border:none;color:var(--text3);font-size:.7rem;cursor:pointer;margin-left:3px;padding:0';
+    btn.textContent = '✕';
+    btn.dataset.city = city;
+    btn.onclick = function() { removeCity(this.dataset.city); };
+    tag.appendChild(document.createTextNode(city));
+    tag.appendChild(btn);
     container.insertBefore(tag, input);
   });
-  // 如果有標籤，input placeholder 改掉
   input.placeholder = ntCities.length > 0 ? '再新增城市...' : '輸入城市後按 Enter...';
 }
 
 function removeCity(city) {
   ntCities = ntCities.filter(c => c !== city);
-  renderCityTags();
+  renderCityTags(); renderCitySuggestions(_ntCountryKey); updateAutoName();
+}
+
+function renderCitySuggestions(countryKey) {
+  const wrap = document.getElementById('city-suggestions-wrap');
+  const chips = document.getElementById('city-suggestion-chips');
+  if (!wrap || !chips) return;
+  const geo = GEOGRAPHY_DATA && GEOGRAPHY_DATA[countryKey];
+  if (!geo || !geo.cities || geo.cities.length === 0) { wrap.style.display='none'; return; }
+  const avail = geo.cities.filter(c => !ntCities.includes(c));
+  if (avail.length === 0) { wrap.style.display='none'; return; }
+  chips.innerHTML = '';
+  avail.forEach(c => {
+    const btn = document.createElement('button');
+    btn.type = 'button'; btn.className = 'city-suggest-chip'; btn.textContent = c;
+    btn.dataset.cityName = c;
+    btn.onclick = function() { addCity(this.dataset.cityName); };
+    chips.appendChild(btn);
+  });
+  wrap.style.display = 'block';
+}
+
+function handleCountrySearch(query) {
+  const dropdown = document.getElementById('country-autocomplete');
+  if (!dropdown) return;
+  const q = query.trim().toLowerCase();
+  const list = GEO_LIST || [];
+  const results = q === '' ? list
+    : list.filter(g => g.name.includes(q) || g.nameEn.toLowerCase().includes(q) || g.cities.some(c => c.includes(q)));
+
+  if (results.length === 0) {
+    const item = document.createElement('div');
+    item.className = 'country-ac-item';
+    item.dataset.key = 'other'; item.dataset.name = query; item.dataset.flag = '✏️';
+    item.onclick = function() { selectCountry(this.dataset.key, this.dataset.name, this.dataset.flag); };
+    item.innerHTML = '<span style="font-size:1.1rem">✏️</span><div><div style="font-size:.88rem;font-weight:600">'+query+'</div><div style="font-size:.68rem;color:var(--text3)">自訂國家</div></div>';
+    dropdown.innerHTML = ''; dropdown.appendChild(item);
+  } else {
+    dropdown.innerHTML = '';
+    results.forEach(g => {
+      const item = document.createElement('div');
+      item.className = 'country-ac-item';
+      item.dataset.key = g.key; item.dataset.name = g.name; item.dataset.flag = g.flag;
+      item.onclick = function() { selectCountry(this.dataset.key, this.dataset.name, this.dataset.flag); };
+      item.innerHTML = '<span style="font-size:1.3rem;flex-shrink:0">'+g.flag+'</span><div><div style="font-size:.88rem;font-weight:600;color:var(--text)">'+g.name+'</div><div style="font-size:.68rem;color:var(--text3)">'+g.nameEn+'</div></div>';
+      dropdown.appendChild(item);
+    });
+  }
+  dropdown.style.display = 'block';
+}
+
+function selectCountry(key, name, flag) {
+  _ntCountryKey = key;
+  const flagEl=document.getElementById('nt-country-flag');
+  const srchEl=document.getElementById('nt-country-search');
+  const hidEl=document.getElementById('nt-country');
+  const drop=document.getElementById('country-autocomplete');
+  const custGrp=document.getElementById('custom-country-group');
+  if(flagEl) flagEl.textContent=flag||'🌍';
+  if(srchEl) srchEl.value=key==='other'?'':name;
+  if(hidEl)  hidEl.value=key;
+  if(drop)   drop.style.display='none';
+  if(custGrp) custGrp.style.display=key==='other'?'block':'none';
+  const geo=GEOGRAPHY_DATA&&GEOGRAPHY_DATA[key];
+  applyTheme((geo&&geo.theme)||(COUNTRY_THEMES[key]&&COUNTRY_THEMES[key].theme)||'default');
+  if(geo&&geo.currency){ const c=document.getElementById('nt-currency'); if(c) c.value=geo.currency; }
+  renderCitySuggestions(key);
   updateAutoName();
 }
 
+document.addEventListener('click', function(e) {
+  const drop=document.getElementById('country-autocomplete');
+  const disp=document.getElementById('nt-country-display');
+  if(drop&&disp&&!disp.contains(e.target)) drop.style.display='none';
+}, true);
+
 function updateAutoName() {
-  const nameInput = document.getElementById('nt-name');
-  const autoEl = document.getElementById('nt-auto-name');
-  const autoText = document.getElementById('nt-auto-name-text');
-  if (!autoEl || !autoText) return;
-
-  // 如果用戶自己填了名字就不顯示自動
-  if ((nameInput && nameInput.value).trim()) { autoEl.style.display = 'none'; return; }
-
-  const country = (document.getElementById('nt-country')||{value:''}).value || 'default';
-  const customName = (document.getElementById('nt-country-name')||{value:''}).value.trim();
-  const countryName = country === 'other' ? customName : ((COUNTRY_THEMES[country] && COUNTRY_THEMES[country].name) || customName || '');
-  const departure = (document.getElementById('nt-departure')||{value:''}).value;
-  const year = departure ? new Date(departure).getFullYear() : new Date().getFullYear();
-
-  let suggested = '';
-  if (country === 'default' || !countryName) {
-    suggested = `旅行 ${year}`;
-  } else if (ntCities.length === 0) {
-    suggested = `${countryName}之旅 ${year}`;
-  } else if (ntCities.length === 1) {
-    suggested = `${countryName} · ${ntCities[0]} ${year}`;
-  } else {
-    suggested = `${countryName} · ${ntCities.slice(0,3).join('、')} ${year}`;
-  }
-
-  autoText.textContent = `自動命名：${suggested}`;
-  autoEl.style.display = 'flex';
+  const nameInput=document.getElementById('nt-name');
+  const autoEl=document.getElementById('nt-auto-name');
+  const autoText=document.getElementById('nt-auto-name-text');
+  if(!autoEl||!autoText) return;
+  if((nameInput&&nameInput.value).trim()){autoEl.style.display='none';return;}
+  const country=(document.getElementById('nt-country')||{value:''}).value||'default';
+  const customName=(document.getElementById('nt-country-name')||{value:''}).value.trim();
+  const geoName=GEOGRAPHY_DATA&&GEOGRAPHY_DATA[country]?GEOGRAPHY_DATA[country].name:null;
+  const countryName=country==='other'?customName:(geoName||(COUNTRY_THEMES[country]&&COUNTRY_THEMES[country].name)||customName||'');
+  const departure=(document.getElementById('nt-departure')||{value:''}).value;
+  const year=departure?new Date(departure).getFullYear():new Date().getFullYear();
+  let sug='';
+  if(!countryName||country==='default') sug=`旅行 ${year}`;
+  else if(ntCities.length===0) sug=`${countryName}之旅 ${year}`;
+  else if(ntCities.length===1) sug=`${countryName} · ${ntCities[0]} ${year}`;
+  else sug=`${countryName} · ${ntCities.slice(0,3).join('、')} ${year}`;
+  autoText.textContent=`自動命名：${sug}`;
+  autoEl.style.display='flex';
 }
 
 function getAutoName() {
-  const nameInput = document.getElementById('nt-name');
-  if ((nameInput && nameInput.value).trim()) return nameInput.value.trim();
-
-  const country = (document.getElementById('nt-country')||{value:''}).value || 'default';
-  const customName = (document.getElementById('nt-country-name')||{value:''}).value.trim();
-  // 內建國家用中文名，自訂國家用用戶輸入
-  const countryName = country === 'other' ? customName : ((COUNTRY_THEMES[country] && COUNTRY_THEMES[country].name) || customName || '');
-  const departure = (document.getElementById('nt-departure')||{value:''}).value;
-  const year = departure ? new Date(departure).getFullYear() : new Date().getFullYear();
-
-  if (!countryName || country === 'default') return `旅行 ${year}`;
-  if (ntCities.length === 0) return `${countryName}之旅 ${year}`;
-  if (ntCities.length === 1) return `${countryName} · ${ntCities[0]} ${year}`;
+  const nameInput=document.getElementById('nt-name');
+  if((nameInput&&nameInput.value).trim()) return nameInput.value.trim();
+  const country=(document.getElementById('nt-country')||{value:''}).value||'default';
+  const customName=(document.getElementById('nt-country-name')||{value:''}).value.trim();
+  const geoName=GEOGRAPHY_DATA&&GEOGRAPHY_DATA[country]?GEOGRAPHY_DATA[country].name:null;
+  const countryName=country==='other'?customName:(geoName||(COUNTRY_THEMES[country]&&COUNTRY_THEMES[country].name)||customName||'');
+  const departure=(document.getElementById('nt-departure')||{value:''}).value;
+  const year=departure?new Date(departure).getFullYear():new Date().getFullYear();
+  if(!countryName||country==='default') return `旅行 ${year}`;
+  if(ntCities.length===0) return `${countryName}之旅 ${year}`;
+  if(ntCities.length===1) return `${countryName} · ${ntCities[0]} ${year}`;
   return `${countryName} · ${ntCities.slice(0,3).join('、')} ${year}`;
 }
 
 function resetCityTags() {
-  ntCities = [];
-  renderCityTags();
-  const autoEl = document.getElementById('nt-auto-name');
-  if (autoEl) autoEl.style.display = 'none';
+  ntCities=[]; renderCityTags();
+  const autoEl=document.getElementById('nt-auto-name');
+  if(autoEl) autoEl.style.display='none';
+  selectCountry('default','全球','🌍');
 }
 
 function toggleCustomCountry(val) {
-  const group = document.getElementById('custom-country-group');
-  if (group) group.style.display = val === 'other' ? 'block' : 'none';
+  const group=document.getElementById('custom-country-group');
+  if(group) group.style.display=val==='other'?'block':'none';
 }
 
 window.openBibiDrawer = openBibiDrawer;
@@ -3647,6 +4019,48 @@ window.resetBibiPhoto = resetBibiPhoto;
 window.archiveTrip = archiveTrip;
 window.selectTrip = selectTrip;
 window.archiveTripById = archiveTripById;
+window.showLobby = showLobby;
+window.hideLobby = hideLobby;
+window.renderLobby = renderLobby;
+window.processTrips = processTrips;
+window.renderTripSelector = renderTripSelector;
+window.applyTripTheme = applyTripTheme;
+window.handleCountrySearch = handleCountrySearch;
+window.selectCountry = selectCountry;
+window.addCity = addCity;
+window.renderCitySuggestions = renderCitySuggestions;
+// 已封存切換
+window._rsArchOpen = false;
+window._toggleRsArch = function() {
+  window._rsArchOpen = !window._rsArchOpen;
+  var l=document.getElementById('rs-arch-list'), c=document.getElementById('rs-arch-chev');
+  if(l){l.style.maxHeight=window._rsArchOpen?l.scrollHeight+'px':'0';l.style.opacity=window._rsArchOpen?'1':'0';}
+  if(c) c.textContent=window._rsArchOpen?'▲':'▼';
+};
+window._lobbyArchOpen = false;
+window._lobbyUpcomingOpen = true;
+window._toggleLobbySection = function(id) {
+  if(id==='arch') {
+    window._lobbyArchOpen = !window._lobbyArchOpen;
+    var list=document.getElementById('lobby-arch-list2');
+    var chev=document.getElementById('lobby-arch-chev2');
+    if(list){
+      if(window._lobbyArchOpen){list.style.maxHeight=list.scrollHeight+'px';list.style.opacity='1';}
+      else{list.style.maxHeight='0';list.style.opacity='0';}
+    }
+    if(chev) chev.style.transform=window._lobbyArchOpen?'rotate(180deg)':'rotate(0deg)';
+  } else if(id==='upcoming') {
+    window._lobbyUpcomingOpen = !window._lobbyUpcomingOpen;
+    var list2=document.getElementById('lobby-upcoming-list');
+    var chev2=document.getElementById('lobby-upcoming-chev');
+    if(list2){
+      if(window._lobbyUpcomingOpen){list2.style.maxHeight=list2.scrollHeight+'px';list2.style.opacity='1';}
+      else{list2.style.maxHeight='0';list2.style.opacity='0';}
+    }
+    if(chev2) chev2.style.transform=window._lobbyUpcomingOpen?'rotate(180deg)':'rotate(0deg)';
+  }
+};
+window.toggleCustomCountry = window.toggleCustomCountry || function(v){var g=document.getElementById("custom-country-group");if(g)g.style.display=v==="other"?"block":"none";};
 window.deleteTripById = deleteTripById;
 window.openEditTrip = openEditTrip;
 window.saveEditedTrip = saveEditedTrip;
@@ -3901,21 +4315,38 @@ window.toggleWeatherForecast = toggleWeatherForecast;
   <!-- HEADER -->
   <header class="main-header">
     <div class="header-inner">
-      <!-- 左：Logo + 旅行選擇 -->
-      <div class="flex items-center gap-2">
-        <button onclick="openModal('modal-trips')" style="font-family:'Noto Sans TC',sans-serif;font-size:1.1rem;font-weight:300;letter-spacing:.14em;text-transform:uppercase;color:var(--text)"><em style="font-style:normal;color:var(--accent);font-weight:700">Y</em>allabi</button>
+      <!-- 左：Logo / 返回 + 國家徽章 -->
+      <div class="header-left">
+        <button onclick="showLobby()" class="header-logo"><em>Y</em>allabi</button>
+        <button class="btn-back-lobby" onclick="showLobby()">← 大廳</button>
         <button class="country-badge" onclick="openModal('modal-trips')">
           <span class="flag" id="country-flag" style="filter:grayscale(.4);opacity:.85">🌍</span>
-          <span id="country-name">選擇旅行</span>
+          <span id="country-name" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:72px">選擇旅行</span>
         </button>
       </div>
-      <!-- 右：成員頭像 + 設定 -->
-      <div class="flex items-center" style="gap:6px">
-        <div id="member-avatars" class="flex items-center" style="gap:4px"></div>
-        <button onclick="openSettings()" style="width:32px;height:32px;border-radius:50%;background:transparent;border:1.5px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:.82rem;color:var(--text3);transition:all .15s" onmouseenter="this.style.background='var(--bg2)'" onmouseleave="this.style.background='transparent'">⚙️</button>
+      <!-- 右：頭像 + 深色切換 + 設定（邀請移入設定） -->
+      <div class="header-right">
+        <div id="member-avatars" class="flex items-center" style="gap:3px"></div>
+        <button class="dark-mode-btn" onclick="toggleDarkMode()">🌙</button>
+        <button class="settings-btn" onclick="openSettings()">⚙️</button>
       </div>
     </div>
   </header>
+
+  <!-- ══ LOBBY OVERLAY ══ -->
+  <div id="lobby-overlay" class="lobby-overlay">
+    <div class="lobby-header">
+      <div>
+        <div class="lobby-title">我的旅行計畫</div>
+        <div class="lobby-subtitle" id="lobby-subtitle">載入中...</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <button class="dark-mode-btn" onclick="toggleDarkMode()" title="切換深色模式">🌙</button>
+        <button class="lobby-add-btn" onclick="openModal('modal-new-trip')">＋ 新增旅行</button>
+      </div>
+    </div>
+    <div id="lobby-trips-area"></div>
+  </div>
 
   <!-- ══ PAGE: ITINERARY ══ -->
   <div id="page-itinerary" class="page active">
@@ -3988,8 +4419,16 @@ window.toggleWeatherForecast = toggleWeatherForecast;
           <div style="margin-top:12px;margin-bottom:10px">
             <div style="font-size:.62rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:6px">金額</div>
             <div style="display:flex;gap:8px">
-              <select id="convert-from" class="form-select" style="width:130px" onchange="quickConvert()">
-                <option value="TWD">TWD 台幣</option>
+              <select id="convert-from" class="form-select" style="width:110px" onchange="quickConvert()">
+                <option value="TWD">🇹🇼 TWD</option>
+                <option value="THB">🇹🇭 THB</option>
+                <option value="JPY">🇯🇵 JPY</option>
+                <option value="EUR">🇪🇺 EUR</option>
+                <option value="USD">🇺🇸 USD</option>
+                <option value="KRW">🇰🇷 KRW</option>
+                <option value="SGD">🇸🇬 SGD</option>
+                <option value="AUD">🇦🇺 AUD</option>
+                <option value="GBP">🇬🇧 GBP</option>
               </select>
               <input id="convert-input" type="number" placeholder="輸入金額" class="form-input" style="flex:1" oninput="quickConvert()">
             </div>
@@ -3998,7 +4437,15 @@ window.toggleWeatherForecast = toggleWeatherForecast;
           <div style="margin-bottom:12px">
             <div style="font-size:.62rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:6px">換算成</div>
             <select id="convert-to" class="form-select" onchange="quickConvert()">
-              <option value="TWD">TWD 台幣</option>
+              <option value="TWD">🇹🇼 TWD 台幣</option>
+              <option value="THB">🇹🇭 THB 泰銖</option>
+              <option value="JPY">🇯🇵 JPY 日圓</option>
+              <option value="EUR">🇪🇺 EUR 歐元</option>
+              <option value="USD">🇺🇸 USD 美金</option>
+              <option value="KRW">🇰🇷 KRW 韓圜</option>
+              <option value="SGD">🇸🇬 SGD 新幣</option>
+              <option value="AUD">🇦🇺 AUD 澳幣</option>
+              <option value="GBP">🇬🇧 GBP 英鎊</option>
             </select>
           </div>
           <!-- 換算結果 -->
@@ -4013,9 +4460,6 @@ window.toggleWeatherForecast = toggleWeatherForecast;
 
       <!-- Summary -->
       <div id="expense-summary"></div>
-      <div style="text-align:center;margin-bottom:8px">
-        <button onclick="openPinCurrenciesModal()" style="font-size:.7rem;color:var(--text3);background:none;border:none;cursor:pointer;-webkit-tap-highlight-color:transparent;padding:4px 8px">⭐ 管理常用幣別</button>
-      </div>
 
       <!-- Person filter -->
       <div id="expense-person-tabs" class="person-tabs"></div>
@@ -4122,8 +4566,12 @@ window.toggleWeatherForecast = toggleWeatherForecast;
     </div>
   </div>
 
-  <!-- BOTTOM NAV - 4 tabs, Bibi 改成浮動按鈕 -->
+  <!-- BOTTOM NAV - 5 tabs -->
   <nav class="bottom-nav">
+    <button class="nav-btn" id="nav-lobby" onclick="showLobby()">
+      <div class="nav-icon" style="color:rgba(255,255,255,.38)"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></div>
+      <div class="nav-label">大廳</div>
+    </button>
     <button class="nav-btn active" id="nav-itinerary" onclick="switchTab('itinerary')">
       <div class="nav-icon" style="color:rgba(255,255,255,.38)">
         <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M19 4h-2V2h-2v2H9V2H7v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8c.13 0 .26-.03.38-.08s.23-.12.33-.22l7-7c.09-.09.15-.19.2-.29l.03-.09c.03-.08.05-.17.05-.26 0-.02.01-.04.01-.06V6c0-1.1-.9-2-2-2m0 9h-6c-.55 0-1 .45-1 1v6H5V8h14z"/></svg>
@@ -4281,8 +4729,9 @@ window.toggleWeatherForecast = toggleWeatherForecast;
             <div>
               <label class="form-label">幣別 / 金額</label>
               <div style="display:flex;gap:4px">
-                <select id="exp-currency" class="form-select" style="width:110px;padding:11px 20px 11px 8px" onchange="updateExpensePreview()">
-                  <option value="TWD">TWD 台幣</option>
+                <select id="exp-currency" class="form-select" style="width:80px;padding:11px 20px 11px 8px" onchange="updateExpensePreview()">
+                  <option value="TWD">TWD</option><option value="THB">THB</option><option value="JPY">JPY</option>
+                  <option value="EUR">EUR</option><option value="USD">USD</option><option value="KRW">KRW</option>
                 </select>
                 <input id="exp-amount" type="number" class="form-input" placeholder="金額" style="flex:1" oninput="updateExpensePreview()">
               </div>
@@ -4296,15 +4745,13 @@ window.toggleWeatherForecast = toggleWeatherForecast;
             </div>
             <div>
               <label class="form-label">分帳方式</label>
-              <select id="exp-split" class="form-select" onchange="renderCustomSplitInputs(this.value,{})">
+              <select id="exp-split" class="form-select">
                 <option value="equal">👫 甜蜜平分</option>
                 <option value="personal">👤 個人</option>
                 <option value="treat">🎁 請客</option>
-                <option value="custom">✏️ 自訂金額</option>
               </select>
             </div>
           </div>
-          <div id="custom-split-area" style="margin-bottom:14px;display:none"></div>
           <div class="form-group">
             <input id="exp-note" type="text" class="form-input" placeholder="備註 (選填)">
           </div>
@@ -4473,23 +4920,15 @@ window.toggleWeatherForecast = toggleWeatherForecast;
     <div class="modal-body">
       <form id="form-new-trip" onsubmit="return false">
         <div class="card-dashed mb-4">
-          <div class="form-group">
+          <!-- 國家自動完成 -->
+          <div class="form-group" style="position:relative">
             <label class="form-label">目的地</label>
-            <select id="nt-country" class="form-select" onchange="toggleCustomCountry(this.value);updateAutoName()">
-              <option value="default">🌍 全球／未定</option>
-              <option value="thailand">🇹🇭 泰國 Thailand</option>
-              <option value="japan">🇯🇵 日本 Japan</option>
-              <option value="france">🇫🇷 法國 France</option>
-              <option value="italy">🇮🇹 義大利 Italy</option>
-              <option value="greece">🇬🇷 希臘 Greece</option>
-              <option value="morocco">🇲🇦 摩洛哥 Morocco</option>
-              <option value="maldives">🇲🇻 馬爾地夫 Maldives</option>
-              <option value="korea">🇰🇷 韓國 Korea</option>
-              <option value="singapore">🇸🇬 新加坡 Singapore</option>
-              <option value="usa">🇺🇸 美國 USA</option>
-              <option value="australia">🇦🇺 澳洲 Australia</option>
-              <option value="other">✏️ 其他國家（自己填）</option>
-            </select>
+            <div id="nt-country-display" style="display:flex;align-items:center;gap:8px;padding:0 12px;border-radius:var(--r-md);border:1.5px solid var(--border);background:var(--surface);min-height:46px;cursor:pointer" onclick="document.getElementById('nt-country-search').focus()">
+              <span id="nt-country-flag" style="font-size:1.4rem;flex-shrink:0">🌍</span>
+              <input id="nt-country-search" type="text" autocomplete="off" placeholder="搜尋國家... 如：日本、France" style="border:none;outline:none;font-size:.9rem;color:var(--text);background:transparent;flex:1;padding:4px 0;min-width:80px" oninput="handleCountrySearch(this.value)" onfocus="handleCountrySearch(this.value)">
+            </div>
+            <input type="hidden" id="nt-country" value="default">
+            <div id="country-autocomplete" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r-md);box-shadow:0 8px 24px var(--shadow);z-index:200;max-height:220px;overflow-y:auto"></div>
           </div>
           <div class="form-group" id="custom-country-group" style="display:none">
             <label class="form-label">國家名稱</label>
@@ -4499,8 +4938,11 @@ window.toggleWeatherForecast = toggleWeatherForecast;
           <div class="form-group">
             <label class="form-label">城市 / 地區（選填，可多個）</label>
             <div id="nt-city-tags" style="display:flex;flex-wrap:wrap;gap:6px;padding:9px 12px;border-radius:var(--r-md);border:1.5px solid var(--border);background:var(--surface);min-height:46px;align-items:center;cursor:text" onclick="document.getElementById('nt-city-input').focus()">
-              <!-- tags rendered here by JS -->
               <input id="nt-city-input" type="text" placeholder="輸入城市後按 Enter..." style="border:none;outline:none;font-size:15px;color:var(--text);background:transparent;min-width:100px;flex:1;padding:1px 0" onkeydown="handleCityInput(event)" oninput="updateAutoName()">
+            </div>
+            <div id="city-suggestions-wrap" style="display:none;margin-top:8px">
+              <div style="font-size:.65rem;color:var(--text3);margin-bottom:5px">熱門城市快速選取：</div>
+              <div id="city-suggestion-chips" style="display:flex;flex-wrap:wrap;gap:5px"></div>
             </div>
             <div style="font-size:.65rem;color:var(--text3);margin-top:4px">按 Enter 或逗號新增城市，點標籤刪除</div>
           </div>
@@ -4975,19 +5417,11 @@ function toggleConverter() {
   body.style.display = isOpen ? 'none' : 'block';
   arrow.style.transform = isOpen ? '' : 'rotate(180deg)';
   if (!isOpen) {
-    // 動態填入 150+ 幣別選單
+    // 預設來源幣別為旅行幣別，目標為TWD
     const fromSel = document.getElementById('convert-from');
-    const toSel   = document.getElementById('convert-to');
-    if (fromSel && !fromSel.dataset.built) {
-      fromSel.innerHTML = buildCurrencyOptions(tripCurrency || 'THB');
-      fromSel.dataset.built = '1';
-    } else if (fromSel) {
+    const toSel = document.getElementById('convert-to');
+    if (fromSel && toSel) {
       fromSel.value = tripCurrency || 'THB';
-    }
-    if (toSel && !toSel.dataset.built) {
-      toSel.innerHTML = buildCurrencyOptions('TWD');
-      toSel.dataset.built = '1';
-    } else if (toSel) {
       toSel.value = 'TWD';
     }
     quickConvert();
@@ -5139,23 +5573,5 @@ async function saveNickname() {
 // 載入時鎖定 body scroll，防止 splash 位移感
 document.body.classList.add('splash-open');
 </script>
-
-<!-- Modal: 管理常用幣別 -->
-<div id="modal-pin-currencies" class="modal-overlay">
-  <div class="modal-sheet">
-    <div class="modal-handle"></div>
-    <div class="modal-header">
-      <span class="modal-title">⭐ 管理常用幣別</span>
-      <button class="modal-close" onclick="closePinCurrenciesModal()">✕</button>
-    </div>
-    <div class="modal-body" style="padding-bottom:24px">
-      <p style="font-size:.78rem;color:var(--text3);margin-bottom:12px">點擊 ☆/★ 釘選常用幣別，釘選的幣別會顯示在所有下拉選單最上方。</p>
-      <div id="pin-currencies-body" style="display:flex;flex-direction:column;gap:4px;max-height:60vh;overflow-y:auto"></div>
-      <style>
-        .pin-currency-row { display:flex;align-items:center;padding:6px 4px;border-bottom:1px solid var(--border); }
-      </style>
-    </div>
-  </div>
-</div>
 </body>
 </html>
