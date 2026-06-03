@@ -329,6 +329,17 @@ function switchTab(tab) {
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   document.getElementById(`page-${tab}`) && document.getElementById(`page-${tab}`).classList.add('active');
   document.getElementById(`nav-${tab}`) && document.getElementById(`nav-${tab}`).classList.add('active');
+
+  // 護照在大廳也可開：暫時隱藏 lobby overlay
+  const lobbyEl = document.getElementById('lobby-overlay');
+  if (tab === 'passport' && currentView === 'lobby') {
+    if (lobbyEl) lobbyEl.style.display = 'none';
+  } else if (tab !== 'passport' && currentView === 'lobby') {
+    // 其他 tab 在大廳點了沒意義，回到大廳
+    if (lobbyEl) lobbyEl.style.display = '';
+    showLobby(); return;
+  }
+
   // render content
   if (tab === 'itinerary') renderItinerary();
   if (tab === 'expense')   renderExpenses();
@@ -2799,6 +2810,9 @@ async function createNewTrip() {
 // ════════════════════════════════════════
 function showLobby() {
   currentView = 'lobby';
+  // 確保 lobby overlay 可見（從護照頁返回時）
+  const lobbyEl = document.getElementById('lobby-overlay');
+  if (lobbyEl) lobbyEl.style.display = '';
   applyTheme('default');  // applyTheme 內部已保留 data-mode
   const flag=document.getElementById('country-flag'), name=document.getElementById('country-name');
   if(flag) flag.textContent='🌍'; if(name) name.textContent='我的旅行';
