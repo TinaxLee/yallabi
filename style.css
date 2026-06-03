@@ -104,11 +104,15 @@ body { transition: background-color .4s cubic-bezier(.4,0,.2,1), color .4s cubic
 }
 .lobby-title {
   font-size: 1.35rem; font-weight: 700;
-  color: var(--text); letter-spacing: .01em;
+  color: var(--text); letter-spacing: .08em;
+}
+.lobby-logo-y {
+  color: var(--accent);
 }
 .lobby-subtitle {
   font-size: .72rem; color: var(--text3);
-  letter-spacing: .04em; margin-top: 2px;
+  letter-spacing: .06em; margin-top: 2px;
+  font-style: italic;
 }
 .lobby-add-btn {
   display: inline-flex; align-items: center; gap: 5px;
@@ -143,8 +147,8 @@ body { transition: background-color .4s cubic-bezier(.4,0,.2,1), color .4s cubic
 }
 .lobby-collapsible { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .lobby-section-count {
-  font-size: .65rem; color: var(--text3);
-  background: var(--bg2); padding: 1px 7px; border-radius: 10px;
+  font-size: .72rem; color: var(--text3);
+  background: var(--bg2); padding: 1px 8px; border-radius: 10px;
 }
 
 /* ── 新增旅行虛線卡片 ────────────────────────────────── */
@@ -248,8 +252,8 @@ body { transition: background-color .4s cubic-bezier(.4,0,.2,1), color .4s cubic
 /* ── Section divider ─────────────────────────────────── */
 .lobby-section-label {
   padding: 8px 20px 6px;
-  font-size: .65rem; font-weight: 700;
-  letter-spacing: .1em; text-transform: uppercase;
+  font-size: .72rem; font-weight: 700;
+  letter-spacing: .08em; text-transform: uppercase;
   color: var(--text3);
 }
 

@@ -2832,29 +2832,57 @@ function formatLobbyDateRange(t, getEnd) {
 }
 
 // ── 大廳旅伴頭像（輕量版，用 members uid 首字）──────────
+// 大廳頭像快取：uid → { nickname, displayName, avatarEmoji, avatarUrl, photoURL }
+window._lobbyMemberCache = window._lobbyMemberCache || {};
+
+// 查詢非封存行程的成員資料，存入快取後重繪大廳
+async function fetchLobbyMemberProfiles(trips) {
+  const uids = new Set();
+  trips.forEach(t => { (t.members||[]).forEach(uid => uids.add(uid)); });
+  const toFetch = [...uids].filter(uid => !window._lobbyMemberCache[uid]);
+  if (toFetch.length === 0) return;
+  await Promise.all(toFetch.map(async uid => {
+    try {
+      const d = await getDoc(doc(db,'users',uid));
+      window._lobbyMemberCache[uid] = d.exists() ? d.data() : {};
+    } catch { window._lobbyMemberCache[uid] = {}; }
+  }));
+}
+
+function renderLobbyAvatarFromCache(uid, i) {
+  const m = window._lobbyMemberCache[uid] || {};
+  const colors = ['#c2d9e8','#e8dff0','#d8edd8','#f0dde0','#f0ecd8'];
+  const textColors = ['#3a5f75','#5a4070','#4a6a3a','#7a3d46','#7a6a3a'];
+  const bg = colors[i % colors.length];
+  const fg = textColors[i % textColors.length];
+  const ml = i > 0 ? 'margin-left:-6px;' : '';
+  const base = 'width:26px;height:26px;border-radius:50%;border:2px solid var(--bg);'+ml+'flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center;';
+  if (m.avatarUrl) {
+    return '<div style="'+base+'background:'+bg+'"><img src="'+m.avatarUrl+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%"></div>';
+  }
+  if (m.avatarEmoji) {
+    return '<div style="'+base+'background:'+bg+';font-size:.8rem">'+m.avatarEmoji+'</div>';
+  }
+  if (m.photoURL) {
+    return '<div style="'+base+'background:'+bg+'"><img src="'+m.photoURL+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%"></div>';
+  }
+  const initial = (m.nickname||m.displayName||m.name||uid||'?')[0].toUpperCase();
+  return '<div style="'+base+'background:'+bg+';color:'+fg+';font-size:.62rem;font-weight:700">'+initial+'</div>';
+}
+
 function renderLobbyAvatars(trip) {
   const members = trip.members || [];
   if (members.length === 0) return '';
   const shown = members.slice(0,3);
   const extra = members.length - 3;
-  const colors = ['#c2d9e8','#e8dff0','#d8edd8','#f0dde0','#f0ecd8'];
-  const textColors = ['#3a5f75','#5a4070','#4a6a3a','#7a3d46','#7a6a3a'];
-  const avatars = shown.map((uid,i) => {
-    const initial = uid ? uid[0].toUpperCase() : '?';
-    const bg = colors[i % colors.length];
-    const fg = textColors[i % textColors.length];
-    const ml = i > 0 ? 'margin-left:-6px;' : '';
-    return '<div style="width:22px;height:22px;border-radius:50%;background:'+bg+';color:'+fg
-      +';display:flex;align-items:center;justify-content:center;font-size:.58rem;font-weight:700'
-      +';border:2px solid var(--bg);'+ml+'flex-shrink:0">'+initial+'</div>';
-  }).join('');
+  const avatars = shown.map((uid,i) => renderLobbyAvatarFromCache(uid,i)).join('');
   const extraEl = extra > 0
-    ? '<div style="width:22px;height:22px;border-radius:50%;background:var(--bg2);color:var(--text3);font-size:.55rem;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid var(--bg);margin-left:-6px;flex-shrink:0">+'+extra+'</div>'
+    ? '<div style="width:26px;height:26px;border-radius:50%;background:var(--bg2);color:var(--text3);font-size:.58rem;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid var(--bg);margin-left:-6px;flex-shrink:0">+'+extra+'</div>'
     : '';
   return '<div style="display:flex;align-items:center">'+avatars+extraEl+'</div>';
 }
 
-function renderLobby() {
+async function renderLobby() {
   const area=document.getElementById('lobby-trips-area');
   if(!area) return;
 
@@ -2872,6 +2900,14 @@ function renderLobby() {
 
   const {current,upcoming,archived,getEnd}=processTrips(tripsData);
   const today=new Date(); today.setHours(0,0,0,0);
+
+  // 查詢非封存行程的成員頭像（只在第一次，有新 uid 才重繪）
+  const activeTrips=[...current,...upcoming];
+  const allUids=new Set(); activeTrips.forEach(t=>(t.members||[]).forEach(u=>allUids.add(u)));
+  const needFetch=[...allUids].filter(uid=>!window._lobbyMemberCache[uid]);
+  if(needFetch.length>0) {
+    fetchLobbyMemberProfiles(activeTrips).then(()=>{ renderLobby(); }).catch(()=>{});
+  }
 
   function daysUntil(t) {
     if(!t.departureDate) return null;
@@ -3050,12 +3086,12 @@ function lobbyCardNew(t, info, name_, dateRange, statusTxt, pct, subLine, badge,
   // 狀態 badge
   let statusBadge='';
   if(statusTxt) {
-    statusBadge='<span style="position:absolute;top:12px;right:12px;font-size:.6rem;font-weight:600;padding:3px 9px;border-radius:999px;'
+    statusBadge='<span style="position:absolute;top:12px;right:12px;font-size:.7rem;font-weight:600;padding:3px 10px;border-radius:999px;'
       +(isArchived?'background:var(--bg3,rgba(0,0,0,.06));color:var(--text3)':'background:rgba(255,255,255,.35);'+textStyle)
       +'">'+statusTxt+'</span>';
   }
   if(badge) {
-    statusBadge='<span style="position:absolute;top:12px;right:12px;font-size:.6rem;font-weight:600;padding:3px 9px;border-radius:999px;background:rgba(255,255,255,.35);'+textStyle+'">'+badge+'</span>';
+    statusBadge='<span style="position:absolute;top:12px;right:12px;font-size:.7rem;font-weight:600;padding:3px 10px;border-radius:999px;background:rgba(255,255,255,.35);'+textStyle+'">'+badge+'</span>';
   }
 
   // 進度條（進行中才有）
@@ -3074,18 +3110,18 @@ function lobbyCardNew(t, info, name_, dateRange, statusTxt, pct, subLine, badge,
     +'<div style="padding:13px 14px 11px;position:relative;border-radius:14px 14px 0 0;'+bgStyle+textStyle+'min-height:72px">'
     +statusBadge
     +'<div style="display:flex;align-items:center;gap:9px">'
-    +'<span style="font-size:1.9rem;line-height:1;flex-shrink:0">'+info.flag+'</span>'
+    +'<span style="font-size:2.2rem;line-height:1;flex-shrink:0">'+info.flag+'</span>'
     +'<div style="flex:1;min-width:0">'
-    +'<div style="font-size:.9rem;font-weight:600;'+textStyle+'white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+name_+'</div>'
-    +'<div style="font-size:.68rem;margin-top:2px;opacity:.7;'+textStyle+'">'+dateRange+'</div>'
+    +'<div style="font-size:1rem;font-weight:600;'+textStyle+'white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+name_+'</div>'
+    +'<div style="font-size:.78rem;margin-top:3px;opacity:.72;'+textStyle+'">'+dateRange+'</div>'
     +'</div>'
     +'</div>'
     +'</div>'
     // 進度條
     +progressBar
     // 下半部：白底資訊列
-    +'<div style="padding:8px 14px 10px;background:var(--surface);display:flex;justify-content:space-between;align-items:center">'
-    +'<span style="font-size:.68rem;color:var(--text3)">'+subLine+'</span>'
+    +'<div style="padding:9px 14px 11px;background:var(--surface);display:flex;justify-content:space-between;align-items:center">'
+    +'<span style="font-size:.75rem;color:var(--text3)">'+subLine+'</span>'
     +bottomRight
     +'</div>'
     // 快速操作列
@@ -4337,8 +4373,8 @@ window.toggleWeatherForecast = toggleWeatherForecast;
   <div id="lobby-overlay" class="lobby-overlay">
     <div class="lobby-header">
       <div>
-        <div class="lobby-title">我的旅行計畫</div>
-        <div class="lobby-subtitle" id="lobby-subtitle">載入中...</div>
+        <div class="lobby-title"><span class="lobby-logo-y">Y</span>ALLABI</div>
+        <div class="lobby-subtitle">every trip, a story</div>
       </div>
       <div style="display:flex;align-items:center;gap:8px">
         <button class="dark-mode-btn" onclick="toggleDarkMode()" title="切換深色模式">🌙</button>
