@@ -856,3 +856,117 @@ textarea.form-input{resize:none;white-space:pre-wrap;line-height:1.6;}
 .premium-badge{display:inline-flex;align-items:center;gap:3px;background:var(--accent);color:white;font-size:.6rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border-radius:999px;}
 @keyframes themeIn{from{opacity:.7;}to{opacity:1;}}
 .theme-transition{animation:themeIn .4s var(--ease);}
+
+/* ════════════════════════════════════════════════════════
+   TIMEZONE CARD
+════════════════════════════════════════════════════════ */
+.tz-card {
+  background: var(--primary);
+  border-radius: var(--r-lg);
+  padding: 16px 18px;
+  color: white;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 16px;
+  transition: background-color var(--dur) var(--ease);
+}
+.tz-card::before {
+  content: ''; position: absolute; top: -24px; right: -24px;
+  width: 80px; height: 80px; border-radius: 50%;
+  background: rgba(255,255,255,.06); pointer-events: none;
+}
+.tz-card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px;
+}
+.tz-card-title {
+  font-size: .65rem; font-weight: 700;
+  letter-spacing: .12em; text-transform: uppercase;
+  opacity: .75;
+}
+.tz-toggle-btn {
+  background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.3);
+  color: white; border-radius: 999px; padding: 4px 12px;
+  font-size: .72rem; font-weight: 600; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background .15s;
+}
+.tz-toggle-btn:active { background: rgba(255,255,255,.32); }
+.tz-city-list { display: flex; flex-direction: column; gap: 0; }
+.tz-city-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255,255,255,.1);
+}
+.tz-city-row:last-child { border-bottom: none; }
+.tz-city-home { opacity: .65; }
+.tz-city-name { font-size: .82rem; font-weight: 400; opacity: .88; }
+.tz-city-time {
+  font-family: 'Noto Serif TC', serif;
+  font-size: 1.05rem; font-weight: 400; color: white;
+  display: flex; align-items: baseline; gap: 5px;
+}
+.tz-weekday {
+  font-family: var(--font-body);
+  font-size: .6rem; opacity: .6; font-weight: 400;
+}
+/* Converter */
+.tz-converter {
+  margin-top: 12px;
+  border-top: 1px solid rgba(255,255,255,.15);
+  padding-top: 12px;
+}
+.tz-converter-label {
+  font-size: .66rem; opacity: .6; margin-bottom: 8px; letter-spacing: .02em;
+}
+.tz-input {
+  width: 100%; padding: 9px 14px;
+  background: rgba(255,255,255,.15);
+  border: 1px solid rgba(255,255,255,.25);
+  border-radius: var(--r-md); color: white;
+  font-size: 1rem; font-family: var(--font-body);
+  outline: none; margin-bottom: 10px;
+  -webkit-appearance: none; appearance: none;
+}
+.tz-input::-webkit-calendar-picker-indicator { filter: invert(1) opacity(.5); }
+.tz-conversion-list { display: flex; flex-direction: column; gap: 0; }
+.tz-conv-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 7px 0;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+.tz-conv-row:last-child { border-bottom: none; }
+.tz-conv-home { opacity: .55; }
+.tz-conv-city { font-size: .82rem; opacity: .85; }
+.tz-conv-right { display: flex; align-items: baseline; gap: 8px; }
+.tz-conv-diff {
+  font-size: .62rem; opacity: .55;
+  background: rgba(255,255,255,.12);
+  padding: 2px 7px; border-radius: 999px;
+}
+.tz-conv-time {
+  font-family: 'Noto Serif TC', serif;
+  font-size: 1rem; font-weight: 400; color: white;
+}
+
+/* ════════════════════════════════════════════════════════
+   EXPENSE PARTICIPANT CHIPS
+════════════════════════════════════════════════════════ */
+.exp-participants-grid {
+  display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px;
+}
+.exp-participant-chip {
+  display: inline-flex; align-items: center;
+  padding: 7px 14px; border-radius: 999px;
+  border: 1.5px solid var(--border2);
+  background: var(--bg2); color: var(--text3);
+  font-size: .8rem; font-weight: 500;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+  transition: all .15s var(--ease);
+  user-select: none; -webkit-user-select: none;
+}
+.exp-participant-chip.selected {
+  background: var(--primary); color: white;
+  border-color: var(--primary);
+}
+.exp-participant-chip:active { transform: scale(.92); }
