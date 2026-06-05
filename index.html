@@ -685,7 +685,7 @@ const EXPENSE_CATEGORIES = [
 
 let expensePersonFilter = 'all';
 let exchangeRates = {};
-let baseCurrency = 'TWD';
+let baseCurrency = localStorage.getItem('yallabi_base_cur') || 'TWD';
 let tripCurrency = 'THB';
 let ratesUpdatedAt = null;
 
@@ -731,6 +731,15 @@ async function fetchExchangeRates() {
     }
   } catch(e) { console.log('備用匯率 API 也失敗'); }
 }
+
+function changeBaseCurrency(cur) {
+  if (!cur) return;
+  baseCurrency = cur;
+  localStorage.setItem('yallabi_base_cur', cur);
+  // Re-fetch rates with new base then re-render
+  fetchExchangeRates();
+}
+window.changeBaseCurrency = changeBaseCurrency;
 
 function updateRatesTimestamp() {
   const el = document.getElementById('rates-updated-at');
@@ -876,8 +885,21 @@ function renderExpenseSummary() {
       + '<span style="font-size:.82rem;color:rgba(255,255,255,.7)">✓ 帳目平衡，無需結算</span></div>';
   }
 
+  // Build currency selector (show all GEOGRAPHY_DATA currencies + any used in this trip)
+  var allCurs = ['TWD','THB','JPY','EUR','USD','KRW','SGD','AUD','GBP'];
+  curKeys.forEach(function(c) { if (!allCurs.includes(c)) allCurs.push(c); });
+  var curFlags = {'TWD':'🇹🇼','THB':'🇹🇭','JPY':'🇯🇵','EUR':'🇪🇺','USD':'🇺🇸','KRW':'🇰🇷','SGD':'🇸🇬','AUD':'🇦🇺','GBP':'🇬🇧'};
+  var selOpts = allCurs.map(function(c) {
+    return '<option value="' + c + '"' + (c === baseCurrency ? ' selected' : '') + '>'
+      + (curFlags[c] || '') + ' ' + c + '</option>';
+  }).join('');
+  var curSel = '<select id="settle-base-cur" class="settle-cur-select" onchange="changeBaseCurrency(this.value)">' + selOpts + '</select>';
+
   el.innerHTML = '<div class="settle-card">'
-    + '<div class="settle-section-label" style="margin-bottom:8px">各幣別合計</div>'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'
+    + '<div class="settle-section-label">各幣別合計</div>'
+    + '<div style="display:flex;align-items:center;gap:6px"><span style="font-size:.62rem;color:rgba(255,255,255,.5)">換算成</span>' + curSel + '</div>'
+    + '</div>'
     + '<div class="settle-cur-grid">' + curRows + '</div>'
     + twdRow
     + transfersHTML

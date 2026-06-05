@@ -1003,3 +1003,22 @@ textarea.form-input{resize:none;white-space:pre-wrap;line-height:1.6;}
   font-family: 'Noto Serif TC', serif;
   font-size: 1rem; font-weight: 400; color: white;
 }
+
+/* settle card — 換算幣別選單 */
+.settle-cur-select {
+  background: rgba(255,255,255,.15);
+  border: 1px solid rgba(255,255,255,.25);
+  color: white;
+  border-radius: 6px;
+  padding: 3px 6px;
+  font-size: .72rem;
+  font-family: var(--font-body);
+  outline: none;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.settle-cur-select option {
+  background: #2a4a52;
+  color: white;
+}
