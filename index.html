@@ -84,27 +84,27 @@ const COUNTRY_THEMES = {
 // 🌏 GEOGRAPHY_DATA — 20 國地理資料庫
 // ════════════════════════════════════════
 const GEOGRAPHY_DATA = {
-  default:    { key:'default',    flag:'🌍', name:'全球',      nameEn:'Global',       theme:'default',   currency:'TWD', tz:'Asia/Taipei',            cities:[] },
-  thailand:   { key:'thailand',   flag:'🇹🇭', name:'泰國',     nameEn:'Thailand',     theme:'thailand',  currency:'THB', tz:'Asia/Bangkok',           cities:['曼谷','清邁','普吉島','芭提雅','蘇美島','清萊','華欣','喀比','大城','拜縣'] },
-  japan:      { key:'japan',      flag:'🇯🇵', name:'日本',     nameEn:'Japan',        theme:'japan',     currency:'JPY', tz:'Asia/Tokyo',             cities:['東京','大阪','京都','沖繩','北海道','名古屋','福岡','奈良','神戶','箱根','鎌倉','廣島'] },
-  france:     { key:'france',     flag:'🇫🇷', name:'法國',     nameEn:'France',       theme:'france',    currency:'EUR', tz:'Europe/Paris',           cities:['巴黎','尼斯','馬賽','里昂','波爾多','史特拉斯堡','凡爾賽'] },
-  italy:      { key:'italy',      flag:'🇮🇹', name:'義大利',   nameEn:'Italy',        theme:'italy',     currency:'EUR', tz:'Europe/Rome',            cities:['羅馬','米蘭','佛羅倫斯','威尼斯','那不勒斯','都靈','波隆那','阿馬爾菲'] },
-  greece:     { key:'greece',     flag:'🇬🇷', name:'希臘',     nameEn:'Greece',       theme:'greece',    currency:'EUR', tz:'Europe/Athens',          cities:['雅典','聖托里尼','米克諾斯','羅德島','克里特','科孚島'] },
-  morocco:    { key:'morocco',    flag:'🇲🇦', name:'摩洛哥',   nameEn:'Morocco',      theme:'morocco',   currency:'TWD', tz:'Africa/Casablanca',      cities:['馬拉喀什','菲斯','卡薩布蘭卡','拉巴特','舍夫沙萬'] },
-  maldives:   { key:'maldives',   flag:'🇲🇻', name:'馬爾地夫', nameEn:'Maldives',     theme:'maldives',  currency:'TWD', tz:'Indian/Maldives',        cities:['馬列','北馬列環礁','南馬列環礁','阿里環礁'] },
-  korea:      { key:'korea',      flag:'🇰🇷', name:'韓國',     nameEn:'Korea',        theme:'korea',     currency:'KRW', tz:'Asia/Seoul',             cities:['首爾','釜山','濟州島','仁川','大邱','光州','全州','慶州'] },
-  singapore:  { key:'singapore',  flag:'🇸🇬', name:'新加坡',   nameEn:'Singapore',    theme:'singapore', currency:'SGD', tz:'Asia/Singapore',         cities:['濱海灣','烏節路','聖淘沙','小印度','牛車水','樟宜'] },
-  usa:        { key:'usa',        flag:'🇺🇸', name:'美國',     nameEn:'USA',          theme:'usa',       currency:'USD', tz:'America/New_York',       cities:['紐約','洛杉磯','舊金山','拉斯維加斯','邁阿密','芝加哥','西雅圖','夏威夷'] },
-  australia:  { key:'australia',  flag:'🇦🇺', name:'澳洲',     nameEn:'Australia',    theme:'australia', currency:'AUD', tz:'Australia/Sydney',       cities:['雪梨','墨爾本','布里斯本','黃金海岸','凱恩斯','珀斯','大堡礁'] },
-  uk:         { key:'uk',         flag:'🇬🇧', name:'英國',     nameEn:'UK',           theme:'default',   currency:'GBP', tz:'Europe/London',          cities:['倫敦','愛丁堡','曼徹斯特','利物浦','牛津','劍橋','巴斯','約克'] },
-  vietnam:    { key:'vietnam',    flag:'🇻🇳', name:'越南',     nameEn:'Vietnam',      theme:'default',   currency:'TWD', tz:'Asia/Ho_Chi_Minh',       cities:['河內','胡志明市','峴港','會安','芽莊','下龍灣','沙壩','富國島'] },
-  indonesia:  { key:'indonesia',  flag:'🇮🇩', name:'印尼',     nameEn:'Indonesia',    theme:'default',   currency:'TWD', tz:'Asia/Jakarta',           cities:['峇里島','雅加達','日惹','龍目島','科莫多島'] },
-  spain:      { key:'spain',      flag:'🇪🇸', name:'西班牙',   nameEn:'Spain',        theme:'default',   currency:'EUR', tz:'Europe/Madrid',          cities:['巴塞隆納','馬德里','塞維亞','格拉納達','畢爾包','瓦倫西亞'] },
-  turkey:     { key:'turkey',     flag:'🇹🇷', name:'土耳其',   nameEn:'Turkey',       theme:'default',   currency:'TWD', tz:'Europe/Istanbul',        cities:['伊斯坦堡','安塔利亞','卡帕多奇亞','以弗所','棉花堡'] },
-  egypt:      { key:'egypt',      flag:'🇪🇬', name:'埃及',     nameEn:'Egypt',        theme:'default',   currency:'TWD', tz:'Africa/Cairo',           cities:['開羅','盧克索','亞斯文','亞歷山大港','紅海'] },
-  newzealand: { key:'newzealand', flag:'🇳🇿', name:'紐西蘭',   nameEn:'New Zealand',  theme:'default',   currency:'AUD', tz:'Pacific/Auckland',       cities:['奧克蘭','皇后鎮','基督城','羅托魯阿','惠靈頓'] },
-  canada:     { key:'canada',     flag:'🇨🇦', name:'加拿大',   nameEn:'Canada',       theme:'default',   currency:'USD', tz:'America/Vancouver',      cities:['溫哥華','多倫多','班夫','魁北克城','蒙特婁','惠斯勒'] },
-  portugal:   { key:'portugal',   flag:'🇵🇹', name:'葡萄牙',   nameEn:'Portugal',     theme:'default',   currency:'EUR', tz:'Europe/Lisbon',          cities:['里斯本','波爾圖','辛特拉','法羅','馬德拉島','科英布拉'] },
+  default:    { key:'default',    flag:'🌍', name:'全球',      nameEn:'Global',       theme:'default',   currency:'TWD', cities:[] },
+  thailand:   { key:'thailand',   flag:'🇹🇭', name:'泰國',     nameEn:'Thailand',     theme:'thailand',  currency:'THB', cities:['曼谷','清邁','普吉島','芭提雅','蘇美島','清萊','華欣','喀比','大城','拜縣'] },
+  japan:      { key:'japan',      flag:'🇯🇵', name:'日本',     nameEn:'Japan',        theme:'japan',     currency:'JPY', cities:['東京','大阪','京都','沖繩','北海道','名古屋','福岡','奈良','神戶','箱根','鎌倉','廣島'] },
+  france:     { key:'france',     flag:'🇫🇷', name:'法國',     nameEn:'France',       theme:'france',    currency:'EUR', cities:['巴黎','尼斯','馬賽','里昂','波爾多','史特拉斯堡','凡爾賽'] },
+  italy:      { key:'italy',      flag:'🇮🇹', name:'義大利',   nameEn:'Italy',        theme:'italy',     currency:'EUR', cities:['羅馬','米蘭','佛羅倫斯','威尼斯','那不勒斯','都靈','波隆那','阿馬爾菲'] },
+  greece:     { key:'greece',     flag:'🇬🇷', name:'希臘',     nameEn:'Greece',       theme:'greece',    currency:'EUR', cities:['雅典','聖托里尼','米克諾斯','羅德島','克里特','科孚島'] },
+  morocco:    { key:'morocco',    flag:'🇲🇦', name:'摩洛哥',   nameEn:'Morocco',      theme:'morocco',   currency:'TWD', cities:['馬拉喀什','菲斯','卡薩布蘭卡','拉巴特','舍夫沙萬'] },
+  maldives:   { key:'maldives',   flag:'🇲🇻', name:'馬爾地夫', nameEn:'Maldives',     theme:'maldives',  currency:'TWD', cities:['馬列','北馬列環礁','南馬列環礁','阿里環礁'] },
+  korea:      { key:'korea',      flag:'🇰🇷', name:'韓國',     nameEn:'Korea',        theme:'korea',     currency:'KRW', cities:['首爾','釜山','濟州島','仁川','大邱','光州','全州','慶州'] },
+  singapore:  { key:'singapore',  flag:'🇸🇬', name:'新加坡',   nameEn:'Singapore',    theme:'singapore', currency:'SGD', cities:['濱海灣','烏節路','聖淘沙','小印度','牛車水','樟宜'] },
+  usa:        { key:'usa',        flag:'🇺🇸', name:'美國',     nameEn:'USA',          theme:'usa',       currency:'USD', cities:['紐約','洛杉磯','舊金山','拉斯維加斯','邁阿密','芝加哥','西雅圖','夏威夷'] },
+  australia:  { key:'australia',  flag:'🇦🇺', name:'澳洲',     nameEn:'Australia',    theme:'australia', currency:'AUD', cities:['雪梨','墨爾本','布里斯本','黃金海岸','凱恩斯','珀斯','大堡礁'] },
+  uk:         { key:'uk',         flag:'🇬🇧', name:'英國',     nameEn:'UK',           theme:'default',   currency:'GBP', cities:['倫敦','愛丁堡','曼徹斯特','利物浦','牛津','劍橋','巴斯','約克'] },
+  vietnam:    { key:'vietnam',    flag:'🇻🇳', name:'越南',     nameEn:'Vietnam',      theme:'default',   currency:'TWD', cities:['河內','胡志明市','峴港','會安','芽莊','下龍灣','沙壩','富國島'] },
+  indonesia:  { key:'indonesia',  flag:'🇮🇩', name:'印尼',     nameEn:'Indonesia',    theme:'default',   currency:'TWD', cities:['峇里島','雅加達','日惹','龍目島','科莫多島'] },
+  spain:      { key:'spain',      flag:'🇪🇸', name:'西班牙',   nameEn:'Spain',        theme:'default',   currency:'EUR', cities:['巴塞隆納','馬德里','塞維亞','格拉納達','畢爾包','瓦倫西亞'] },
+  turkey:     { key:'turkey',     flag:'🇹🇷', name:'土耳其',   nameEn:'Turkey',       theme:'default',   currency:'TWD', cities:['伊斯坦堡','安塔利亞','卡帕多奇亞','以弗所','棉花堡'] },
+  egypt:      { key:'egypt',      flag:'🇪🇬', name:'埃及',     nameEn:'Egypt',        theme:'default',   currency:'TWD', cities:['開羅','盧克索','亞斯文','亞歷山大港','紅海'] },
+  newzealand: { key:'newzealand', flag:'🇳🇿', name:'紐西蘭',   nameEn:'New Zealand',  theme:'default',   currency:'AUD', cities:['奧克蘭','皇后鎮','基督城','羅托魯阿','惠靈頓'] },
+  canada:     { key:'canada',     flag:'🇨🇦', name:'加拿大',   nameEn:'Canada',       theme:'default',   currency:'USD', cities:['溫哥華','多倫多','班夫','魁北克城','蒙特婁','惠斯勒'] },
+  portugal:   { key:'portugal',   flag:'🇵🇹', name:'葡萄牙',   nameEn:'Portugal',     theme:'default',   currency:'EUR', cities:['里斯本','波爾圖','辛特拉','法羅','馬德拉島','科英布拉'] },
 };
 const GEO_LIST = Object.values(GEOGRAPHY_DATA).filter(g => g.key !== 'default');
 
@@ -802,27 +802,23 @@ function renderExpenses() {
 function renderExpenseSummary() {
   var defaultMember = { uid: (currentUser && currentUser.uid), name: '我' };
   var members = membersData.length > 0 ? membersData : [defaultMember];
-  
-  // Calculate totals
+
+  // Calculate totals (all in baseCurrency for settlement)
   const totals = {};
   members.forEach(m => totals[m.uid] = { paid: 0, owed: 0 });
-  
-  expensesData.forEach(exp => {
-    const payer = exp.payerUid;
-    const amount = parseFloat(exp.amount) || 0;
-    const converted = convertCurrency(amount, exp.currency || tripCurrency, baseCurrency);
-    
+
+  expensesData.forEach(function(exp) {
+    var payer = exp.payerUid;
+    var amount = parseFloat(exp.amount) || 0;
+    var converted = convertCurrency(amount, exp.currency || tripCurrency, baseCurrency);
     if (totals[payer] !== undefined) totals[payer].paid += converted;
-    
     // Split logic
     if (exp.splitType === 'custom' && exp.participants && exp.participants.length > 0) {
-      // Split only among selected participants
-      const parts = exp.participants;
-      const share = converted / parts.length;
-      parts.forEach(function(uid) { if (totals[uid] !== undefined) totals[uid].owed += share; });
+      var share = converted / exp.participants.length;
+      exp.participants.forEach(function(uid) { if (totals[uid] !== undefined) totals[uid].owed += share; });
     } else if (exp.splitType === 'equal') {
-      const share = converted / members.length;
-      members.forEach(m => { if (totals[m.uid]) totals[m.uid].owed += share; });
+      var share = converted / members.length;
+      members.forEach(function(m) { if (totals[m.uid]) totals[m.uid].owed += share; });
     } else if (exp.splitType === 'personal') {
       if (totals[payer]) totals[payer].owed += converted;
     }
@@ -830,60 +826,62 @@ function renderExpenseSummary() {
   });
 
   // Minimum transfers algorithm
-  const balances = [];
+  var balances = [];
   for (var bi = 0; bi < members.length; bi++) {
     var m = members[bi];
     var paid = (totals[m.uid] && totals[m.uid].paid) || 0;
     var owed = (totals[m.uid] && totals[m.uid].owed) || 0;
     balances.push({ uid: m.uid, name: m.name || m.displayName || '旅伴', balance: paid - owed });
   }
+  var transfers = calculateMinTransfers(balances);
 
-  const transfers = calculateMinTransfers(balances);
-  // Multi-currency breakdown: group by currency
+  // Multi-currency breakdown
   var currencyTotals = {};
   expensesData.forEach(function(e) {
     var cur = e.currency || tripCurrency;
-    var amt = parseFloat(e.amount) || 0;
-    currencyTotals[cur] = (currencyTotals[cur] || 0) + amt;
+    currencyTotals[cur] = (currencyTotals[cur] || 0) + (parseFloat(e.amount) || 0);
   });
   var totalTWD = expensesData.reduce(function(sum, e) {
     return sum + convertCurrency(parseFloat(e.amount)||0, e.currency||tripCurrency, baseCurrency);
   }, 0);
 
-  const el = document.getElementById('expense-summary');
+  var el = document.getElementById('expense-summary');
   if (!el) return;
-  const baseLabel = baseCurrency === 'TWD' ? 'NT$' : baseCurrency;
-
-  // Build currency breakdown HTML
+  var baseLabel = baseCurrency === 'TWD' ? 'NT$' : baseCurrency;
   var curKeys = Object.keys(currencyTotals);
-  var curBreakdown = '';
-  if (curKeys.length <= 1) {
-    var cur = curKeys[0] || tripCurrency;
-    var symLabel = cur === 'TWD' ? 'NT$' : cur;
-    curBreakdown = '<div class="settle-total-col"><div class="settle-total-label">' + cur + ' 總計</div><div class="settle-total-num">' + symLabel + ' ' + (currencyTotals[cur]||0).toLocaleString() + '</div></div>';
-  } else {
-    curBreakdown = '<div class="settle-total-col" style="grid-column:1/-1"><div class="settle-total-label" style="margin-bottom:6px">各幣別合計</div>';
-    curKeys.forEach(function(cur) {
-      var sym = cur === 'TWD' ? 'NT$' : cur;
-      curBreakdown += '<div style="display:flex;justify-content:space-between;font-size:.82rem;color:rgba(255,255,255,.85);margin-bottom:3px"><span>' + cur + '</span><span>' + sym + ' ' + currencyTotals[cur].toLocaleString() + '</span></div>';
-    });
-    curBreakdown += '</div>';
-  }
-  var twdCol = '<div class="settle-total-col" style="text-align:right"><div class="settle-total-label">NT$ 換算</div><div class="settle-total-num">NT$ ' + Math.round(totalTWD).toLocaleString() + '</div></div>';
 
-  let transfersHTML = '';
+  // Build currency rows
+  var curRows = '';
+  curKeys.forEach(function(cur) {
+    var sym = cur === 'TWD' ? 'NT$' : cur;
+    curRows += '<div class="settle-cur-row"><span class="settle-cur-code">' + cur + '</span>'
+      + '<span class="settle-cur-amt">' + sym + ' ' + currencyTotals[cur].toLocaleString() + '</span></div>';
+  });
+  var twdRow = curKeys.length > 1
+    ? '<div class="settle-twd-total">≈ NT$ ' + Math.round(totalTWD).toLocaleString() + ' 換算</div>'
+    : '';
+
+  // Transfers
+  var transfersHTML = '';
   if (transfers.length > 0) {
     var rows = '';
     for (var ti = 0; ti < transfers.length; ti++) {
       var t = transfers[ti];
-      rows += '<div class="settle-row"><span class="settle-from-to">' + t.from + ' 需給 ' + t.to + '</span><span class="settle-amount">' + baseLabel + ' ' + Math.round(t.amount).toLocaleString() + '</span></div>';
+      rows += '<div class="settle-row"><span class="settle-from-to">' + t.from + ' 需給 ' + t.to + '</span>'
+        + '<span class="settle-amount">' + baseLabel + ' ' + Math.round(t.amount).toLocaleString() + '</span></div>';
     }
     transfersHTML = '<div class="settle-hr"></div><div class="settle-section-label">共同結算（已扣除個人/請客）</div>' + rows;
   } else {
-    transfersHTML = '<div class="settle-hr"></div><div class="settle-row" style="justify-content:center"><span style="font-size:.82rem;color:rgba(255,255,255,.7)">✓ 帳目平衡，無需結算</span></div>';
+    transfersHTML = '<div class="settle-hr"></div><div class="settle-row" style="justify-content:center">'
+      + '<span style="font-size:.82rem;color:rgba(255,255,255,.7)">✓ 帳目平衡，無需結算</span></div>';
   }
 
-  el.innerHTML = '<div class="settle-card"><div class="settle-total-row">' + curBreakdown + (curKeys.length <= 1 ? twdCol : '') + '</div>' + (curKeys.length > 1 ? '<div style="display:flex;justify-content:flex-end;margin-bottom:12px"><span style="font-size:.72rem;color:rgba(255,255,255,.55)">≈ NT$ ' + Math.round(totalTWD).toLocaleString() + ' 換算</span></div>' : '') + transfersHTML + '</div>';
+  el.innerHTML = '<div class="settle-card">'
+    + '<div class="settle-section-label" style="margin-bottom:8px">各幣別合計</div>'
+    + '<div class="settle-cur-grid">' + curRows + '</div>'
+    + twdRow
+    + transfersHTML
+    + '</div>';
 }
 
 function calculateMinTransfers(balances) {
@@ -932,40 +930,86 @@ function renderExpenseList() {
     return;
   }
 
-  container.innerHTML = Object.entries(groups).sort(([a],[b]) => b.localeCompare(a)).map(([date, items]) => {
-    const dayTotal = items.reduce((s,e) => s + (parseFloat(e.amount)||0), 0);
-    return `
-    <div style="margin-bottom:16px">
-      <div class="flex justify-between items-center mb-2">
-        <span style="font-size:.72rem;font-weight:600;color:var(--text3)">${formatDateDisplay(date)}</span>
-        <span style="font-size:.78rem;font-weight:600;color:var(--text2)">${tripCurrency} ${dayTotal.toLocaleString()}</span>
-      </div>
-      ${items.map(e => {
-        const cat = EXPENSE_CATEGORIES.find(c => c.id === e.category) || EXPENSE_CATEGORIES[6];
-        const payer = membersData.find(m => m.uid === e.payerUid);
-        return `
-        <div class="expense-row">
-          <div class="expense-icon">${cat.icon}</div>
-          <div style="flex:1">
-            <div style="font-size:.88rem;font-weight:500;color:var(--text)">${e.name||''}</div>
-            <div style="font-size:.7rem;color:var(--text3)">${cat.label} · ${(payer && payer.name)||'我'} 支付 · ${getSplitLabel(e.splitType)}</div>
-          </div>
-          <div style="text-align:right">
-            <div style="font-family:'Noto Serif TC',serif;font-size:1rem;font-weight:400;color:var(--text)">${e.currency||tripCurrency} ${parseFloat(e.amount||0).toLocaleString()}</div>
-            <div style="display:flex;gap:6px;justify-content:flex-end;margin-top:4px">
-              <button onclick="editExpense('${e.id}')" style="font-size:.7rem;color:var(--text3)">✏️</button>
-              <button onclick="deleteExpense('${e.id}')" style="font-size:.7rem;color:var(--text3)">✕</button>
-            </div>
-          </div>
-        </div>`;
-      }).join('')}
-    </div>`;
-  }).join('');
+  // Track which date groups are collapsed (default: all open)
+  if (!window._expCollapsed) window._expCollapsed = {};
+
+  var sortedEntries = Object.entries(groups).sort(function(a,b){ return b[0].localeCompare(a[0]); });
+  var html = '';
+  sortedEntries.forEach(function(entry) {
+    var date = entry[0];
+    var items = entry[1];
+    var isCollapsed = !!window._expCollapsed[date];
+
+    // Per-currency day total
+    var dayCurs = {};
+    items.forEach(function(e) {
+      var cur = e.currency || tripCurrency;
+      dayCurs[cur] = (dayCurs[cur] || 0) + (parseFloat(e.amount) || 0);
+    });
+    var dayTotalStr = Object.keys(dayCurs).map(function(cur) {
+      return cur + ' ' + dayCurs[cur].toLocaleString();
+    }).join('  ');
+
+    var itemsHTML = '';
+    items.forEach(function(e) {
+      var cat = EXPENSE_CATEGORIES.find(function(c){ return c.id === e.category; }) || EXPENSE_CATEGORIES[6];
+      var payer = membersData.find(function(m){ return m.uid === e.payerUid; });
+      itemsHTML += '<div class="expense-row">'
+        + '<div class="expense-icon">' + cat.icon + '</div>'
+        + '<div style="flex:1">'
+        + '<div style="font-size:.88rem;font-weight:500;color:var(--text)">' + (e.name||'') + '</div>'
+        + '<div style="font-size:.7rem;color:var(--text3)">' + cat.label + ' · ' + ((payer && payer.name)||'我') + ' 支付 · ' + getSplitLabel(e.splitType) + '</div>'
+        + '</div>'
+        + '<div style="text-align:right">'
+        + '<div style="font-family:'Noto Serif TC',serif;font-size:1rem;font-weight:400;color:var(--text)">' + (e.currency||tripCurrency) + ' ' + parseFloat(e.amount||0).toLocaleString() + '</div>'
+        + '<div style="display:flex;gap:6px;justify-content:flex-end;margin-top:4px">'
+        + '<button onclick="editExpense('' + e.id + '')" style="font-size:.7rem;color:var(--text3)">✏️</button>'
+        + '<button onclick="deleteExpense('' + e.id + '')" style="font-size:.7rem;color:var(--text3)">✕</button>'
+        + '</div></div></div>';
+    });
+
+    html += '<div class="exp-date-group" style="margin-bottom:10px">'
+      + '<div class="exp-date-header" onclick="toggleExpDateGroup('' + date + '')">'
+      + '<div style="display:flex;align-items:center;gap:6px">'
+      + '<span class="exp-date-arrow' + (isCollapsed ? '' : ' open') + '">›</span>'
+      + '<span class="exp-date-label">' + formatDateDisplay(date) + '</span>'
+      + '</div>'
+      + '<span class="exp-date-total">' + dayTotalStr + '</span>'
+      + '</div>'
+      + '<div class="exp-date-body' + (isCollapsed ? ' collapsed' : '') + '">' + itemsHTML + '</div>'
+      + '</div>';
+  });
+  container.innerHTML = html;
 }
 
 function getSplitLabel(type) {
   return { equal:'全員平分', custom:'自選分攤', personal:'個人', treat:'請客' }[type] || '全員平分';
 }
+
+function toggleExpDateGroup(date) {
+  if (!window._expCollapsed) window._expCollapsed = {};
+  window._expCollapsed[date] = !window._expCollapsed[date];
+  var group = document.querySelector('.exp-date-group [onclick*="' + date + '"]');
+  if (!group) { renderExpenseList(); return; }
+  var parent = group.closest('.exp-date-group');
+  if (!parent) return;
+  var body = parent.querySelector('.exp-date-body');
+  var arrow = parent.querySelector('.exp-date-arrow');
+  if (body) body.classList.toggle('collapsed', !!window._expCollapsed[date]);
+  if (arrow) arrow.classList.toggle('open', !window._expCollapsed[date]);
+}
+window.toggleExpDateGroup = toggleExpDateGroup;
+
+function toggleExpChart() {
+  var body = document.getElementById('exp-chart-body');
+  var arrow = document.getElementById('exp-chart-arrow');
+  if (!body) return;
+  var isOpen = body.style.display !== 'none';
+  body.style.display = isOpen ? 'none' : 'block';
+  if (arrow) arrow.style.transform = isOpen ? '' : 'rotate(90deg)';
+  if (!isOpen) renderExpenseChart();
+}
+window.toggleExpChart = toggleExpChart;
 
 function renderExpenseChart() {
   const canvas = document.getElementById('expense-chart');
@@ -1006,7 +1050,6 @@ function openAddExpense(editId = null) {
     form.querySelector('#exp-date').value = item.date || '';
     form.querySelector('#exp-note').value = item.note || '';
     form.dataset.editId = editId;
-    form.dataset.editParticipants = JSON.stringify(item.participants || []);
     document.getElementById('modal-expense-title').textContent = '修改記帳';
   } else {
     form.reset();
@@ -1014,23 +1057,9 @@ function openAddExpense(editId = null) {
     form.querySelector('#exp-date').valueAsDate = new Date();
     form.querySelector('#exp-payer').value = (currentUser && currentUser.uid) || '';
     delete form.dataset.editId;
-    delete form.dataset.editParticipants;
     document.getElementById('modal-expense-title').textContent = '記下一筆花費';
   }
   renderPayerOptions();
-  renderSplitParticipants();
-  // Restore saved participants for edit mode
-  if (editId) {
-    var savedParts = [];
-    try { savedParts = JSON.parse(form.dataset.editParticipants || '[]'); } catch(e) {}
-    if (savedParts.length > 0) {
-      document.querySelectorAll('.exp-participant-cb').forEach(function(cb) {
-        cb.checked = savedParts.includes(cb.value);
-        var chip = cb.closest('.exp-participant-chip');
-        if (chip) chip.classList.toggle('selected', cb.checked);
-      });
-    }
-  }
   openModal('modal-expense');
 }
 
@@ -1040,34 +1069,7 @@ function renderPayerOptions() {
   const sel = document.getElementById('exp-payer');
   if (!sel) return;
   const options = membersData.length > 0 ? membersData : [{ uid: (currentUser && currentUser.uid), name:'我' }];
-  sel.innerHTML = options.map(m => '<option value="' + m.uid + '">' + (m.name || m.displayName || '我') + '</option>').join('');
-}
-
-function renderSplitParticipants() {
-  const splitSel = document.getElementById('exp-split');
-  const wrap = document.getElementById('exp-participants-wrap');
-  const grid = document.getElementById('exp-participants');
-  if (!splitSel || !wrap || !grid) return;
-  if (splitSel.value !== 'custom') { wrap.style.display = 'none'; return; }
-  wrap.style.display = 'block';
-  const members = membersData.length > 0 ? membersData : [{ uid: (currentUser && currentUser.uid), name:'我' }];
-  grid.innerHTML = members.map(m => {
-    var uid = m.uid;
-    var name = m.name || m.displayName || '旅伴';
-    return '<label class="exp-participant-chip" id="chip-' + uid + '">'
-      + '<input type="checkbox" class="exp-participant-cb" value="' + uid + '" checked style="display:none">'
-      + '<span class="exp-participant-name">' + name + '</span>'
-      + '</label>';
-  }).join('');
-  // Toggle chip style on click
-  grid.querySelectorAll('.exp-participant-chip').forEach(function(chip) {
-    chip.addEventListener('click', function() {
-      var cb = chip.querySelector('input');
-      cb.checked = !cb.checked;
-      chip.classList.toggle('selected', cb.checked);
-    });
-    chip.classList.add('selected');
-  });
+  sel.innerHTML = options.map(m => `<option value="${m.uid}">${m.name || m.displayName || '我'}</option>`).join('');
 }
 
 async function saveExpense() {
@@ -1083,14 +1085,7 @@ async function saveExpense() {
     splitType: form.querySelector('#exp-split').value,
     date: form.querySelector('#exp-date').value,
     note: form.querySelector('#exp-note').value.trim(),
-    updatedAt: Date.now(),
-    participants: (function() {
-      var splitVal = form.querySelector('#exp-split').value;
-      if (splitVal !== 'custom') return [];
-      var checked = [];
-      document.querySelectorAll('.exp-participant-cb:checked').forEach(function(cb) { checked.push(cb.value); });
-      return checked;
-    })()
+    updatedAt: Date.now()
   };
   try {
     const editId = form.dataset.editId;
@@ -2695,7 +2690,6 @@ function _preloadTrip(tripId) {
     unsubscribers.push(unsub);
   });
   fetchWeather(currentTrip);
-  renderTzCard(currentTrip);
 }
 
 
@@ -2807,7 +2801,6 @@ async function selectTrip(tripId) {
   }));
   renderMemberAvatars();
   fetchWeather(currentTrip);
-  renderTzCard(currentTrip);
 
   console.log('[Yallabi] selectTrip:', tripId, currentTrip.name || '');
 }
@@ -3346,7 +3339,6 @@ async function saveEditedTrip() {
       updateCountryBadge(currentTrip);
       renderHero(currentTrip);
       fetchWeather(currentTrip);
-      renderTzCard(currentTrip);
     }
 
     closeModal('modal-new-trip');
@@ -4386,146 +4378,8 @@ function switchWeatherCity(idx) {
 window.toggleItCard = toggleItCard;
 window.renderHero = renderHero;
 window.switchWeatherCity = switchWeatherCity;
-// ════════════════════════════════════════
-// 🕐 TIMEZONE CARD
-// ════════════════════════════════════════
-
-// 城市→時區對應（補充個別城市覆蓋，其餘使用行程國家 tz）
-const CITY_TZ_OVERRIDE = {
-  '紐約':'America/New_York', '洛杉磯':'America/Los_Angeles',
-  '舊金山':'America/Los_Angeles', '拉斯維加斯':'America/Los_Angeles',
-  '邁阿密':'America/New_York', '芝加哥':'America/Chicago',
-  '西雅圖':'America/Los_Angeles', '夏威夷':'Pacific/Honolulu',
-  '溫哥華':'America/Vancouver', '多倫多':'America/Toronto',
-  '班夫':'America/Edmonton', '魁北克城':'America/Toronto',
-  '蒙特婁':'America/Toronto', '惠斯勒':'America/Vancouver',
-  '峇里島':'Asia/Makassar', '雪梨':'Australia/Sydney',
-  '墨爾本':'Australia/Melbourne', '布里斯本':'Australia/Brisbane',
-  '黃金海岸':'Australia/Brisbane', '凱恩斯':'Australia/Brisbane',
-  '珀斯':'Australia/Perth',
-};
-
-let tzCardTimer = null;
-let tzConverterOpen = false;
-
-function getTripTimezones(trip) {
-  if (!trip) return [];
-  const geoKey = trip.country || 'default';
-  const geoData = GEOGRAPHY_DATA[geoKey];
-  const countryTz = (geoData && geoData.tz) || 'Asia/Taipei';
-  const cities = trip.cities || (geoData && geoData.cities) || [];
-  const result = [{ label: '台灣', tz: 'Asia/Taipei', isHome: true }];
-  const seen = new Set(['Asia/Taipei']);
-  cities.slice(0, 5).forEach(city => {
-    const tz = CITY_TZ_OVERRIDE[city] || countryTz;
-    if (!seen.has(tz)) {
-      seen.add(tz);
-      result.push({ label: city, tz });
-    } else if (result.length === 1) {
-      // Always show at least the destination even if same tz
-      result.push({ label: city, tz });
-    }
-  });
-  if (result.length === 1 && geoData && geoData.name) {
-    result.push({ label: geoData.name, tz: countryTz });
-  }
-  return result;
-}
-
-function formatTzTime(tz) {
-  try {
-    return new Intl.DateTimeFormat('zh-TW', {
-      timeZone: tz, hour: '2-digit', minute: '2-digit',
-      hour12: false, weekday: 'short'
-    }).format(new Date());
-  } catch(e) { return '--:--'; }
-}
-
-function renderTzCard(trip) {
-  const card = document.getElementById('tz-card');
-  if (!card) return;
-  const tzList = getTripTimezones(trip);
-  if (tzList.length <= 1) { card.style.display = 'none'; return; }
-  card.style.display = 'block';
-  renderTzCityList(tzList);
-  if (tzCardTimer) clearInterval(tzCardTimer);
-  tzCardTimer = setInterval(() => renderTzCityList(tzList), 30000);
-}
-
-function renderTzCityList(tzList) {
-  const el = document.getElementById('tz-city-list');
-  if (!el) return;
-  el.innerHTML = tzList.map(item => {
-    const parts = formatTzTime(item.tz).split(' ');
-    const weekday = parts[0] || '';
-    const time = parts[1] || parts[0] || '--:--';
-    return '<div class="tz-city-row' + (item.isHome ? ' tz-city-home' : '') + '">'
-      + '<span class="tz-city-name">' + (item.isHome ? '🏠 ' : '') + item.label + '</span>'
-      + '<span class="tz-city-time"><span class="tz-weekday">' + weekday + '</span>' + time + '</span>'
-      + '</div>';
-  }).join('');
-}
-
-function toggleTzConverter() {
-  tzConverterOpen = !tzConverterOpen;
-  const conv = document.getElementById('tz-converter');
-  const btn = document.getElementById('tz-toggle-btn');
-  if (!conv || !btn) return;
-  conv.style.display = tzConverterOpen ? 'block' : 'none';
-  btn.textContent = tzConverterOpen ? '收起' : '換算';
-  if (tzConverterOpen) {
-    const now = new Date();
-    const hh = String(now.getHours()).padStart(2,'0');
-    const mm = String(now.getMinutes()).padStart(2,'0');
-    const inp = document.getElementById('tz-input');
-    if (inp) { inp.value = hh + ':' + mm; renderTzConversion(); }
-  }
-}
-
-function renderTzConversion() {
-  const inp = document.getElementById('tz-input');
-  const listEl = document.getElementById('tz-conversion-list');
-  if (!inp || !listEl || !currentTrip) return;
-  const val = inp.value;
-  if (!val) { listEl.innerHTML = ''; return; }
-  const [hh, mm] = val.split(':').map(Number);
-  const tzList = getTripTimezones(currentTrip);
-  const homeTz = 'Asia/Taipei';
-  // Build a Date at the given Taiwan time today
-  const now = new Date();
-  const dateStr = now.toLocaleDateString('en-CA', { timeZone: homeTz });
-  const baseDate = new Date(dateStr + 'T' + String(hh).padStart(2,'0') + ':' + String(mm).padStart(2,'0') + ':00');
-  // Get Taiwan offset
-  const homeOffset = getTimezoneOffsetMinutes(homeTz, baseDate);
-  listEl.innerHTML = tzList.map(item => {
-    const destOffset = getTimezoneOffsetMinutes(item.tz, baseDate);
-    const diffMin = destOffset - homeOffset;
-    const destDate = new Date(baseDate.getTime() + diffMin * 60000);
-    const dh = String(destDate.getHours()).padStart(2,'0');
-    const dm = String(destDate.getMinutes()).padStart(2,'0');
-    const diffLabel = diffMin === 0 ? '同時區' : (diffMin > 0 ? '+' : '') + Math.round(diffMin/60) + 'h';
-    return '<div class="tz-conv-row' + (item.isHome ? ' tz-conv-home' : '') + '">'
-      + '<span class="tz-conv-city">' + item.label + '</span>'
-      + '<span class="tz-conv-right"><span class="tz-conv-diff">' + diffLabel + '</span><span class="tz-conv-time">' + dh + ':' + dm + '</span></span>'
-      + '</div>';
-  }).join('');
-}
-
-function getTimezoneOffsetMinutes(tz, date) {
-  try {
-    const utcDate = new Date(date.toLocaleString('en-US', { timeZone: 'UTC' }));
-    const tzDate  = new Date(date.toLocaleString('en-US', { timeZone: tz }));
-    return (tzDate - utcDate) / 60000;
-  } catch(e) { return 0; }
-}
-
-window.toggleTzConverter = toggleTzConverter;
-window.renderTzConversion = renderTzConversion;
-window.renderTzCard = renderTzCard;
-
 window.renderWeatherCard = renderWeatherCard;
 window.toggleWeatherForecast = toggleWeatherForecast;
-window.renderSplitParticipants = renderSplitParticipants;
 
 </script>
 </head>
@@ -4643,20 +4497,6 @@ window.renderSplitParticipants = renderSplitParticipants;
           </div>
         </div>
 
-        <!-- Timezone Card -->
-        <div class="tz-card" id="tz-card" style="display:none">
-          <div class="tz-card-header">
-            <span class="tz-card-title">🕐 時差對照</span>
-            <button class="tz-toggle-btn" id="tz-toggle-btn" onclick="toggleTzConverter()">換算</button>
-          </div>
-          <div id="tz-city-list" class="tz-city-list"></div>
-          <div id="tz-converter" class="tz-converter" style="display:none">
-            <div class="tz-converter-label">輸入時間，查看各地對應時間</div>
-            <input type="time" id="tz-input" class="tz-input" oninput="renderTzConversion()">
-            <div id="tz-conversion-list" class="tz-conversion-list"></div>
-          </div>
-        </div>
-
       </div>
 
       <!-- Day Tabs -->
@@ -4746,14 +4586,17 @@ window.renderSplitParticipants = renderSplitParticipants;
       <!-- Person filter -->
       <div id="expense-person-tabs" class="person-tabs"></div>
 
-      <!-- Chart -->
-      <div style="background:var(--surface);border-radius:var(--r-md);border:1px solid var(--border);box-shadow:0 2px 8px var(--shadow);margin-bottom:12px;overflow:visible">
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px">
-          <div style="font-size:.78rem;font-weight:600;color:var(--text)">支出比例分析</div>
-          <button onclick="settleExpenses()" style="font-size:.7rem;color:var(--text3);padding:4px 8px;background:var(--bg2);border-radius:6px">標記結清</button>
+      <!-- Chart — collapsible -->
+      <div style="background:var(--surface);border-radius:var(--r-md);border:1px solid var(--border);box-shadow:0 2px 8px var(--shadow);margin-bottom:12px;overflow:hidden">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;cursor:pointer" onclick="toggleExpChart()">
+          <div style="display:flex;align-items:center;gap:6px">
+            <span id="exp-chart-arrow" style="font-size:.7rem;color:var(--text3);transition:transform .2s;display:inline-block">›</span>
+            <span style="font-size:.78rem;font-weight:600;color:var(--text)">支出比例分析</span>
+          </div>
+          <button onclick="event.stopPropagation();settleExpenses()" style="font-size:.7rem;color:var(--text3);padding:4px 8px;background:var(--bg2);border-radius:6px">標記結清</button>
         </div>
-        <div style="padding:0 16px 16px">
-          <canvas id="expense-chart" height="180"></canvas>
+        <div id="exp-chart-body" style="display:none;padding:0 16px 14px">
+          <canvas id="expense-chart" height="160"></canvas>
         </div>
       </div>
 
@@ -5027,18 +4870,12 @@ window.renderSplitParticipants = renderSplitParticipants;
             </div>
             <div>
               <label class="form-label">分帳方式</label>
-              <select id="exp-split" class="form-select" onchange="renderSplitParticipants()">
-                <option value="equal">👫 全員平分</option>
-                <option value="custom">✏️ 自選成員</option>
+              <select id="exp-split" class="form-select">
+                <option value="equal">👫 甜蜜平分</option>
                 <option value="personal">👤 個人</option>
                 <option value="treat">🎁 請客</option>
               </select>
             </div>
-          </div>
-          <!-- 自選參與者 checkbox 區（splitType=custom 時顯示） -->
-          <div id="exp-participants-wrap" style="display:none;margin-bottom:14px">
-            <label class="form-label">分攤對象</label>
-            <div id="exp-participants" class="exp-participants-grid"></div>
           </div>
           <div class="form-group">
             <input id="exp-note" type="text" class="form-input" placeholder="備註 (選填)">
