@@ -850,7 +850,7 @@ function renderExpenseSummary() {
     var cur = e.currency || tripCurrency;
     currencyTotals[cur] = (currencyTotals[cur] || 0) + (parseFloat(e.amount) || 0);
   });
-  var totalTWD = expensesData.reduce(function(sum, e) {
+  var totalBase = expensesData.reduce(function(sum, e) {
     return sum + convertCurrency(parseFloat(e.amount)||0, e.currency||tripCurrency, baseCurrency);
   }, 0);
 
@@ -867,7 +867,7 @@ function renderExpenseSummary() {
       + '<span class="settle-cur-amt">' + sym + ' ' + currencyTotals[cur].toLocaleString() + '</span></div>';
   });
   var twdRow = curKeys.length > 1
-    ? '<div class="settle-twd-total">≈ NT$ ' + Math.round(totalTWD).toLocaleString() + ' 換算</div>'
+    ? '<div class="settle-twd-total">≈ ' + baseLabel + ' ' + Math.round(totalBase).toLocaleString() + ' 換算</div>'
     : '';
 
   // Transfers
