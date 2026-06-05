@@ -84,27 +84,27 @@ const COUNTRY_THEMES = {
 // 🌏 GEOGRAPHY_DATA — 20 國地理資料庫
 // ════════════════════════════════════════
 const GEOGRAPHY_DATA = {
-  default:    { key:'default',    flag:'🌍', name:'全球',      nameEn:'Global',       theme:'default',   currency:'TWD', cities:[] },
-  thailand:   { key:'thailand',   flag:'🇹🇭', name:'泰國',     nameEn:'Thailand',     theme:'thailand',  currency:'THB', cities:['曼谷','清邁','普吉島','芭提雅','蘇美島','清萊','華欣','喀比','大城','拜縣'] },
-  japan:      { key:'japan',      flag:'🇯🇵', name:'日本',     nameEn:'Japan',        theme:'japan',     currency:'JPY', cities:['東京','大阪','京都','沖繩','北海道','名古屋','福岡','奈良','神戶','箱根','鎌倉','廣島'] },
-  france:     { key:'france',     flag:'🇫🇷', name:'法國',     nameEn:'France',       theme:'france',    currency:'EUR', cities:['巴黎','尼斯','馬賽','里昂','波爾多','史特拉斯堡','凡爾賽'] },
-  italy:      { key:'italy',      flag:'🇮🇹', name:'義大利',   nameEn:'Italy',        theme:'italy',     currency:'EUR', cities:['羅馬','米蘭','佛羅倫斯','威尼斯','那不勒斯','都靈','波隆那','阿馬爾菲'] },
-  greece:     { key:'greece',     flag:'🇬🇷', name:'希臘',     nameEn:'Greece',       theme:'greece',    currency:'EUR', cities:['雅典','聖托里尼','米克諾斯','羅德島','克里特','科孚島'] },
-  morocco:    { key:'morocco',    flag:'🇲🇦', name:'摩洛哥',   nameEn:'Morocco',      theme:'morocco',   currency:'TWD', cities:['馬拉喀什','菲斯','卡薩布蘭卡','拉巴特','舍夫沙萬'] },
-  maldives:   { key:'maldives',   flag:'🇲🇻', name:'馬爾地夫', nameEn:'Maldives',     theme:'maldives',  currency:'TWD', cities:['馬列','北馬列環礁','南馬列環礁','阿里環礁'] },
-  korea:      { key:'korea',      flag:'🇰🇷', name:'韓國',     nameEn:'Korea',        theme:'korea',     currency:'KRW', cities:['首爾','釜山','濟州島','仁川','大邱','光州','全州','慶州'] },
-  singapore:  { key:'singapore',  flag:'🇸🇬', name:'新加坡',   nameEn:'Singapore',    theme:'singapore', currency:'SGD', cities:['濱海灣','烏節路','聖淘沙','小印度','牛車水','樟宜'] },
-  usa:        { key:'usa',        flag:'🇺🇸', name:'美國',     nameEn:'USA',          theme:'usa',       currency:'USD', cities:['紐約','洛杉磯','舊金山','拉斯維加斯','邁阿密','芝加哥','西雅圖','夏威夷'] },
-  australia:  { key:'australia',  flag:'🇦🇺', name:'澳洲',     nameEn:'Australia',    theme:'australia', currency:'AUD', cities:['雪梨','墨爾本','布里斯本','黃金海岸','凱恩斯','珀斯','大堡礁'] },
-  uk:         { key:'uk',         flag:'🇬🇧', name:'英國',     nameEn:'UK',           theme:'default',   currency:'GBP', cities:['倫敦','愛丁堡','曼徹斯特','利物浦','牛津','劍橋','巴斯','約克'] },
-  vietnam:    { key:'vietnam',    flag:'🇻🇳', name:'越南',     nameEn:'Vietnam',      theme:'default',   currency:'TWD', cities:['河內','胡志明市','峴港','會安','芽莊','下龍灣','沙壩','富國島'] },
-  indonesia:  { key:'indonesia',  flag:'🇮🇩', name:'印尼',     nameEn:'Indonesia',    theme:'default',   currency:'TWD', cities:['峇里島','雅加達','日惹','龍目島','科莫多島'] },
-  spain:      { key:'spain',      flag:'🇪🇸', name:'西班牙',   nameEn:'Spain',        theme:'default',   currency:'EUR', cities:['巴塞隆納','馬德里','塞維亞','格拉納達','畢爾包','瓦倫西亞'] },
-  turkey:     { key:'turkey',     flag:'🇹🇷', name:'土耳其',   nameEn:'Turkey',       theme:'default',   currency:'TWD', cities:['伊斯坦堡','安塔利亞','卡帕多奇亞','以弗所','棉花堡'] },
-  egypt:      { key:'egypt',      flag:'🇪🇬', name:'埃及',     nameEn:'Egypt',        theme:'default',   currency:'TWD', cities:['開羅','盧克索','亞斯文','亞歷山大港','紅海'] },
-  newzealand: { key:'newzealand', flag:'🇳🇿', name:'紐西蘭',   nameEn:'New Zealand',  theme:'default',   currency:'AUD', cities:['奧克蘭','皇后鎮','基督城','羅托魯阿','惠靈頓'] },
-  canada:     { key:'canada',     flag:'🇨🇦', name:'加拿大',   nameEn:'Canada',       theme:'default',   currency:'USD', cities:['溫哥華','多倫多','班夫','魁北克城','蒙特婁','惠斯勒'] },
-  portugal:   { key:'portugal',   flag:'🇵🇹', name:'葡萄牙',   nameEn:'Portugal',     theme:'default',   currency:'EUR', cities:['里斯本','波爾圖','辛特拉','法羅','馬德拉島','科英布拉'] },
+  default:    { key:'default',    flag:'🌍', name:'全球',      nameEn:'Global',       theme:'default',   currency:'TWD', tz:'Asia/Taipei',            cities:[] },
+  thailand:   { key:'thailand',   flag:'🇹🇭', name:'泰國',     nameEn:'Thailand',     theme:'thailand',  currency:'THB', tz:'Asia/Bangkok',           cities:['曼谷','清邁','普吉島','芭提雅','蘇美島','清萊','華欣','喀比','大城','拜縣'] },
+  japan:      { key:'japan',      flag:'🇯🇵', name:'日本',     nameEn:'Japan',        theme:'japan',     currency:'JPY', tz:'Asia/Tokyo',             cities:['東京','大阪','京都','沖繩','北海道','名古屋','福岡','奈良','神戶','箱根','鎌倉','廣島'] },
+  france:     { key:'france',     flag:'🇫🇷', name:'法國',     nameEn:'France',       theme:'france',    currency:'EUR', tz:'Europe/Paris',           cities:['巴黎','尼斯','馬賽','里昂','波爾多','史特拉斯堡','凡爾賽'] },
+  italy:      { key:'italy',      flag:'🇮🇹', name:'義大利',   nameEn:'Italy',        theme:'italy',     currency:'EUR', tz:'Europe/Rome',            cities:['羅馬','米蘭','佛羅倫斯','威尼斯','那不勒斯','都靈','波隆那','阿馬爾菲'] },
+  greece:     { key:'greece',     flag:'🇬🇷', name:'希臘',     nameEn:'Greece',       theme:'greece',    currency:'EUR', tz:'Europe/Athens',          cities:['雅典','聖托里尼','米克諾斯','羅德島','克里特','科孚島'] },
+  morocco:    { key:'morocco',    flag:'🇲🇦', name:'摩洛哥',   nameEn:'Morocco',      theme:'morocco',   currency:'TWD', tz:'Africa/Casablanca',      cities:['馬拉喀什','菲斯','卡薩布蘭卡','拉巴特','舍夫沙萬'] },
+  maldives:   { key:'maldives',   flag:'🇲🇻', name:'馬爾地夫', nameEn:'Maldives',     theme:'maldives',  currency:'TWD', tz:'Indian/Maldives',        cities:['馬列','北馬列環礁','南馬列環礁','阿里環礁'] },
+  korea:      { key:'korea',      flag:'🇰🇷', name:'韓國',     nameEn:'Korea',        theme:'korea',     currency:'KRW', tz:'Asia/Seoul',             cities:['首爾','釜山','濟州島','仁川','大邱','光州','全州','慶州'] },
+  singapore:  { key:'singapore',  flag:'🇸🇬', name:'新加坡',   nameEn:'Singapore',    theme:'singapore', currency:'SGD', tz:'Asia/Singapore',         cities:['濱海灣','烏節路','聖淘沙','小印度','牛車水','樟宜'] },
+  usa:        { key:'usa',        flag:'🇺🇸', name:'美國',     nameEn:'USA',          theme:'usa',       currency:'USD', tz:'America/New_York',       cities:['紐約','洛杉磯','舊金山','拉斯維加斯','邁阿密','芝加哥','西雅圖','夏威夷'] },
+  australia:  { key:'australia',  flag:'🇦🇺', name:'澳洲',     nameEn:'Australia',    theme:'australia', currency:'AUD', tz:'Australia/Sydney',       cities:['雪梨','墨爾本','布里斯本','黃金海岸','凱恩斯','珀斯','大堡礁'] },
+  uk:         { key:'uk',         flag:'🇬🇧', name:'英國',     nameEn:'UK',           theme:'default',   currency:'GBP', tz:'Europe/London',          cities:['倫敦','愛丁堡','曼徹斯特','利物浦','牛津','劍橋','巴斯','約克'] },
+  vietnam:    { key:'vietnam',    flag:'🇻🇳', name:'越南',     nameEn:'Vietnam',      theme:'default',   currency:'TWD', tz:'Asia/Ho_Chi_Minh',       cities:['河內','胡志明市','峴港','會安','芽莊','下龍灣','沙壩','富國島'] },
+  indonesia:  { key:'indonesia',  flag:'🇮🇩', name:'印尼',     nameEn:'Indonesia',    theme:'default',   currency:'TWD', tz:'Asia/Jakarta',           cities:['峇里島','雅加達','日惹','龍目島','科莫多島'] },
+  spain:      { key:'spain',      flag:'🇪🇸', name:'西班牙',   nameEn:'Spain',        theme:'default',   currency:'EUR', tz:'Europe/Madrid',          cities:['巴塞隆納','馬德里','塞維亞','格拉納達','畢爾包','瓦倫西亞'] },
+  turkey:     { key:'turkey',     flag:'🇹🇷', name:'土耳其',   nameEn:'Turkey',       theme:'default',   currency:'TWD', tz:'Europe/Istanbul',        cities:['伊斯坦堡','安塔利亞','卡帕多奇亞','以弗所','棉花堡'] },
+  egypt:      { key:'egypt',      flag:'🇪🇬', name:'埃及',     nameEn:'Egypt',        theme:'default',   currency:'TWD', tz:'Africa/Cairo',           cities:['開羅','盧克索','亞斯文','亞歷山大港','紅海'] },
+  newzealand: { key:'newzealand', flag:'🇳🇿', name:'紐西蘭',   nameEn:'New Zealand',  theme:'default',   currency:'AUD', tz:'Pacific/Auckland',       cities:['奧克蘭','皇后鎮','基督城','羅托魯阿','惠靈頓'] },
+  canada:     { key:'canada',     flag:'🇨🇦', name:'加拿大',   nameEn:'Canada',       theme:'default',   currency:'USD', tz:'America/Vancouver',      cities:['溫哥華','多倫多','班夫','魁北克城','蒙特婁','惠斯勒'] },
+  portugal:   { key:'portugal',   flag:'🇵🇹', name:'葡萄牙',   nameEn:'Portugal',     theme:'default',   currency:'EUR', tz:'Europe/Lisbon',          cities:['里斯本','波爾圖','辛特拉','法羅','馬德拉島','科英布拉'] },
 };
 const GEO_LIST = Object.values(GEOGRAPHY_DATA).filter(g => g.key !== 'default');
 
@@ -2690,6 +2690,7 @@ function _preloadTrip(tripId) {
     unsubscribers.push(unsub);
   });
   fetchWeather(currentTrip);
+  renderTzCard(currentTrip);
 }
 
 
@@ -2801,6 +2802,7 @@ async function selectTrip(tripId) {
   }));
   renderMemberAvatars();
   fetchWeather(currentTrip);
+  renderTzCard(currentTrip);
 
   console.log('[Yallabi] selectTrip:', tripId, currentTrip.name || '');
 }
@@ -3339,6 +3341,7 @@ async function saveEditedTrip() {
       updateCountryBadge(currentTrip);
       renderHero(currentTrip);
       fetchWeather(currentTrip);
+      renderTzCard(currentTrip);
     }
 
     closeModal('modal-new-trip');
@@ -4378,6 +4381,143 @@ function switchWeatherCity(idx) {
 window.toggleItCard = toggleItCard;
 window.renderHero = renderHero;
 window.switchWeatherCity = switchWeatherCity;
+
+// ════════════════════════════════════════════════════════
+// 🕐 TIMEZONE CARD
+// ════════════════════════════════════════════════════════
+
+const CITY_TZ_OVERRIDE = {
+  '紐約':'America/New_York', '洛杉磯':'America/Los_Angeles',
+  '舊金山':'America/Los_Angeles', '拉斯維加斯':'America/Los_Angeles',
+  '邁阿密':'America/New_York', '芝加哥':'America/Chicago',
+  '西雅圖':'America/Los_Angeles', '夏威夷':'Pacific/Honolulu',
+  '溫哥華':'America/Vancouver', '多倫多':'America/Toronto',
+  '班夫':'America/Edmonton', '魁北克城':'America/Toronto',
+  '蒙特婁':'America/Toronto', '惠斯勒':'America/Vancouver',
+  '峇里島':'Asia/Makassar',
+  '雪梨':'Australia/Sydney', '墨爾本':'Australia/Melbourne',
+  '布里斯本':'Australia/Brisbane', '黃金海岸':'Australia/Brisbane',
+  '凱恩斯':'Australia/Brisbane', '珀斯':'Australia/Perth',
+};
+
+let tzCardTimer = null;
+let tzConverterOpen = false;
+
+function getTripTimezones(trip) {
+  if (!trip) return [];
+  const geoKey = trip.country || 'default';
+  const geoData = GEOGRAPHY_DATA[geoKey];
+  const countryTz = (geoData && geoData.tz) || 'Asia/Taipei';
+  const cities = trip.cities || (geoData && geoData.cities) || [];
+  const result = [{ label: '台灣', tz: 'Asia/Taipei', isHome: true }];
+  const seen = new Set(['Asia/Taipei']);
+  cities.slice(0, 5).forEach(function(city) {
+    const tz = CITY_TZ_OVERRIDE[city] || countryTz;
+    if (!seen.has(tz)) {
+      seen.add(tz);
+      result.push({ label: city, tz: tz });
+    } else if (result.length === 1) {
+      result.push({ label: city, tz: tz });
+    }
+  });
+  if (result.length === 1 && geoData && geoData.name) {
+    result.push({ label: geoData.name, tz: countryTz });
+  }
+  return result;
+}
+
+function formatTzTime(tz) {
+  try {
+    return new Intl.DateTimeFormat('zh-TW', {
+      timeZone: tz, hour: '2-digit', minute: '2-digit',
+      hour12: false, weekday: 'short'
+    }).format(new Date());
+  } catch(e) { return '--:--'; }
+}
+
+function renderTzCard(trip) {
+  const card = document.getElementById('tz-card');
+  if (!card) return;
+  const tzList = getTripTimezones(trip);
+  if (tzList.length <= 1) { card.style.display = 'none'; return; }
+  card.style.display = 'block';
+  renderTzCityList(tzList);
+  if (tzCardTimer) clearInterval(tzCardTimer);
+  tzCardTimer = setInterval(function() { renderTzCityList(tzList); }, 30000);
+}
+
+function renderTzCityList(tzList) {
+  const el = document.getElementById('tz-city-list');
+  if (!el) return;
+  el.innerHTML = tzList.map(function(item) {
+    const parts = formatTzTime(item.tz).split(' ');
+    const weekday = parts[0] || '';
+    const time = parts[1] || parts[0] || '--:--';
+    return '<div class="tz-city-row' + (item.isHome ? ' tz-city-home' : '') + '">'
+      + '<span class="tz-city-name">' + (item.isHome ? '🏠 ' : '') + item.label + '</span>'
+      + '<span class="tz-city-time"><span class="tz-weekday">' + weekday + '</span>' + time + '</span>'
+      + '</div>';
+  }).join('');
+}
+
+function toggleTzConverter() {
+  tzConverterOpen = !tzConverterOpen;
+  const conv = document.getElementById('tz-converter');
+  const btn = document.getElementById('tz-toggle-btn');
+  if (!conv || !btn) return;
+  conv.style.display = tzConverterOpen ? 'block' : 'none';
+  btn.textContent = tzConverterOpen ? '收起' : '換算';
+  if (tzConverterOpen) {
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2, '0');
+    const mm = String(now.getMinutes()).padStart(2, '0');
+    const inp = document.getElementById('tz-input');
+    if (inp) { inp.value = hh + ':' + mm; renderTzConversion(); }
+  }
+}
+
+function renderTzConversion() {
+  const inp = document.getElementById('tz-input');
+  const listEl = document.getElementById('tz-conversion-list');
+  if (!inp || !listEl || !currentTrip) return;
+  const val = inp.value;
+  if (!val) { listEl.innerHTML = ''; return; }
+  const parts = val.split(':');
+  const hh = parseInt(parts[0], 10);
+  const mm = parseInt(parts[1], 10);
+  const tzList = getTripTimezones(currentTrip);
+  const homeTz = 'Asia/Taipei';
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-CA', { timeZone: homeTz });
+  const baseDate = new Date(dateStr + 'T' + String(hh).padStart(2,'0') + ':' + String(mm).padStart(2,'0') + ':00');
+  const homeOffset = getTimezoneOffsetMinutes(homeTz, baseDate);
+  listEl.innerHTML = tzList.map(function(item) {
+    const destOffset = getTimezoneOffsetMinutes(item.tz, baseDate);
+    const diffMin = destOffset - homeOffset;
+    const destDate = new Date(baseDate.getTime() + diffMin * 60000);
+    const dh = String(destDate.getHours()).padStart(2, '0');
+    const dm = String(destDate.getMinutes()).padStart(2, '0');
+    const diffLabel = diffMin === 0 ? '同時區' : (diffMin > 0 ? '+' : '') + Math.round(diffMin / 60) + 'h';
+    return '<div class="tz-conv-row' + (item.isHome ? ' tz-conv-home' : '') + '">'
+      + '<span class="tz-conv-city">' + item.label + '</span>'
+      + '<span class="tz-conv-right"><span class="tz-conv-diff">' + diffLabel + '</span>'
+      + '<span class="tz-conv-time">' + dh + ':' + dm + '</span></span>'
+      + '</div>';
+  }).join('');
+}
+
+function getTimezoneOffsetMinutes(tz, date) {
+  try {
+    const utcDate = new Date(date.toLocaleString('en-US', { timeZone: 'UTC' }));
+    const tzDate  = new Date(date.toLocaleString('en-US', { timeZone: tz }));
+    return (tzDate - utcDate) / 60000;
+  } catch(e) { return 0; }
+}
+
+window.toggleTzConverter = toggleTzConverter;
+window.renderTzConversion = renderTzConversion;
+window.renderTzCard = renderTzCard;
+
 window.renderWeatherCard = renderWeatherCard;
 window.toggleWeatherForecast = toggleWeatherForecast;
 
@@ -4494,6 +4634,20 @@ window.toggleWeatherForecast = toggleWeatherForecast;
         <div class="weather-card" id="weather-card">
           <div style="position:relative;z-index:1" id="weather-content">
             <div style="font-size:.72rem;color:rgba(255,255,255,.55);margin-bottom:8px">載入天氣中...</div>
+          </div>
+        </div>
+
+        <!-- Timezone Card -->
+        <div class="tz-card" id="tz-card" style="display:none">
+          <div class="tz-card-header">
+            <span class="tz-card-title">🕐 時差對照</span>
+            <button class="tz-toggle-btn" id="tz-toggle-btn" onclick="toggleTzConverter()">換算</button>
+          </div>
+          <div id="tz-city-list" class="tz-city-list"></div>
+          <div id="tz-converter" class="tz-converter" style="display:none">
+            <div class="tz-converter-label">輸入時間，查看各地對應時間</div>
+            <input type="time" id="tz-input" class="tz-input" oninput="renderTzConversion()">
+            <div id="tz-conversion-list" class="tz-conversion-list"></div>
           </div>
         </div>
 
