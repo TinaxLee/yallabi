@@ -961,15 +961,15 @@ function renderExpenseList() {
         + '<div style="font-size:.7rem;color:var(--text3)">' + cat.label + ' · ' + ((payer && payer.name)||'我') + ' 支付 · ' + getSplitLabel(e.splitType) + '</div>'
         + '</div>'
         + '<div style="text-align:right">'
-        + '<div style="font-family:'Noto Serif TC',serif;font-size:1rem;font-weight:400;color:var(--text)">' + (e.currency||tripCurrency) + ' ' + parseFloat(e.amount||0).toLocaleString() + '</div>'
+        + '<div style="font-family:&quot;Noto Serif TC&quot;,serif;font-size:1rem;font-weight:400;color:var(--text)">' + (e.currency||tripCurrency) + ' ' + parseFloat(e.amount||0).toLocaleString() + '</div>'
         + '<div style="display:flex;gap:6px;justify-content:flex-end;margin-top:4px">'
-        + '<button onclick="editExpense('' + e.id + '')" style="font-size:.7rem;color:var(--text3)">✏️</button>'
-        + '<button onclick="deleteExpense('' + e.id + '')" style="font-size:.7rem;color:var(--text3)">✕</button>'
+        + '<button onclick="editExpense(\'' + e.id + '\')" style="font-size:.7rem;color:var(--text3)">✏️</button>'
+        + '<button onclick="deleteExpense(\'' + e.id + '\')" style="font-size:.7rem;color:var(--text3)">✕</button>'
         + '</div></div></div>';
     });
 
     html += '<div class="exp-date-group" style="margin-bottom:10px">'
-      + '<div class="exp-date-header" onclick="toggleExpDateGroup('' + date + '')">'
+      + '<div class="exp-date-header" onclick="toggleExpDateGroup(\'' + date + '\')">'
       + '<div style="display:flex;align-items:center;gap:6px">'
       + '<span class="exp-date-arrow' + (isCollapsed ? '' : ' open') + '">›</span>'
       + '<span class="exp-date-label">' + formatDateDisplay(date) + '</span>'
