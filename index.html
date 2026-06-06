@@ -876,9 +876,17 @@ function renderExpenseSummary() {
     var rows = '';
     for (var ti = 0; ti < transfers.length; ti++) {
       var t = transfers[ti];
-      rows += '<div class="settle-row"><span class="settle-from-to">' + t.from + ' 需給 ' + t.to + '</span>'
-        + '<span class="settle-amount">' + baseLabel + ' ' + Math.round(t.amount).toLocaleString() + '</span></div>';
+      var key = t.from + '->' + t.to;
+      var isReceived = (currentTrip && currentTrip.receivedTransfers && currentTrip.receivedTransfers[key]);
+      if (isReceived) continue; // 已收到的不顯示
+      rows += '<div class="settle-row">'
+        + '<span class="settle-from-to">' + t.from + ' 需給 ' + t.to + '</span>'
+        + '<div style="display:flex;align-items:center;gap:8px">'
+        + '<span class="settle-amount">' + baseLabel + ' ' + Math.round(t.amount).toLocaleString() + '</span>'
+        + '<button class="settle-received-btn" onclick="markTransferReceived(\'' + key + '\')" title="標記已收到">✓</button>'
+        + '</div></div>';
     }
+    if (!rows) rows = '<div class="settle-row" style="justify-content:center"><span style="font-size:.82rem;color:rgba(255,255,255,.7)">✓ 全部已收款</span></div>';
     transfersHTML = '<div class="settle-hr"></div><div class="settle-section-label">共同結算（已扣除個人/請客）</div>' + rows;
   } else {
     transfersHTML = '<div class="settle-hr"></div><div class="settle-row" style="justify-content:center">'
@@ -1095,8 +1103,10 @@ function renderPayerOptions() {
 }
 
 async function saveExpense() {
+  // Route to personal save if in personal mode
+  var form = document.getElementById('form-expense');
+  if (form && form.dataset.personalMode === 'true') { await savePersonalExpense(); return; }
   if (!currentTripId) { showToast('請先選擇或建立一個旅行'); return; }
-  const form = document.getElementById('form-expense');
   const amount = parseFloat(form.querySelector('#exp-amount').value);
   if (!amount || isNaN(amount)) { showToast('請輸入金額'); return; }
   const data = {
@@ -1135,6 +1145,19 @@ async function deleteExpense(id) {
   await deleteDoc(tripDoc('expenses', id));
   showToast('已刪除');
 }
+
+async function markTransferReceived(key) {
+  if (!currentTripId) return;
+  var received = Object.assign({}, (currentTrip && currentTrip.receivedTransfers) || {});
+  received[key] = Date.now();
+  try {
+    await setDoc(doc(db, 'trips', currentTripId), { receivedTransfers: received }, { merge: true });
+    if (currentTrip) currentTrip.receivedTransfers = received;
+    renderExpenseSummary();
+    showToast('已標記收款 ✓');
+  } catch(e) { showToast('標記失敗'); }
+}
+window.markTransferReceived = markTransferReceived;
 
 async function settleExpenses() {
   const settled = { settledAt: Date.now(), settledBy: currentUser.uid };
@@ -2816,12 +2839,16 @@ async function selectTrip(tripId) {
     unsubscribers.push(unsub);
   });
 
-  // ⑧ 載入旅伴資料
+  // ⑧ 載入旅伴資料（登入用戶 + 訪客）
   const memberUids = currentTrip.members || [currentUser.uid];
-  membersData = await Promise.all(memberUids.map(async uid => {
-    try { const d = await getDoc(doc(db,'users',uid)); return { uid, ...d.data() }; }
-    catch { return { uid, name:'旅伴' }; }
+  const loginMembers = await Promise.all(memberUids.map(async uid => {
+    try { const d = await getDoc(doc(db,'users',uid)); return { uid, type:'user', ...d.data() }; }
+    catch { return { uid, type:'user', name:'旅伴' }; }
   }));
+  const guestMembers = (currentTrip.guests || []).map(function(g) {
+    return { uid: g.guestId, type: 'guest', name: g.name, guestId: g.guestId };
+  });
+  membersData = loginMembers.concat(guestMembers);
   renderMemberAvatars();
   fetchWeather(currentTrip);
   renderTzCard(currentTrip);
@@ -2879,6 +2906,7 @@ async function createNewTrip() {
     cities: [...ntCities],
     departureDate: departure,
     members: [currentUser.uid],
+    guests: ntGuests.map(function(g) { return { name: g.name, guestId: g.guestId }; }),
     days,
     dates: {},
     currency: form.querySelector('#nt-currency').value || 'TWD',
@@ -2894,6 +2922,7 @@ async function createNewTrip() {
     selectTrip(ref.id);
     closeModal('modal-new-trip');
     resetCityTags();
+    resetGuestTags();
     form.reset();
     setTimeout(() => {
       if (confirm('旅行建立成功！\n要邀請旅伴一起規劃嗎？')) openInvite();
@@ -3331,6 +3360,11 @@ function openEditTrip(tripId) {
   const saveBtn = document.querySelector('#modal-new-trip .btn-primary');
   if (saveBtn) { saveBtn.textContent = '儲存變更'; saveBtn.onclick = saveEditedTrip; }
 
+  // Load existing guests into ntGuests
+  ntGuests = ((currentTrip && currentTrip.guests) || []).map(function(g) {
+    return { name: g.name, guestId: g.guestId };
+  });
+  renderGuestTags();
   updateAutoName();
   openModal('modal-new-trip');
 }
@@ -3348,7 +3382,9 @@ async function saveEditedTrip() {
   const name      = inputName || getAutoName();
   const cities    = ntCities.slice();
 
-  const updates = { country, countryName: customCN, name, departureDate: departure, currency, cities };
+  // Collect guests from UI
+  var editedGuests = ntGuests.map(function(g) { return { name: g.name, guestId: g.guestId }; });
+  const updates = { country, countryName: customCN, name, departureDate: departure, currency, cities, guests: editedGuests };
   try {
     await updateDoc(doc(db, 'trips', _editingTripId), updates);
 
@@ -3385,7 +3421,9 @@ function _resetNewTripModal() {
   const form = document.getElementById('form-new-trip');
   if (form) form.reset();
   ntCities = [];
+  ntGuests = [];
   renderCityTags();
+  renderGuestTags();
   toggleCustomCountry('default');
 }
 
@@ -3978,6 +4016,7 @@ window.toggleCustomCountry = toggleCustomCountry;
 // 🏙️ CITY + COUNTRY INPUT
 // ════════════════════════════════════════
 let ntCities = [];
+let ntGuests = []; // 訪客旅伴名單 [{name, guestId}]
 let _ntCountryKey = 'default';
 
 function handleCityInput(e) {
@@ -4216,6 +4255,20 @@ window.loginApple = loginApple;
 window.logout = logout;
 window.openModal = openModal;
 window.closeModal = closeModal;
+// Patch closeModal to reset personalMode
+var _origCloseModal = closeModal;
+window.closeModal = function(id) {
+  _origCloseModal(id);
+  if (id === 'modal-expense') {
+    var f = document.getElementById('form-expense');
+    if (f) {
+      delete f.dataset.personalMode;
+      // Restore hidden group fields
+      var grid = document.getElementById('exp-payer') && document.getElementById('exp-payer').closest('[style*="grid"]');
+      if (grid) grid.style.display = '';
+    }
+  }
+};
 window.showToast = showToast;
 window.requestNotifications = requestNotifications;
 window.quickConvert = quickConvert;
@@ -4223,6 +4276,52 @@ window.toggleConverter = toggleConverter;
 window.updateExpensePreview = updateExpensePreview;
 window.updateDayDate = updateDayDate;
 window.handleCityInput = handleCityInput;
+// ── 訪客旅伴管理 ────────────────────────
+function handleGuestInput(e) {
+  if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addGuestTag(); }
+}
+
+function addGuestTag() {
+  const input = document.getElementById('nt-guest-input');
+  if (!input) return;
+  const name = input.value.trim().replace(/,/g,'');
+  if (!name) return;
+  // 避免重名 — 加序號
+  const sameNames = ntGuests.filter(function(g) { return g.name === name; }).length;
+  const guestId = 'guest_' + name + (sameNames > 0 ? '_' + (sameNames + 1) : '_1');
+  ntGuests.push({ name: name, guestId: guestId });
+  input.value = '';
+  renderGuestTags();
+}
+
+function removeGuestTag(guestId) {
+  ntGuests = ntGuests.filter(function(g) { return g.guestId !== guestId; });
+  renderGuestTags();
+}
+
+function renderGuestTags() {
+  var wrap = document.getElementById('nt-guest-tags');
+  if (!wrap) return;
+  if (ntGuests.length === 0) {
+    wrap.innerHTML = '<span style="font-size:.72rem;color:var(--text3)">尚未新增旅伴</span>';
+    return;
+  }
+  wrap.innerHTML = ntGuests.map(function(g) {
+    return '<span class="city-tag" onclick="removeGuestTag(\'' + g.guestId + '\')" style="cursor:pointer">'
+      + g.name + ' ✕</span>';
+  }).join('');
+}
+
+function resetGuestTags() {
+  ntGuests = [];
+  renderGuestTags();
+}
+
+window.handleGuestInput = handleGuestInput;
+window.addGuestTag = addGuestTag;
+window.removeGuestTag = removeGuestTag;
+
+
 window.removeCity = removeCity;
 window.updateAutoName = updateAutoName;
 window.saveJournal = saveJournal;
@@ -4540,6 +4639,210 @@ window.toggleTzConverter = toggleTzConverter;
 window.renderTzConversion = renderTzConversion;
 window.renderTzCard = renderTzCard;
 
+
+// ════════════════════════════════════════════════════════
+// 👤 個人帳
+// ════════════════════════════════════════════════════════
+let expenseMode = 'group'; // 'group' | 'personal'
+let personalExpensesData = [];
+let personalExpenseUnsub = null;
+
+function switchExpenseMode(mode) {
+  expenseMode = mode;
+  var groupEls = ['converter-card','expense-summary','expense-person-tabs','expense-chart-wrap','expense-list'];
+  var groupBtn = document.getElementById('tab-group-exp');
+  var personalBtn = document.getElementById('tab-personal-exp');
+  var personalWrap = document.getElementById('personal-expense-wrap');
+  var addBtn = document.getElementById('expense-add-btn');
+
+  if (mode === 'group') {
+    groupEls.forEach(function(id) {
+      var el = document.getElementById(id); if (el) el.style.display = '';
+    });
+    if (personalWrap) personalWrap.style.display = 'none';
+    if (groupBtn) groupBtn.classList.add('active');
+    if (personalBtn) personalBtn.classList.remove('active');
+    if (addBtn) { addBtn.textContent = '＋ 新增'; addBtn.onclick = openAddExpense; }
+  } else {
+    // Only logged-in users can have personal account
+    if (!currentUser) { showToast('請先登入才能使用個人帳'); return; }
+    groupEls.forEach(function(id) {
+      var el = document.getElementById(id); if (el) el.style.display = 'none';
+    });
+    if (personalWrap) personalWrap.style.display = 'block';
+    if (groupBtn) groupBtn.classList.remove('active');
+    if (personalBtn) personalBtn.classList.add('active');
+    if (addBtn) { addBtn.textContent = '＋ 個人記帳'; addBtn.onclick = openAddPersonalExpense; }
+    subscribePersonalExpenses();
+  }
+}
+
+function subscribePersonalExpenses() {
+  if (!currentUser || !currentTripId) return;
+  if (personalExpenseUnsub) { personalExpenseUnsub(); personalExpenseUnsub = null; }
+  const ref = collection(db, 'users', currentUser.uid, 'personalExpenses');
+  const q = query(ref, orderBy('date','desc'));
+  personalExpenseUnsub = onSnapshot(q, function(snap) {
+    personalExpensesData = snap.docs
+      .map(function(d) { return Object.assign({ id: d.id }, d.data()); })
+      .filter(function(e) { return e.tripId === currentTripId; });
+    renderPersonalExpenses();
+  });
+}
+
+async function openAddPersonalExpense(editId) {
+  var form = document.getElementById('form-expense');
+  if (!form) return;
+  // Reuse the same expense modal but mark it as personal
+  form.dataset.personalMode = 'true';
+  if (editId) {
+    var item = personalExpensesData.find(function(e) { return e.id === editId; });
+    if (!item) return;
+    form.querySelector('#exp-name').value = item.name || '';
+    form.querySelector('#exp-amount').value = item.amount || '';
+    form.querySelector('#exp-currency').value = item.currency || tripCurrency;
+    form.querySelector('#exp-category').value = item.category || 'other';
+    form.querySelector('#exp-date').value = item.date || '';
+    form.querySelector('#exp-note').value = item.note || '';
+    form.dataset.editId = editId;
+    document.getElementById('modal-expense-title').textContent = '修改個人記帳';
+  } else {
+    form.reset();
+    form.querySelector('#exp-currency').value = tripCurrency;
+    form.querySelector('#exp-date').valueAsDate = new Date();
+    delete form.dataset.editId;
+    document.getElementById('modal-expense-title').textContent = '個人記帳';
+  }
+  // Hide group-only fields
+  var splitRow = document.getElementById('exp-split') && document.getElementById('exp-split').closest('.form-group, div');
+  var payerRow = document.getElementById('exp-payer') && document.getElementById('exp-payer').closest('.form-group, div');
+  var grid = document.getElementById('exp-payer') && document.getElementById('exp-payer').closest('[style*="grid"]');
+  if (grid) grid.style.display = 'none';
+  var partWrap = document.getElementById('exp-participants-wrap');
+  if (partWrap) partWrap.style.display = 'none';
+  openModal('modal-expense');
+}
+
+async function savePersonalExpense() {
+  var form = document.getElementById('form-expense');
+  var amount = parseFloat(form.querySelector('#exp-amount').value);
+  if (!amount || amount <= 0) { showToast('請輸入金額'); return; }
+  var data = {
+    tripId: currentTripId,
+    name: form.querySelector('#exp-name').value.trim() || '支出',
+    amount: amount,
+    currency: form.querySelector('#exp-currency').value,
+    category: form.querySelector('#exp-category').value,
+    date: form.querySelector('#exp-date').value,
+    note: form.querySelector('#exp-note').value.trim(),
+    updatedAt: Date.now()
+  };
+  var editId = form.dataset.editId;
+  try {
+    var ref = collection(db, 'users', currentUser.uid, 'personalExpenses');
+    if (editId) {
+      await updateDoc(doc(ref, editId), data);
+      showToast('已更新 ✓');
+    } else {
+      data.createdAt = Date.now();
+      await addDoc(ref, data);
+      showToast('已記下 ✓');
+    }
+    closeModal('modal-expense');
+  } catch(e) { showToast('儲存失敗'); }
+}
+
+async function deletePersonalExpense(id) {
+  if (!confirm('確定刪除這筆個人記帳？')) return;
+  try {
+    await deleteDoc(doc(db, 'users', currentUser.uid, 'personalExpenses', id));
+    showToast('已刪除');
+  } catch(e) { showToast('刪除失敗'); }
+}
+
+// Render personal expense list + summary
+function renderPersonalExpenses() {
+  renderPersonalSummary();
+  renderPersonalList();
+}
+
+function renderPersonalSummary() {
+  var el = document.getElementById('personal-expense-summary');
+  if (!el) return;
+  if (personalExpensesData.length === 0) {
+    el.innerHTML = '<div style="text-align:center;font-size:.82rem;color:rgba(255,255,255,.6);padding:8px 0">還沒有個人記帳</div>';
+    return;
+  }
+  var curTotals = {};
+  personalExpensesData.forEach(function(e) {
+    var cur = e.currency || tripCurrency;
+    curTotals[cur] = (curTotals[cur] || 0) + (parseFloat(e.amount) || 0);
+  });
+  var totalBase = personalExpensesData.reduce(function(sum, e) {
+    return sum + convertCurrency(parseFloat(e.amount)||0, e.currency||tripCurrency, baseCurrency);
+  }, 0);
+  var baseLabel = baseCurrency === 'TWD' ? 'NT$' : baseCurrency;
+  var curRows = Object.keys(curTotals).map(function(cur) {
+    var sym = cur === 'TWD' ? 'NT$' : cur;
+    return '<div class="settle-cur-row"><span class="settle-cur-code">' + cur + '</span>'
+      + '<span class="settle-cur-amt">' + sym + ' ' + curTotals[cur].toLocaleString() + '</span></div>';
+  }).join('');
+  var twdRow = Object.keys(curTotals).length > 1
+    ? '<div class="settle-twd-total">≈ ' + baseLabel + ' ' + Math.round(totalBase).toLocaleString() + ' 換算</div>' : '';
+  el.innerHTML = '<div class="settle-section-label" style="margin-bottom:8px">個人消費合計</div>'
+    + '<div class="settle-cur-grid">' + curRows + '</div>' + twdRow;
+}
+
+function renderPersonalList() {
+  var container = document.getElementById('personal-expense-list');
+  if (!container) return;
+  if (personalExpensesData.length === 0) {
+    container.innerHTML = '<div style="text-align:center;padding:32px 0;color:var(--text3);font-size:.82rem">還沒有個人記帳<br><span style="font-size:.72rem">點右上角「＋ 個人記帳」開始記錄</span></div>';
+    return;
+  }
+  // Group by date
+  var groups = {};
+  personalExpensesData.forEach(function(e) {
+    var d = e.date || '未分類';
+    if (!groups[d]) groups[d] = [];
+    groups[d].push(e);
+  });
+  var html = '';
+  Object.entries(groups).sort(function(a,b){ return b[0].localeCompare(a[0]); }).forEach(function(entry) {
+    var date = entry[0]; var items = entry[1];
+    var dayCurs = {};
+    items.forEach(function(e) {
+      var cur = e.currency || tripCurrency;
+      dayCurs[cur] = (dayCurs[cur] || 0) + (parseFloat(e.amount) || 0);
+    });
+    var dayStr = Object.keys(dayCurs).map(function(c) { return c + ' ' + dayCurs[c].toLocaleString(); }).join('  ');
+    var itemsHTML = items.map(function(e) {
+      var cat = EXPENSE_CATEGORIES.find(function(c){ return c.id === e.category; }) || EXPENSE_CATEGORIES[6];
+      return '<div class="expense-row">'
+        + '<div class="expense-icon">' + cat.icon + '</div>'
+        + '<div style="flex:1"><div style="font-size:.88rem;font-weight:500;color:var(--text)">' + (e.name||'') + '</div>'
+        + '<div style="font-size:.7rem;color:var(--text3)">' + cat.label + (e.note ? ' · ' + e.note : '') + '</div></div>'
+        + '<div style="text-align:right">'
+        + '<div style="font-family:&quot;Noto Serif TC&quot;,serif;font-size:1rem;color:var(--text)">' + (e.currency||tripCurrency) + ' ' + parseFloat(e.amount||0).toLocaleString() + '</div>'
+        + '<div style="display:flex;gap:6px;justify-content:flex-end;margin-top:4px">'
+        + '<button onclick="openAddPersonalExpense(\'' + e.id + '\')" style="font-size:.7rem;color:var(--text3)">✏️</button>'
+        + '<button onclick="deletePersonalExpense(\'' + e.id + '\')" style="font-size:.7rem;color:var(--text3)">✕</button>'
+        + '</div></div></div>';
+    }).join('');
+    html += '<div class="exp-date-group" style="margin-bottom:10px">'
+      + '<div class="exp-date-header">'
+      + '<span class="exp-date-label">' + formatDateDisplay(date) + '</span>'
+      + '<span class="exp-date-total">' + dayStr + '</span>'
+      + '</div>'
+      + '<div>' + itemsHTML + '</div></div>';
+  });
+  container.innerHTML = html;
+}
+
+window.switchExpenseMode = switchExpenseMode;
+window.openAddPersonalExpense = openAddPersonalExpense;
+window.deletePersonalExpense = deletePersonalExpense;
+
 window.renderWeatherCard = renderWeatherCard;
 window.toggleWeatherForecast = toggleWeatherForecast;
 
@@ -4693,9 +4996,14 @@ window.toggleWeatherForecast = toggleWeatherForecast;
   <!-- ══ PAGE: EXPENSE ══ -->
   <div id="page-expense" class="page">
     <div class="page-content pb-4">
-      <div class="flex items-center justify-between" style="padding:16px 0 12px">
+      <div class="flex items-center justify-between" style="padding:16px 0 8px">
         <div class="section-title">花費記帳</div>
-        <button class="btn-add" onclick="openAddExpense()">＋ 新增</button>
+        <button class="btn-add" id="expense-add-btn" onclick="openAddExpense()">＋ 新增</button>
+      </div>
+      <!-- 群體帳 / 個人帳 切換 -->
+      <div class="expense-mode-tabs" style="margin-bottom:12px">
+        <button class="expense-mode-tab active" id="tab-group-exp" onclick="switchExpenseMode('group')">👫 群體帳</button>
+        <button class="expense-mode-tab" id="tab-personal-exp" onclick="switchExpenseMode('personal')">👤 個人帳</button>
       </div>
 
       <!-- Currency converter - collapsible card -->
@@ -4778,6 +5086,11 @@ window.toggleWeatherForecast = toggleWeatherForecast;
 
       <!-- List -->
       <div id="expense-list"></div>
+      <!-- 個人帳區塊（登入用戶才可見） -->
+      <div id="personal-expense-wrap" style="display:none">
+        <div id="personal-expense-summary" class="settle-card" style="margin-bottom:12px"></div>
+        <div id="personal-expense-list"></div>
+      </div>
     </div>
   </div>
 
@@ -5280,6 +5593,16 @@ window.toggleWeatherForecast = toggleWeatherForecast;
               </select>
             </div>
           </div>
+        </div>
+        <!-- 旅伴管理 -->
+        <div class="card-dashed mb-4" id="nt-guests-section">
+          <label class="form-label">旅伴名單（選填）</label>
+          <div id="nt-guest-tags" class="guest-tags-wrap"></div>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <input id="nt-guest-input" type="text" class="form-input" placeholder="輸入旅伴名字..." style="flex:1" onkeydown="handleGuestInput(event)">
+            <button type="button" class="btn btn-primary" style="padding:0 16px;white-space:nowrap" onclick="addGuestTag()">新增</button>
+          </div>
+          <div style="font-size:.65rem;color:var(--text3);margin-top:4px">按 Enter 或點新增，點名字標籤刪除</div>
         </div>
         <button class="btn btn-primary btn-full" onclick="createNewTrip()">新增旅行</button>
       </form>
