@@ -795,12 +795,22 @@ function renderExpenses() {
     els.forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = ''; });
     const list = document.getElementById('expense-list');
     if (list) list.innerHTML = noTripHTML('💰', '建立旅行後<br>就可以開始記帳囉');
-    // 隱藏換算卡片
     const conv = document.getElementById('converter-card');
     if (conv) conv.style.display = 'none';
     return;
   }
-  // 顯示換算卡片
+  // 每次進入花費頁都重置回群體帳，確保按鈕狀態正確
+  if (expenseMode !== 'group') {
+    expenseMode = 'group';
+    var gBtn = document.getElementById('tab-group-exp');
+    var pBtn = document.getElementById('tab-personal-exp');
+    var pWrap = document.getElementById('personal-expense-wrap');
+    var addBtn = document.getElementById('expense-add-btn');
+    if (gBtn) gBtn.classList.add('active');
+    if (pBtn) pBtn.classList.remove('active');
+    if (pWrap) pWrap.style.display = 'none';
+    if (addBtn) { addBtn.textContent = '＋ 新增'; addBtn.onclick = function() { openAddExpense(); }; }
+  }
   const conv = document.getElementById('converter-card');
   if (conv) conv.style.display = '';
   renderExpenseSummary();
@@ -4649,30 +4659,45 @@ let personalExpenseUnsub = null;
 
 function switchExpenseMode(mode) {
   expenseMode = mode;
-  var groupEls = ['converter-card','expense-summary','expense-person-tabs','expense-chart-wrap','expense-list'];
+  // Correct IDs matching actual HTML structure
+  var groupEls = ['converter-card','expense-summary','expense-person-tabs','expense-list'];
+  var chartWrap = document.getElementById('exp-chart-body') &&
+                  document.getElementById('exp-chart-body').closest('[style*="background"]');
   var groupBtn = document.getElementById('tab-group-exp');
   var personalBtn = document.getElementById('tab-personal-exp');
   var personalWrap = document.getElementById('personal-expense-wrap');
   var addBtn = document.getElementById('expense-add-btn');
+  // Find chart card container (parent of exp-chart-arrow)
+  var chartCard = (function() {
+    var arrow = document.getElementById('exp-chart-arrow');
+    return arrow ? arrow.closest('[style*="border-radius"]') || arrow.parentElement.parentElement : null;
+  })();
 
   if (mode === 'group') {
     groupEls.forEach(function(id) {
       var el = document.getElementById(id); if (el) el.style.display = '';
     });
+    if (chartCard) chartCard.style.display = '';
     if (personalWrap) personalWrap.style.display = 'none';
     if (groupBtn) groupBtn.classList.add('active');
     if (personalBtn) personalBtn.classList.remove('active');
-    if (addBtn) { addBtn.textContent = '＋ 新增'; addBtn.onclick = openAddExpense; }
+    if (addBtn) {
+      addBtn.textContent = '＋ 新增';
+      addBtn.onclick = function() { openAddExpense(); };
+    }
   } else {
-    // Only logged-in users can have personal account
     if (!currentUser) { showToast('請先登入才能使用個人帳'); return; }
     groupEls.forEach(function(id) {
       var el = document.getElementById(id); if (el) el.style.display = 'none';
     });
+    if (chartCard) chartCard.style.display = 'none';
     if (personalWrap) personalWrap.style.display = 'block';
     if (groupBtn) groupBtn.classList.remove('active');
     if (personalBtn) personalBtn.classList.add('active');
-    if (addBtn) { addBtn.textContent = '＋ 個人記帳'; addBtn.onclick = openAddPersonalExpense; }
+    if (addBtn) {
+      addBtn.textContent = '＋ 個人記帳';
+      addBtn.onclick = function() { openAddPersonalExpense(); };
+    }
     subscribePersonalExpenses();
   }
 }
@@ -4789,8 +4814,8 @@ function renderPersonalSummary() {
   }).join('');
   var twdRow = Object.keys(curTotals).length > 1
     ? '<div class="settle-twd-total">≈ ' + baseLabel + ' ' + Math.round(totalBase).toLocaleString() + ' 換算</div>' : '';
-  el.innerHTML = '<div class="settle-section-label" style="margin-bottom:8px">個人消費合計</div>'
-    + '<div class="settle-cur-grid">' + curRows + '</div>' + twdRow;
+  el.innerHTML = '<div class="settle-card"><div class="settle-section-label" style="margin-bottom:8px">個人消費合計</div>'
+    + '<div class="settle-cur-grid">' + curRows + '</div>' + twdRow + '</div>';
 }
 
 function renderPersonalList() {
@@ -5088,7 +5113,7 @@ window.toggleWeatherForecast = toggleWeatherForecast;
       <div id="expense-list"></div>
       <!-- 個人帳區塊（登入用戶才可見） -->
       <div id="personal-expense-wrap" style="display:none">
-        <div id="personal-expense-summary" class="settle-card" style="margin-bottom:12px"></div>
+        <div id="personal-expense-summary" style="margin-bottom:12px"></div>
         <div id="personal-expense-list"></div>
       </div>
     </div>
