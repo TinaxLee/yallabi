@@ -1066,3 +1066,25 @@ textarea.form-input{resize:none;white-space:pre-wrap;line-height:1.6;}
   display: flex; flex-wrap: wrap; gap: 6px;
   min-height: 32px; align-items: center;
 }
+
+/* ════════════════════════════════════════════════════════
+   EXPENSE PARTICIPANT CHIPS
+════════════════════════════════════════════════════════ */
+.exp-participants-grid {
+  display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px;
+}
+.exp-participant-chip {
+  display: inline-flex; align-items: center;
+  padding: 7px 14px; border-radius: 999px;
+  border: 1.5px solid var(--border2);
+  background: var(--bg2); color: var(--text3);
+  font-size: .8rem; font-weight: 500;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+  transition: all .15s var(--ease);
+  user-select: none; -webkit-user-select: none;
+}
+.exp-participant-chip.selected {
+  background: var(--primary); color: white;
+  border-color: var(--primary);
+}
+.exp-participant-chip:active { transform: scale(.92); }

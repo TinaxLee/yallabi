@@ -832,10 +832,11 @@ function renderExpenseSummary() {
     var converted = convertCurrency(amount, exp.currency || tripCurrency, baseCurrency);
     if (totals[payer] !== undefined) totals[payer].paid += converted;
     // Split logic
-    if (exp.splitType === 'custom' && exp.participants && exp.participants.length > 0) {
+    // equal 或 custom：若有 participants 就只分給那幾位，否則全員均分
+    if ((exp.splitType === 'equal' || exp.splitType === 'custom') && exp.participants && exp.participants.length > 0) {
       var share = converted / exp.participants.length;
       exp.participants.forEach(function(uid) { if (totals[uid] !== undefined) totals[uid].owed += share; });
-    } else if (exp.splitType === 'equal') {
+    } else if (exp.splitType === 'equal' || exp.splitType === 'custom') {
       var share = converted / members.length;
       members.forEach(function(m) { if (totals[m.uid]) totals[m.uid].owed += share; });
     } else if (exp.splitType === 'personal') {
@@ -1023,8 +1024,41 @@ function renderExpenseList() {
 }
 
 function getSplitLabel(type) {
-  return { equal:'全員平分', custom:'自選分攤', personal:'個人', treat:'請客' }[type] || '全員平分';
+  return { equal:'平均分攤', custom:'平均分攤', personal:'個人', treat:'請客' }[type] || '平均分攤';
 }
+
+function renderSplitParticipants(savedParticipants) {
+  var splitSel = document.getElementById('exp-split');
+  var wrap = document.getElementById('exp-participants-wrap');
+  var grid = document.getElementById('exp-participants');
+  var label = document.getElementById('exp-participants-label');
+  if (!splitSel || !wrap || !grid) return;
+  var val = splitSel.value;
+  if (val !== 'equal' && val !== 'custom') { wrap.style.display = 'none'; return; }
+  var members = membersData.length > 0 ? membersData : [{ uid: (currentUser && currentUser.uid), name: '我' }];
+  // 只有一人時不需要選，直接隱藏
+  if (members.length <= 1) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+  if (label) label.textContent = '分攤對象（可取消部分成員）';
+  grid.innerHTML = members.map(function(m) {
+    var uid = m.uid;
+    var name = m.name || m.displayName || '旅伴';
+    var isChecked = !savedParticipants || savedParticipants.includes(uid);
+    return '<label class="exp-participant-chip' + (isChecked ? ' selected' : '') + '" id="chip-' + uid + '">'
+      + '<input type="checkbox" class="exp-participant-cb" value="' + uid + '"'
+      + (isChecked ? ' checked' : '') + ' style="display:none">'
+      + '<span class="exp-participant-name">' + name + '</span>'
+      + '</label>';
+  }).join('');
+  grid.querySelectorAll('.exp-participant-chip').forEach(function(chip) {
+    chip.addEventListener('click', function() {
+      var cb = chip.querySelector('input');
+      cb.checked = !cb.checked;
+      chip.classList.toggle('selected', cb.checked);
+    });
+  });
+}
+window.renderSplitParticipants = renderSplitParticipants;
 
 function toggleExpDateGroup(date) {
   if (!window._expCollapsed) window._expCollapsed = {};
@@ -1127,7 +1161,14 @@ async function saveExpense() {
     splitType: form.querySelector('#exp-split').value,
     date: form.querySelector('#exp-date').value,
     note: form.querySelector('#exp-note').value.trim(),
-    updatedAt: Date.now()
+    updatedAt: Date.now(),
+    participants: (function() {
+      var sv = form.querySelector('#exp-split').value;
+      if (sv !== 'equal' && sv !== 'custom') return [];
+      var checked = [];
+      document.querySelectorAll('.exp-participant-cb:checked').forEach(function(cb) { checked.push(cb.value); });
+      return checked;
+    })()
   };
   try {
     const editId = form.dataset.editId;
@@ -4660,7 +4701,7 @@ let personalExpenseUnsub = null;
 function switchExpenseMode(mode) {
   expenseMode = mode;
   // Correct IDs matching actual HTML structure
-  var groupEls = ['converter-card','expense-summary','expense-person-tabs','expense-list'];
+  var groupEls = ['expense-summary','expense-person-tabs','expense-list']; // converter-card stays visible in both modes
   var chartWrap = document.getElementById('exp-chart-body') &&
                   document.getElementById('exp-chart-body').closest('[style*="background"]');
   var groupBtn = document.getElementById('tab-group-exp');
@@ -4822,7 +4863,11 @@ function renderPersonalList() {
   var container = document.getElementById('personal-expense-list');
   if (!container) return;
   if (personalExpensesData.length === 0) {
-    container.innerHTML = '<div style="text-align:center;padding:32px 0;color:var(--text3);font-size:.82rem">還沒有個人記帳<br><span style="font-size:.72rem">點右上角「＋ 個人記帳」開始記錄</span></div>';
+    container.innerHTML = '<div style="text-align:center;padding:48px 0 32px;color:var(--text3)">'
+      + '<div style="font-size:2rem;margin-bottom:12px">🧾</div>'
+      + '<div style="font-size:.88rem;font-weight:500;margin-bottom:6px">還沒有個人記帳</div>'
+      + '<div style="font-size:.72rem;opacity:.7">點右上角「＋ 個人記帳」開始記錄<br>只有你看得見這裡的內容</div>'
+      + '</div>';
     return;
   }
   // Group by date
@@ -5384,12 +5429,17 @@ window.toggleWeatherForecast = toggleWeatherForecast;
             </div>
             <div>
               <label class="form-label">分帳方式</label>
-              <select id="exp-split" class="form-select">
-                <option value="equal">👫 甜蜜平分</option>
+              <select id="exp-split" class="form-select" onchange="renderSplitParticipants()">
+                <option value="equal">👥 平均分攤</option>
                 <option value="personal">👤 個人</option>
                 <option value="treat">🎁 請客</option>
               </select>
             </div>
+          </div>
+          <!-- 分攤對象 checkbox（equal 時顯示，單人時隱藏） -->
+          <div id="exp-participants-wrap" style="display:none;margin-bottom:14px">
+            <label class="form-label" id="exp-participants-label">分攤對象（可取消部分成員）</label>
+            <div id="exp-participants" class="exp-participants-grid"></div>
           </div>
           <div class="form-group">
             <input id="exp-note" type="text" class="form-input" placeholder="備註 (選填)">
