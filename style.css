@@ -1088,3 +1088,86 @@ textarea.form-input{resize:none;white-space:pre-wrap;line-height:1.6;}
   border-color: var(--primary);
 }
 .exp-participant-chip:active { transform: scale(.92); }
+
+/* ════════════════════════════════════════════════════════
+   SAVED PLACES — 景點收藏
+════════════════════════════════════════════════════════ */
+.place-cat-tabs {
+  display: flex; gap: 6px; flex-wrap: wrap;
+}
+.place-cat-tab {
+  padding: 5px 12px; border-radius: 999px;
+  border: 1.5px solid var(--border);
+  background: var(--bg2); color: var(--text3);
+  font-size: .75rem; font-weight: 500;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+  transition: all .15s var(--ease);
+  white-space: nowrap;
+}
+.place-cat-tab.active {
+  background: var(--primary); color: white;
+  border-color: var(--primary);
+}
+.place-cards {
+  display: flex; flex-direction: column; gap: 10px;
+  margin-top: 4px;
+}
+.place-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 12px 14px;
+  transition: border-color .15s;
+}
+.place-card-body {
+  display: flex; align-items: flex-start; gap: 10px;
+}
+.place-card-name {
+  font-size: .88rem; font-weight: 600;
+  color: var(--text); margin-bottom: 3px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.place-card-meta {
+  font-size: .7rem; color: var(--text3); margin-bottom: 2px;
+}
+.place-card-addr {
+  font-size: .68rem; color: var(--text3);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.place-rating {
+  font-size: .72rem; color: #f5a623; font-weight: 600;
+  background: rgba(245,166,35,.12);
+  padding: 2px 7px; border-radius: 999px;
+  white-space: nowrap;
+}
+.place-card-del {
+  font-size: .82rem; color: var(--text3); cursor: pointer;
+  background: none; border: none; padding: 2px;
+  -webkit-tap-highlight-color: transparent;
+}
+.place-card-add {
+  width: 100%; padding: 7px 0;
+  background: var(--primary); color: white;
+  border: none; border-radius: var(--r-md);
+  font-size: .78rem; font-weight: 600;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+  transition: opacity .15s;
+}
+.place-card-add:active { opacity: .75; }
+
+/* Search results */
+.place-search-card {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.place-search-card:last-child { border-bottom: none; }
+.place-save-btn {
+  flex-shrink: 0; padding: 6px 14px;
+  background: var(--primary); color: white;
+  border: none; border-radius: 999px;
+  font-size: .75rem; font-weight: 600;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+  white-space: nowrap;
+}
+.place-save-btn:active { opacity: .75; }

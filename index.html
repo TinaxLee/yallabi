@@ -330,12 +330,11 @@ function switchTab(tab) {
   document.getElementById(`page-${tab}`) && document.getElementById(`page-${tab}`).classList.add('active');
   document.getElementById(`nav-${tab}`) && document.getElementById(`nav-${tab}`).classList.add('active');
 
-  // 護照在大廳也可開：暫時隱藏 lobby overlay
+  // 收藏/護照在大廳也可開：暫時隱藏 lobby overlay
   const lobbyEl = document.getElementById('lobby-overlay');
-  if (tab === 'passport' && currentView === 'lobby') {
+  if (tab === 'saved' && currentView === 'lobby') {
     if (lobbyEl) lobbyEl.style.display = 'none';
-  } else if (tab !== 'passport' && currentView === 'lobby') {
-    // 其他 tab 在大廳點了沒意義，回到大廳
+  } else if (tab !== 'saved' && currentView === 'lobby') {
     if (lobbyEl) lobbyEl.style.display = '';
     showLobby(); return;
   }
@@ -343,7 +342,7 @@ function switchTab(tab) {
   // render content
   if (tab === 'itinerary') renderItinerary();
   if (tab === 'expense')   renderExpenses();
-  if (tab === 'passport')  renderPassport();
+  if (tab === 'saved')     { renderPassport(); renderSavedPlaces(); }
   if (tab === 'depart')    renderDepart();
   if (tab === 'bibi') {
     renderBibiQuickBtns();
@@ -2748,6 +2747,7 @@ async function loadTrips() {
 
   renderTripSelector();
   renderLobby();
+  subscribeSavedPlaces();
 
   if (tripsData.length > 0 && !currentTripId) {
     // 永遠先顯示大廳，讓使用者自己選擇行程
@@ -2781,7 +2781,7 @@ function _preloadTrip(tripId) {
       if(currentNavTab==='itinerary') renderItinerary();
       if(currentNavTab==='expense')   renderExpenses();
       if(currentNavTab==='depart')    renderDepart();
-      if(currentNavTab==='passport')  renderJournal();
+      if(currentNavTab==='saved')  renderJournal();
     });
     unsubscribers.push(unsub);
   });
@@ -2885,7 +2885,7 @@ async function selectTrip(tripId) {
       if (currentNavTab==='itinerary') renderItinerary();
       if (currentNavTab==='expense')   renderExpenses();
       if (currentNavTab==='depart')    renderDepart();
-      if (currentNavTab==='passport')  renderJournal();
+      if (currentNavTab==='saved')  renderJournal();
     });
     unsubscribers.push(unsub);
   });
@@ -4927,6 +4927,220 @@ window.switchExpenseMode = switchExpenseMode;
 window.openAddPersonalExpense = openAddPersonalExpense;
 window.deletePersonalExpense = deletePersonalExpense;
 
+
+// ════════════════════════════════════════════════════════
+// 📍 景點收藏（Saved Places）
+// ════════════════════════════════════════════════════════
+const FSQ_WORKER_URL = 'https://yallabi-places.tina09210808.workers.dev';
+
+const PLACE_CATEGORIES = [
+  { id: 'all',       label: '全部',   emoji: '🗺' },
+  { id: '13000',     label: '美食',   emoji: '🍽' },
+  { id: '16000',     label: '景點',   emoji: '🏛' },
+  { id: '17000',     label: '購物',   emoji: '🛍' },
+  { id: '19000',     label: '住宿',   emoji: '🏨' },
+  { id: '11000',     label: '咖啡',   emoji: '☕' },
+];
+
+let savedPlacesData = [];
+let savedPlacesFilter = { country: 'all', category: 'all' };
+let savedPlacesUnsub = null;
+
+// ── 訂閱 Firestore 景點收藏 ──
+function subscribeSavedPlaces() {
+  if (!currentUser) return;
+  if (savedPlacesUnsub) { savedPlacesUnsub(); savedPlacesUnsub = null; }
+  const ref = collection(db, 'users', currentUser.uid, 'savedPlaces');
+  const q = query(ref, orderBy('savedAt', 'desc'));
+  savedPlacesUnsub = onSnapshot(q, function(snap) {
+    savedPlacesData = snap.docs.map(function(d) { return Object.assign({ id: d.id }, d.data()); });
+    renderSavedPlaces();
+  });
+}
+
+// ── 渲染收藏頁（插入 page-saved 的護照下方）──
+function renderSavedPlaces() {
+  var wrap = document.getElementById('saved-places-section');
+  if (!wrap) {
+    // 建立區塊，插在護照頁 page-content 最後
+    var pageContent = document.querySelector('#page-saved .page-content');
+    if (!pageContent) return;
+    wrap = document.createElement('div');
+    wrap.id = 'saved-places-section';
+    wrap.style.cssText = 'margin-top:8px';
+    pageContent.appendChild(wrap);
+  }
+
+  // 收集行程國家清單供篩選
+  var countries = ['all'];
+  savedPlacesData.forEach(function(p) { if (p.country && !countries.includes(p.country)) countries.push(p.country); });
+
+  var countryOpts = countries.map(function(c) {
+    var geo = GEOGRAPHY_DATA[c];
+    var label = c === 'all' ? '全部地區' : (geo ? geo.flag + ' ' + geo.name : c);
+    return '<option value="' + c + '"' + (savedPlacesFilter.country === c ? ' selected' : '') + '>' + label + '</option>';
+  }).join('');
+
+  var catTabs = PLACE_CATEGORIES.map(function(cat) {
+    var isActive = savedPlacesFilter.category === cat.id;
+    return '<button class="place-cat-tab' + (isActive ? ' active' : '') + '" onclick="filterSavedPlaces(null,\'' + cat.id + '\')">'
+      + cat.emoji + ' ' + cat.label + '</button>';
+  }).join('');
+
+  // Filter data
+  var filtered = savedPlacesData.filter(function(p) {
+    var countryOk = savedPlacesFilter.country === 'all' || p.country === savedPlacesFilter.country;
+    var catOk = savedPlacesFilter.category === 'all' || (p.categoryId && p.categoryId.startsWith(savedPlacesFilter.category.slice(0,3)));
+    return countryOk && catOk;
+  });
+
+  var cardsHTML = filtered.length === 0
+    ? '<div style="text-align:center;padding:40px 0;color:var(--text3)">'
+      + '<div style="font-size:2rem;margin-bottom:10px">📍</div>'
+      + '<div style="font-size:.88rem;font-weight:500;margin-bottom:4px">還沒有收藏景點</div>'
+      + '<div style="font-size:.72rem;opacity:.7">點「搜尋景點」開始收藏</div></div>'
+    : filtered.map(function(p) { return renderSavedPlaceCard(p); }).join('');
+
+  wrap.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 0 10px">'
+    + '<div class="section-title">📍 景點收藏</div>'
+    + '<button class="btn-add" onclick="openModal(\'page-places-modal\');initPlacesSearch()">搜尋景點</button>'
+    + '</div>'
+    + '<div style="margin-bottom:10px">'
+    + '<select class="form-select" style="font-size:.78rem;padding:6px 10px;margin-bottom:8px" onchange="filterSavedPlaces(this.value,null)">' + countryOpts + '</select>'
+    + '<div class="place-cat-tabs">' + catTabs + '</div>'
+    + '</div>'
+    + '<div class="place-cards">' + cardsHTML + '</div>';
+}
+
+function renderSavedPlaceCard(p) {
+  var rating = p.rating ? '<span class="place-rating">★ ' + p.rating.toFixed(1) + '</span>' : '';
+  var country = p.country ? (GEOGRAPHY_DATA[p.country] ? GEOGRAPHY_DATA[p.country].flag + ' ' + GEOGRAPHY_DATA[p.country].name : p.country) : '';
+  var addBtn = currentTripId
+    ? '<button class="place-card-add" onclick="addPlaceToTrip(\'' + p.id + '\')" title="加入行程">＋ 加入行程</button>'
+    : '';
+  return '<div class="place-card">'
+    + '<div class="place-card-body">'
+    + '<div style="flex:1;min-width:0">'
+    + '<div class="place-card-name">' + (p.name || '景點') + '</div>'
+    + '<div class="place-card-meta">' + (p.categoryLabel || '') + (country ? ' · ' + country : '') + '</div>'
+    + '<div class="place-card-addr">' + (p.address || '') + '</div>'
+    + '</div>'
+    + '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0">'
+    + rating
+    + '<button class="place-card-del" onclick="deleteSavedPlace(\'' + p.id + '\')" title="移除收藏">🗑</button>'
+    + '</div>'
+    + '</div>'
+    + (addBtn ? '<div style="margin-top:8px">' + addBtn + '</div>' : '')
+    + '</div>';
+}
+
+function filterSavedPlaces(country, category) {
+  if (country !== null && country !== undefined) savedPlacesFilter.country = country;
+  if (category !== null && category !== undefined) savedPlacesFilter.category = category;
+  renderSavedPlaces();
+}
+
+// ── 搜尋景點 ──
+function initPlacesSearch() {
+  var input = document.getElementById('places-search-input');
+  if (input) { input.value = ''; input.focus(); }
+  var results = document.getElementById('places-search-results');
+  if (results) results.innerHTML = '';
+}
+
+async function searchPlaces() {
+  var input = document.getElementById('places-search-input');
+  var results = document.getElementById('places-search-results');
+  if (!input || !results) return;
+  var q = input.value.trim();
+  if (!q) return;
+  results.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text3)">搜尋中...</div>';
+  try {
+    var url = FSQ_WORKER_URL + '?query=' + encodeURIComponent(q) + '&limit=10';
+    var res = await fetch(url);
+    var data = await res.json();
+    if (!data.results || data.results.length === 0) {
+      results.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text3)">找不到結果，換個關鍵字試試</div>';
+      return;
+    }
+    results.innerHTML = data.results.map(function(place) {
+      var cat = place.categories && place.categories[0];
+      var catLabel = cat ? cat.name : '景點';
+      var addr = place.location ? (place.location.formatted_address || place.location.address || '') : '';
+      var rating = place.rating ? '★ ' + place.rating.toFixed(1) : '';
+      return '<div class="place-search-card">'
+        + '<div style="flex:1;min-width:0">'
+        + '<div class="place-card-name">' + place.name + '</div>'
+        + '<div class="place-card-meta">' + catLabel + (rating ? ' · ' + rating : '') + '</div>'
+        + '<div class="place-card-addr">' + addr + '</div>'
+        + '</div>'
+        + '<button class="place-save-btn" onclick="savePlaceFromSearch(' + JSON.stringify(JSON.stringify({
+            fsqId: place.fsq_id,
+            name: place.name,
+            address: addr,
+            categoryLabel: catLabel,
+            categoryId: cat ? String(cat.id) : '',
+            rating: place.rating || null,
+            lat: place.geocodes && place.geocodes.main ? place.geocodes.main.latitude : null,
+            lng: place.geocodes && place.geocodes.main ? place.geocodes.main.longitude : null,
+          })) + ')">收藏</button>'
+        + '</div>';
+    }).join('');
+  } catch(e) {
+    results.innerHTML = '<div style="text-align:center;padding:24px;color:var(--danger)">搜尋失敗，請稍後再試</div>';
+  }
+}
+
+async function savePlaceFromSearch(jsonStr) {
+  if (!currentUser) { showToast('請先登入'); return; }
+  var place;
+  try { place = JSON.parse(jsonStr); } catch(e) { return; }
+  // 自動偵測國家（從目前行程或讓使用者之後標記）
+  place.country = (currentTrip && currentTrip.country) || 'default';
+  place.savedAt = Date.now();
+  try {
+    var ref = collection(db, 'users', currentUser.uid, 'savedPlaces');
+    await addDoc(ref, place);
+    showToast('已收藏 ✓');
+  } catch(e) { showToast('收藏失敗'); }
+}
+
+async function deleteSavedPlace(id) {
+  if (!confirm('確定移除這個收藏？')) return;
+  try {
+    await deleteDoc(doc(db, 'users', currentUser.uid, 'savedPlaces', id));
+    showToast('已移除');
+  } catch(e) { showToast('移除失敗'); }
+}
+
+// ── 加入行程（待安排清單）──
+async function addPlaceToTrip(placeId) {
+  if (!currentTripId) { showToast('請先進入一個行程'); return; }
+  var place = savedPlacesData.find(function(p) { return p.id === placeId; });
+  if (!place) return;
+  try {
+    var ref = collection(db, 'trips', currentTripId, 'pendingPlaces');
+    await addDoc(ref, {
+      placeId: placeId,
+      name: place.name,
+      address: place.address || '',
+      categoryLabel: place.categoryLabel || '',
+      rating: place.rating || null,
+      addedAt: Date.now(),
+    });
+    showToast(place.name + ' 已加入待安排清單 ✓');
+  } catch(e) { showToast('加入失敗'); }
+}
+
+window.searchPlaces = searchPlaces;
+window.savePlaceFromSearch = savePlaceFromSearch;
+window.deleteSavedPlace = deleteSavedPlace;
+window.addPlaceToTrip = addPlaceToTrip;
+window.filterSavedPlaces = filterSavedPlaces;
+window.subscribeSavedPlaces = subscribeSavedPlaces;
+window.renderSavedPlaces = renderSavedPlaces;
+window.initPlacesSearch = initPlacesSearch;
+
 window.renderWeatherCard = renderWeatherCard;
 window.toggleWeatherForecast = toggleWeatherForecast;
 
@@ -5181,8 +5395,8 @@ window.toggleWeatherForecast = toggleWeatherForecast;
   <!-- ══ PAGE: BIBI (保留空殼，避免 switchTab 報錯) ══ -->
   <div id="page-bibi" class="page" style="display:none"></div>
 
-  <!-- ══ PAGE: PASSPORT ══ -->
-  <div id="page-passport" class="page">
+  <!-- ══ PAGE: SAVED（收藏 = 護照 + 景點收藏） ══ -->
+  <div id="page-saved" class="page">
     <div class="page-content pb-4">
       <!-- Passport Cover -->
       <div class="passport-cover mb-4 mt-4">
@@ -5215,6 +5429,25 @@ window.toggleWeatherForecast = toggleWeatherForecast;
       </div>
       <div id="journal-list">
         <div class="empty-state"><span class="empty-icon">📖</span><p>記錄旅途中的美好瞬間</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ PAGE: PLACES (景點收藏) ══ -->
+  <!-- 注意：景點收藏區塊在 page-saved 裡，由 JS 動態插入 -->
+  <div id="page-places-modal" class="modal-overlay">
+    <div class="modal-sheet" style="height:92dvh">
+      <div class="modal-handle"></div>
+      <div class="modal-header">
+        <span class="modal-title">搜尋景點</span>
+        <button class="modal-close" onclick="closeModal('page-places-modal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="display:flex;gap:8px;margin-bottom:12px">
+          <input id="places-search-input" type="text" class="form-input" placeholder="搜尋景點、餐廳、飯店..." style="flex:1" onkeydown="if(event.key==='Enter')searchPlaces()">
+          <button class="btn btn-primary" style="white-space:nowrap;padding:0 16px" onclick="searchPlaces()">搜尋</button>
+        </div>
+        <div id="places-search-results"></div>
       </div>
     </div>
   </div>
@@ -5282,11 +5515,11 @@ window.toggleWeatherForecast = toggleWeatherForecast;
       </div>
       <div class="nav-label">花費</div>
     </button>
-    <button class="nav-btn" id="nav-passport" onclick="switchTab('passport')">
+    <button class="nav-btn" id="nav-saved" onclick="switchTab('saved')">
       <div class="nav-icon" style="color:rgba(255,255,255,.38)">
-        <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M21 8h-2V3a1 1 0 0 0-1.37-.93l-15 6c-.09.04-.16.1-.24.16-.03.02-.06.03-.09.06-.04.04-.05.08-.08.12-.05.06-.1.12-.13.19-.01.02 0 .05-.02.08-.03.1-.06.2-.06.31v3.55c0 .48.33.89.8.98a1.499 1.499 0 0 1 0 2.94c-.47.09-.8.5-.8.98v3.55c0 .55.45 1 1 1h18c.55 0 1-.45 1-1v-3.55c0-.48-.33-.89-.8-.98a1.499 1.499 0 0 1 0-2.94c.47-.09.8-.5.8-.98V8.99c0-.55-.45-1-1-1Zm-4 0H8.19L17 4.48zm3 3.84c-1.2.57-2 1.79-2 3.16s.8 2.59 2 3.16V20h-4v-2h-1v2H4v-1.84c1.2-.57 2-1.79 2-3.16s-.8-2.59-2-3.16V10h11v1h1v-1h4z"/><path d="M15 12h1v2h-1zm0 3h1v2h-1z"/></svg>
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2z"/></svg>
       </div>
-      <div class="nav-label">護照</div>
+      <div class="nav-label">收藏</div>
     </button>
     <button class="nav-btn" id="nav-depart" onclick="switchTab('depart')">
       <div class="nav-icon" style="color:rgba(255,255,255,.38)">
