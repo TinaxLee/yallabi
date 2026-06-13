@@ -42,7 +42,7 @@ window.addEventListener('unhandledrejection', function(e) {
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
 import { getAuth, signInWithPopup, GoogleAuthProvider, OAuthProvider, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-import { getFirestore, collection, doc, addDoc, setDoc, deleteDoc, updateDoc, onSnapshot, getDoc, getDocs, query, orderBy, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+import { getFirestore, collection, doc, addDoc, setDoc, deleteDoc, updateDoc, onSnapshot, getDoc, getDocs, query, orderBy, where, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js';
 
 // ════════════════════════════════════════
@@ -425,7 +425,43 @@ function noTripHTML(icon, msg) {
   </div>`;
 }
 
+let itineraryMode = 'schedule'; // 'schedule' | 'journal'
+
+function switchItineraryMode(mode) {
+  itineraryMode = mode;
+  var scheduleWrap = document.getElementById('itinerary-schedule-wrap');
+  var journalWrap = document.getElementById('itinerary-journal-wrap');
+  var scheduleBtn = document.getElementById('tab-it-schedule');
+  var journalBtn = document.getElementById('tab-it-journal');
+  if (mode === 'schedule') {
+    if (scheduleWrap) scheduleWrap.style.display = '';
+    if (journalWrap) journalWrap.style.display = 'none';
+    if (scheduleBtn) scheduleBtn.classList.add('active');
+    if (journalBtn) journalBtn.classList.remove('active');
+  } else {
+    if (scheduleWrap) scheduleWrap.style.display = 'none';
+    if (journalWrap) journalWrap.style.display = '';
+    if (scheduleBtn) scheduleBtn.classList.remove('active');
+    if (journalBtn) journalBtn.classList.add('active');
+    subscribeJournal();
+    renderJournal();
+  }
+}
+window.switchItineraryMode = switchItineraryMode;
+
 function renderItinerary() {
+  // 進入行程頁時重置回行程模式
+  if (itineraryMode !== 'schedule') {
+    itineraryMode = 'schedule';
+    var sw = document.getElementById('itinerary-schedule-wrap');
+    var jw = document.getElementById('itinerary-journal-wrap');
+    var sb = document.getElementById('tab-it-schedule');
+    var jb = document.getElementById('tab-it-journal');
+    if (sw) sw.style.display = '';
+    if (jw) jw.style.display = 'none';
+    if (sb) sb.classList.add('active');
+    if (jb) jb.classList.remove('active');
+  }
   if (!currentTripId) {
     const container = document.getElementById('itinerary-list');
     if (container) container.innerHTML = noTripHTML('🗺️', '建立你的第一趟旅行<br>開始規劃行程吧');
@@ -1951,7 +1987,7 @@ async function openTripMemory(tripId) {
     const [itSnap, expSnap, journalSnap] = await Promise.all([
       getDocs(collection(db,'trips',tripId,'itinerary')),
       getDocs(collection(db,'trips',tripId,'expenses')),
-      getDocs(collection(db,'trips',tripId,'journal')),
+      getDocs(query(collection(db,'users',currentUser.uid,'journal'), where('tripId','==',tripId))),
     ]);
 
     const itItems = itSnap.docs.map(d => ({ id:d.id, ...d.data() })).sort((a,b) => (a.day||'').localeCompare(b.day||'') || (a.startTime||'').localeCompare(b.startTime||''));
@@ -2101,6 +2137,20 @@ const JOURNAL_MOODS = [
   { id:'romantic', label:'浪漫',  emoji:'💕' },
 ];
 
+let journalUnsub = null;
+
+function subscribeJournal() {
+  if (!currentUser || !currentTripId) return;
+  if (journalUnsub) { journalUnsub(); journalUnsub = null; }
+  const ref = collection(db, 'users', currentUser.uid, 'journal');
+  const q = query(ref, where('tripId', '==', currentTripId));
+  journalUnsub = onSnapshot(q, function(snap) {
+    journalData = snap.docs.map(function(d) { return Object.assign({ id: d.id }, d.data()); });
+    if (itineraryMode === 'journal') renderJournal();
+  });
+}
+window.subscribeJournal = subscribeJournal;
+
 function renderJournal() {
   const container = document.getElementById('journal-list');
   if (!container) return;
@@ -2233,13 +2283,14 @@ async function saveJournal() {
 
     const data = { content, day, date, mood, photoURL, updatedAt: Date.now() };
     const editId = form.dataset.editId;
+    const journalRef = collection(db, 'users', currentUser.uid, 'journal');
     if (editId) {
-      await updateDoc(tripDoc('journal', editId), data);
+      await updateDoc(doc(journalRef, editId), data);
       showToast('已更新 ✓');
     } else {
       data.createdAt = Date.now();
-      data.authorUid = currentUser.uid;
-      await addDoc(tripCol('journal'), data);
+      data.tripId = currentTripId;
+      await addDoc(journalRef, data);
       showToast('日記已記下 ✦');
     }
     closeModal('modal-journal');
@@ -2282,7 +2333,7 @@ async function compressAndUpload(file, customPath = null) {
 
 async function deleteJournal(id) {
   if (!confirm('確定刪除這篇日記？')) return;
-  await deleteDoc(tripDoc('journal', id));
+  await deleteDoc(doc(db, 'users', currentUser.uid, 'journal', id));
   showToast('已刪除');
 }
 
@@ -2754,7 +2805,7 @@ async function loadTrips() {
     showLobby();
   } else if (tripsData.length === 0) {
     currentTripId=null; currentTrip=null;
-    renderHero(null); renderItinerary(); renderExpenses(); renderDepart(); renderJournal();
+    renderHero(null); renderItinerary(); renderExpenses(); renderDepart();
     const flag=document.getElementById('country-flag'), name=document.getElementById('country-name');
     if(flag) flag.textContent='🌍'; if(name) name.textContent='選擇旅行';
     showLobby();
@@ -2852,6 +2903,7 @@ async function selectTrip(tripId) {
   itineraryData = []; missionsData  = []; packingData = [];
   expensesData  = []; flightsData  = []; hotelsData  = [];
   journalData   = [];
+  if (journalUnsub) { journalUnsub(); journalUnsub = null; }
 
   // ④ 立即套用新旅行主題色 + 重設 Day filter
   applyTripTheme(currentTrip.country);
@@ -2871,7 +2923,7 @@ async function selectTrip(tripId) {
   unsubscribers = [];
 
   // ⑦ 訂閱新旅行所有 collection
-  const collections = ['itinerary','missions','packing','expenses','flights','hotels','journal'];
+  const collections = ['itinerary','missions','packing','expenses','flights','hotels'];
   collections.forEach(col => {
     const unsub = onSnapshot(tripCol(col), snap => {
       const data = snap.docs.map(d => ({ id:d.id, ...d.data() }));
@@ -2881,11 +2933,9 @@ async function selectTrip(tripId) {
       if (col==='expenses')  expensesData  = data;
       if (col==='flights')   flightsData   = data;
       if (col==='hotels')    hotelsData    = data;
-      if (col==='journal')   journalData   = data;
       if (currentNavTab==='itinerary') renderItinerary();
       if (currentNavTab==='expense')   renderExpenses();
       if (currentNavTab==='depart')    renderDepart();
-      if (currentNavTab==='saved')  renderJournal();
     });
     unsubscribers.push(unsub);
   });
@@ -5276,17 +5326,38 @@ window.toggleWeatherForecast = toggleWeatherForecast;
 
       </div>
 
-      <!-- Day Tabs -->
-      <div id="day-tabs" class="day-tabs no-scrollbar"></div>
-
-      <!-- Section Header -->
-      <div class="flex items-center justify-between mb-3">
-        <div class="section-title">今日行程</div>
-        <button class="btn-add" onclick="openAddItinerary()">＋ 新增行程</button>
+      <!-- 行程 / 日記 切換 -->
+      <div class="expense-mode-tabs" style="margin-bottom:12px">
+        <button class="expense-mode-tab active" id="tab-it-schedule" onclick="switchItineraryMode('schedule')">📅 行程</button>
+        <button class="expense-mode-tab" id="tab-it-journal" onclick="switchItineraryMode('journal')">📖 日記</button>
       </div>
 
-      <!-- Itinerary List -->
-      <div id="itinerary-list"></div>
+      <!-- 行程模式 -->
+      <div id="itinerary-schedule-wrap">
+        <!-- Day Tabs -->
+        <div id="day-tabs" class="day-tabs no-scrollbar"></div>
+
+        <!-- Section Header -->
+        <div class="flex items-center justify-between mb-3">
+          <div class="section-title">今日行程</div>
+          <button class="btn-add" onclick="openAddItinerary()">＋ 新增行程</button>
+        </div>
+
+        <!-- Itinerary List -->
+        <div id="itinerary-list"></div>
+      </div>
+
+      <!-- 日記模式（個人專屬） -->
+      <div id="itinerary-journal-wrap" style="display:none">
+        <div class="flex items-center justify-between mb-3">
+          <div class="section-title">我的旅行日記</div>
+          <button class="btn-add" onclick="openAddJournal()">＋ 新增</button>
+        </div>
+        <div style="font-size:.68rem;color:var(--text3);margin-bottom:12px;opacity:.75">📖 只有你自己看得到這裡的內容</div>
+        <div id="journal-list">
+          <div class="empty-state"><span class="empty-icon">📖</span><p>記錄旅途中的美好瞬間</p></div>
+        </div>
+      </div>
 
     </div>
   </div>
@@ -5422,14 +5493,6 @@ window.toggleWeatherForecast = toggleWeatherForecast;
       </div>
       <div id="stamp-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px"></div>
 
-      <!-- Journal -->
-      <div class="flex items-center justify-between mb-3">
-        <div class="section-title">旅遊日記</div>
-        <button class="btn-add" onclick="openAddJournal()">＋ 新增</button>
-      </div>
-      <div id="journal-list">
-        <div class="empty-state"><span class="empty-icon">📖</span><p>記錄旅途中的美好瞬間</p></div>
-      </div>
     </div>
   </div>
 
