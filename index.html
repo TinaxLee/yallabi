@@ -2142,6 +2142,8 @@ let journalUnsub = null;
 function subscribeJournal() {
   if (!currentUser || !currentTripId) return;
   if (journalUnsub) { journalUnsub(); journalUnsub = null; }
+  if (packingUnsub) { packingUnsub(); packingUnsub = null; }
+  packingData = [];
   const ref = collection(db, 'users', currentUser.uid, 'journal');
   const q = query(ref, where('tripId', '==', currentTripId));
   journalUnsub = onSnapshot(q, function(snap) {
@@ -2348,7 +2350,42 @@ function previewJournalPhoto(input) {
 // ════════════════════════════════════════
 // ✈️ PAGE: DEPART (航班/飯店/行李/任務)
 // ════════════════════════════════════════
+let departMode = 'trip'; // 'trip' | 'packing'
+
+function switchDepartMode(mode) {
+  departMode = mode;
+  var tripWrap = document.getElementById('depart-trip-wrap');
+  var packWrap = document.getElementById('depart-packing-wrap');
+  var tripBtn = document.getElementById('tab-dp-trip');
+  var packBtn = document.getElementById('tab-dp-packing');
+  if (mode === 'trip') {
+    if (tripWrap) tripWrap.style.display = '';
+    if (packWrap) packWrap.style.display = 'none';
+    if (tripBtn) tripBtn.classList.add('active');
+    if (packBtn) packBtn.classList.remove('active');
+  } else {
+    if (tripWrap) tripWrap.style.display = 'none';
+    if (packWrap) packWrap.style.display = '';
+    if (tripBtn) tripBtn.classList.remove('active');
+    if (packBtn) packBtn.classList.add('active');
+    subscribePackingList();
+  }
+}
+window.switchDepartMode = switchDepartMode;
+
 function renderDepart() {
+  // 進入出發頁重置回「旅程資訊」模式
+  if (departMode !== 'trip') {
+    departMode = 'trip';
+    var tw = document.getElementById('depart-trip-wrap');
+    var pw = document.getElementById('depart-packing-wrap');
+    var tb = document.getElementById('tab-dp-trip');
+    var pb = document.getElementById('tab-dp-packing');
+    if (tw) tw.style.display = '';
+    if (pw) pw.style.display = 'none';
+    if (tb) tb.classList.add('active');
+    if (pb) pb.classList.remove('active');
+  }
   if (!currentTripId) {
     ['flights-list','hotels-list','missions-card','packing-list'].forEach(id => {
       const el = document.getElementById(id);
@@ -2665,43 +2702,21 @@ function renderPacking() {
   const container = document.getElementById('packing-list');
   if (!container) return;
   const filtered = packingData.filter(p => p.category === packCategoryFilter);
-  const members = membersData.length > 0 ? membersData : [{ uid: (currentUser && currentUser.uid), name:'我' }];
 
   if (filtered.length === 0) {
-    container.innerHTML = `<div style="text-align:center;padding:20px;color:var(--text3);font-size:.82rem">ALL CLEAR ✨</div>`;
+    container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text3);font-size:.82rem">ALL CLEAR ✨</div>';
     return;
   }
 
-  // Group by member
-  const grouped = {};
-  members.forEach(m => { grouped[m.uid] = []; });
-  filtered.forEach(p => {
-    const uid = p.memberUid || (currentUser && currentUser.uid);
-    if (!grouped[uid]) grouped[uid] = [];
-    grouped[uid].push(p);
-  });
-
-  container.innerHTML = members.map(m => {
-    const items = grouped[m.uid] || [];
-    return `
-    <div style="margin-bottom:16px">
-      <div style="font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:8px">
-        👤 ${m.name || m.displayName || '我'}
-      </div>
-      ${items.length === 0 ? `<div style="text-align:center;padding:10px;color:var(--text3);font-size:.78rem">ALL CLEAR ✨</div>` :
-        items.map(p => `
-        <div class="pack-item ${p.checked ? 'checked' : ''}">
-          <div class="pack-check ${p.checked ? 'checked' : ''}" onclick="togglePack('${p.id}',${!p.checked})">
-            ${p.checked ? '✓' : ''}
-          </div>
-          <span class="pack-name" style="flex:1;font-size:.88rem;color:var(--text)">${p.name}</span>
-          <div class="flex gap-1">
-            <button onclick="editPackItem('${p.id}')" style="color:var(--text3);font-size:.85rem;padding:4px">✏️</button>
-            <button onclick="deletePackItem('${p.id}')" style="color:var(--text3);font-size:.85rem;padding:4px">✕</button>
-          </div>
-        </div>`).join('')
-      }
-    </div>`;
+  container.innerHTML = filtered.map(function(p) {
+    return '<div class="pack-item ' + (p.checked ? 'checked' : '') + '">'
+      + '<div class="pack-check ' + (p.checked ? 'checked' : '') + '" onclick="togglePack(\'' + p.id + '\',' + (!p.checked) + ')">'
+      + (p.checked ? '✓' : '') + '</div>'
+      + '<span class="pack-name" style="flex:1;font-size:.88rem;color:var(--text)">' + p.name + '</span>'
+      + '<div class="flex gap-1">'
+      + '<button onclick="editPackItem(\'' + p.id + '\')" style="color:var(--text3);font-size:.85rem;padding:4px">✏️</button>'
+      + '<button onclick="deletePackItem(\'' + p.id + '\')" style="color:var(--text3);font-size:.85rem;padding:4px">✕</button>'
+      + '</div></div>';
   }).join('');
 }
 
@@ -2714,7 +2729,6 @@ function switchPackCategory(cat) {
 function openAddPack() {
   document.getElementById('form-pack').reset();
   document.getElementById('form-pack').querySelector('#pk-category').value = packCategoryFilter;
-  renderPackMemberOptions();
   openModal('modal-pack');
 }
 
@@ -2724,38 +2738,46 @@ function editPackItem(id) {
   const form = document.getElementById('form-pack');
   form.querySelector('#pk-name').value = item.name || '';
   form.querySelector('#pk-category').value = item.category || 'clothes';
-  form.querySelector('#pk-member').value = item.memberUid || (currentUser && currentUser.uid) || '';
   form.dataset.editId = id;
-  renderPackMemberOptions();
   openModal('modal-pack');
 }
 
-function renderPackMemberOptions() {
-  const sel = document.getElementById('pk-member');
-  if (!sel) return;
-  const members = membersData.length > 0 ? membersData : [{ uid: (currentUser && currentUser.uid), name:'我' }];
-  sel.innerHTML = members.map(m => `<option value="${m.uid}">${m.name || m.displayName || '我'}</option>`).join('');
+let packingUnsub = null;
+
+function subscribePackingList() {
+  if (!currentUser || !currentTripId) return;
+  if (packingUnsub) { packingUnsub(); packingUnsub = null; }
+  const ref = collection(db, 'users', currentUser.uid, 'packingList');
+  const q = query(ref, where('tripId', '==', currentTripId));
+  packingUnsub = onSnapshot(q, function(snap) {
+    packingData = snap.docs.map(function(d) { return Object.assign({ id: d.id }, d.data()); });
+    if (departMode === 'packing') renderPacking();
+  });
 }
+window.subscribePackingList = subscribePackingList;
 
 async function savePack() {
   const form = document.getElementById('form-pack');
   const name = form.querySelector('#pk-name').value.trim();
   if (!name) { showToast('請輸入物品名稱'); return; }
-  const data = { name, category: form.querySelector('#pk-category').value, memberUid: form.querySelector('#pk-member').value, checked: false, updatedAt: Date.now() };
+  const data = { name, category: form.querySelector('#pk-category').value, checked: false, tripId: currentTripId, updatedAt: Date.now() };
   try {
     const editId = form.dataset.editId;
-    if (editId) { await updateDoc(tripDoc('packing', editId), { name, category: data.category, memberUid: data.memberUid }); showToast('已更新 ✓'); }
-    else { data.createdAt = Date.now(); await addDoc(tripCol('packing'), data); showToast('已新增 ✓'); }
+    const packRef = collection(db, 'users', currentUser.uid, 'packingList');
+    if (editId) { await updateDoc(doc(packRef, editId), { name, category: data.category }); showToast('已更新 ✓'); }
+    else { data.createdAt = Date.now(); await addDoc(packRef, data); showToast('已新增 ✓'); }
     closeModal('modal-pack');
   } catch(e) { showToast('儲存失敗'); }
 }
 
 async function togglePack(id, checked) {
-  await updateDoc(tripDoc('packing', id), { checked, updatedAt: Date.now() });
+  if (!currentUser) return;
+  await updateDoc(doc(db, 'users', currentUser.uid, 'packingList', id), { checked, updatedAt: Date.now() });
 }
 
 async function deletePackItem(id) {
-  await deleteDoc(tripDoc('packing', id));
+  if (!currentUser) return;
+  await deleteDoc(doc(db, 'users', currentUser.uid, 'packingList', id));
 }
 
 // ════════════════════════════════════════
@@ -2826,7 +2848,7 @@ function _preloadTrip(tripId) {
     const unsub = onSnapshot(tripCol(col), snap => {
       const data=snap.docs.map(d=>({id:d.id,...d.data()}));
       if(col==='itinerary') itineraryData=data; if(col==='missions') missionsData=data;
-      if(col==='packing')   packingData=data;   if(col==='expenses') expensesData=data;
+      if(col==='expenses') expensesData=data;
       if(col==='flights')   flightsData=data;   if(col==='hotels')   hotelsData=data;
       if(col==='journal')   journalData=data;
       if(currentNavTab==='itinerary') renderItinerary();
@@ -2923,7 +2945,7 @@ async function selectTrip(tripId) {
   unsubscribers = [];
 
   // ⑦ 訂閱新旅行所有 collection
-  const collections = ['itinerary','missions','packing','expenses','flights','hotels'];
+  const collections = ['itinerary','missions','expenses','flights','hotels'];
   collections.forEach(col => {
     const unsub = onSnapshot(tripCol(col), snap => {
       const data = snap.docs.map(d => ({ id:d.id, ...d.data() }));
@@ -5519,43 +5541,55 @@ window.toggleWeatherForecast = toggleWeatherForecast;
   <div id="page-depart" class="page">
     <div class="page-content pb-4">
 
-      <!-- 航班 -->
-      <div class="flex items-center justify-between" style="padding:16px 0 10px">
-        <div class="section-title">航班資訊 ✈️</div>
-        <button class="btn-add" onclick="openAddFlight()">＋ 新增</button>
-      </div>
-      <div id="flights-list"></div>
-
-      <!-- 飯店 -->
-      <div class="flex items-center justify-between" style="padding:16px 0 10px">
-        <div class="section-title">入住飯店 🏨</div>
-        <button class="btn-add" onclick="openAddHotel()">＋ 新增</button>
-      </div>
-      <div id="hotels-list"></div>
-
-      <!-- 任務 -->
-      <div class="flex items-center justify-between" style="padding:16px 0 10px">
-        <div class="section-title">重要任務 🔔</div>
-        <button class="btn-add" onclick="openAddMission()">＋ 新增任務</button>
-      </div>
-      <div class="card card-p mb-3" id="missions-card">
-        <!-- rendered dynamically by renderMissionSections() -->
+      <!-- 旅程資訊 / 我的行李 切換 -->
+      <div class="expense-mode-tabs" style="margin:16px 0 12px">
+        <button class="expense-mode-tab active" id="tab-dp-trip" onclick="switchDepartMode('trip')">📋 旅程資訊</button>
+        <button class="expense-mode-tab" id="tab-dp-packing" onclick="switchDepartMode('packing')">🧳 我的行李</button>
       </div>
 
-      <!-- 行李 -->
-      <div class="flex items-center justify-between" style="padding:16px 0 10px">
-        <div class="section-title">行李清單 🧳</div>
-        <button class="btn-add" onclick="openAddPack()">＋ 新增</button>
+      <!-- 旅程資訊（群體共享） -->
+      <div id="depart-trip-wrap">
+        <!-- 航班 -->
+        <div class="flex items-center justify-between" style="padding:4px 0 10px">
+          <div class="section-title">航班資訊 ✈️</div>
+          <button class="btn-add" onclick="openAddFlight()">＋ 新增</button>
+        </div>
+        <div id="flights-list"></div>
+
+        <!-- 飯店 -->
+        <div class="flex items-center justify-between" style="padding:16px 0 10px">
+          <div class="section-title">入住飯店 🏨</div>
+          <button class="btn-add" onclick="openAddHotel()">＋ 新增</button>
+        </div>
+        <div id="hotels-list"></div>
+
+        <!-- 任務 -->
+        <div class="flex items-center justify-between" style="padding:16px 0 10px">
+          <div class="section-title">重要任務 🔔</div>
+          <button class="btn-add" onclick="openAddMission()">＋ 新增任務</button>
+        </div>
+        <div class="card card-p mb-3" id="missions-card">
+          <!-- rendered dynamically by renderMissionSections() -->
+        </div>
       </div>
-      <div class="flex gap-2 mb-3 no-scrollbar" style="overflow-x:auto" id="pack-cat-tabs">
-        <button class="chip pack-cat-btn active" data-cat="clothes" onclick="switchPackCategory('clothes')">👔 衣物</button>
-        <button class="chip pack-cat-btn" data-cat="toiletry" onclick="switchPackCategory('toiletry')">🧴 盥洗</button>
-        <button class="chip pack-cat-btn" data-cat="tech" onclick="switchPackCategory('tech')">📱 3C</button>
-        <button class="chip pack-cat-btn" data-cat="medicine" onclick="switchPackCategory('medicine')">💊 藥品</button>
-        <button class="chip pack-cat-btn" data-cat="docs" onclick="switchPackCategory('docs')">📄 文件</button>
-        <button class="chip pack-cat-btn" data-cat="other" onclick="switchPackCategory('other')">📦 其他</button>
+
+      <!-- 我的行李（個人專屬） -->
+      <div id="depart-packing-wrap" style="display:none">
+        <div class="flex items-center justify-between" style="padding:4px 0 6px">
+          <div class="section-title">行李清單 🧳</div>
+          <button class="btn-add" onclick="openAddPack()">＋ 新增</button>
+        </div>
+        <div style="font-size:.68rem;color:var(--text3);margin-bottom:12px;opacity:.75">🧳 只有你自己看得到這裡的內容</div>
+        <div class="flex gap-2 mb-3 no-scrollbar" style="overflow-x:auto" id="pack-cat-tabs">
+          <button class="chip pack-cat-btn active" data-cat="clothes" onclick="switchPackCategory('clothes')">👔 衣物</button>
+          <button class="chip pack-cat-btn" data-cat="toiletry" onclick="switchPackCategory('toiletry')">🧴 盥洗</button>
+          <button class="chip pack-cat-btn" data-cat="tech" onclick="switchPackCategory('tech')">📱 3C</button>
+          <button class="chip pack-cat-btn" data-cat="medicine" onclick="switchPackCategory('medicine')">💊 藥品</button>
+          <button class="chip pack-cat-btn" data-cat="docs" onclick="switchPackCategory('docs')">📄 文件</button>
+          <button class="chip pack-cat-btn" data-cat="other" onclick="switchPackCategory('other')">📦 其他</button>
+        </div>
+        <div class="card card-p" id="packing-list"></div>
       </div>
-      <div class="card card-p" id="packing-list"></div>
 
     </div>
   </div>
@@ -5882,10 +5916,6 @@ window.toggleWeatherForecast = toggleWeatherForecast;
     <div class="modal-body">
       <form id="form-pack" onsubmit="return false">
         <div class="card-dashed mb-4">
-          <div class="form-group">
-            <label class="form-label">誰的行李</label>
-            <select id="pk-member" class="form-select"></select>
-          </div>
           <div class="form-group">
             <label class="form-label">類別</label>
             <select id="pk-category" class="form-select">
