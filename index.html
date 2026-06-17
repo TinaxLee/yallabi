@@ -5014,6 +5014,20 @@ const PLACE_CATEGORIES = [
   { id: '11000',     label: '咖啡',   emoji: '☕' },
 ];
 
+// Nominatim 的 type 字串 → 收藏分類對應表
+const NOMINATIM_TYPE_MAP = {
+  restaurant: '13000', fast_food: '13000', food_court: '13000', bar: '13000', pub: '13000',
+  cafe: '11000', coffee_shop: '11000',
+  hotel: '19000', hostel: '19000', guest_house: '19000', motel: '19000', apartment: '19000',
+  shop: '17000', supermarket: '17000', mall: '17000', marketplace: '17000', department_store: '17000',
+  attraction: '16000', museum: '16000', place_of_worship: '16000', temple: '16000', monument: '16000',
+  viewpoint: '16000', park: '16000', zoo: '16000', theme_park: '16000', gallery: '16000', castle: '16000',
+};
+function mapNominatimType(type) {
+  return NOMINATIM_TYPE_MAP[type] || '16000'; // 預設歸類為「景點」
+}
+
+
 let savedPlacesData = [];
 let savedPlacesFilter = { country: 'all', category: 'all' };
 let savedPlacesUnsub = null;
@@ -5135,27 +5149,29 @@ async function searchPlaces() {
       results.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text3)">找不到結果，換個關鍵字試試</div>';
       return;
     }
-    results.innerHTML = data.results.map(function(place) {
+    results.innerHTML = data.results.map(function(place, idx) {
       var cat = place.categories && place.categories[0];
       var catLabel = cat ? cat.name : '景點';
       var addr = place.location ? (place.location.formatted_address || place.location.address || '') : '';
       var rating = place.rating ? '★ ' + place.rating.toFixed(1) : '';
+      window._placeSearchCache = window._placeSearchCache || {};
+      window._placeSearchCache[idx] = {
+        fsqId: place.fsq_id,
+        name: place.name,
+        address: addr,
+        categoryLabel: catLabel,
+        categoryId: mapNominatimType(cat ? cat.id : ''),
+        rating: place.rating || null,
+        lat: place.geocodes && place.geocodes.main ? place.geocodes.main.latitude : null,
+        lng: place.geocodes && place.geocodes.main ? place.geocodes.main.longitude : null,
+      };
       return '<div class="place-search-card">'
         + '<div style="flex:1;min-width:0">'
         + '<div class="place-card-name">' + place.name + '</div>'
         + '<div class="place-card-meta">' + catLabel + (rating ? ' · ' + rating : '') + '</div>'
         + '<div class="place-card-addr">' + addr + '</div>'
         + '</div>'
-        + '<button class="place-save-btn" onclick="savePlaceFromSearch(' + JSON.stringify(JSON.stringify({
-            fsqId: place.fsq_id,
-            name: place.name,
-            address: addr,
-            categoryLabel: catLabel,
-            categoryId: cat ? String(cat.id) : '',
-            rating: place.rating || null,
-            lat: place.geocodes && place.geocodes.main ? place.geocodes.main.latitude : null,
-            lng: place.geocodes && place.geocodes.main ? place.geocodes.main.longitude : null,
-          })) + ')">收藏</button>'
+        + '<button class="place-save-btn" onclick="savePlaceFromSearch(' + idx + ')">收藏</button>'
         + '</div>';
     }).join('');
   } catch(e) {
@@ -5163,10 +5179,10 @@ async function searchPlaces() {
   }
 }
 
-async function savePlaceFromSearch(jsonStr) {
+async function savePlaceFromSearch(idx) {
   if (!currentUser) { showToast('請先登入'); return; }
-  var place;
-  try { place = JSON.parse(jsonStr); } catch(e) { return; }
+  var place = window._placeSearchCache && window._placeSearchCache[idx];
+  if (!place) return;
   // 自動偵測國家（從目前行程或讓使用者之後標記）
   place.country = (currentTrip && currentTrip.country) || 'default';
   place.savedAt = Date.now();
