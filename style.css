@@ -1216,3 +1216,207 @@ textarea.form-input{resize:none;white-space:pre-wrap;line-height:1.6;}
 .mission-section-body.collapsed {
   display: none;
 }
+
+/* ════════════════════════════════════════════════════════
+   FLIGHT CARD V2
+════════════════════════════════════════════════════════ */
+.flight-card-v2 {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg, 16px);
+  padding: 14px 16px;
+  margin-bottom: 12px;
+}
+.fl-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  gap: 8px;
+}
+.fl-dir-chip {
+  font-size: .65rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(180,140,80,.12);
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.fl-no {
+  font-size: .78rem;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: .04em;
+}
+.fl-date {
+  font-size: .72rem;
+  color: var(--text3);
+}
+.fl-seat {
+  font-size: .65rem;
+  background: var(--bg2);
+  color: var(--text3);
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.fl-action-btn {
+  background: none;
+  border: none;
+  font-size: .88rem;
+  color: var(--text3);
+  cursor: pointer;
+  padding: 4px 5px;
+  border-radius: 6px;
+  -webkit-tap-highlight-color: transparent;
+  line-height: 1;
+}
+.fl-action-btn:active { opacity: .6; }
+.fl-route {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.fl-endpoint { min-width: 0; }
+.fl-endpoint-right { text-align: right; }
+.fl-airport {
+  font-size: .7rem;
+  font-weight: 700;
+  color: var(--text3);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+.fl-time {
+  font-size: 1.55rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1;
+  letter-spacing: -.02em;
+  font-variant-numeric: tabular-nums;
+}
+.fl-middle {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.fl-duration {
+  font-size: .65rem;
+  color: var(--text3);
+  white-space: nowrap;
+}
+.fl-line {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+.fl-line::before {
+  content: '';
+  position: absolute;
+  left: 0; right: 0;
+  top: 50%;
+  height: 1px;
+  background: var(--border);
+}
+.fl-line svg { position: relative; z-index: 1; }
+.fl-footer {
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.fl-info-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: .72rem;
+  color: var(--text2);
+}
+.fl-info-val {
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* ════════════════════════════════════════════════════════
+   HOTEL CARD V2
+════════════════════════════════════════════════════════ */
+.hotel-card-v2 {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg, 16px);
+  padding: 14px 16px;
+  margin-bottom: 12px;
+}
+.hotel-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.hotel-name {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.3;
+  flex: 1;
+}
+.hotel-dates {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: .75rem;
+  color: var(--text2);
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+.hotel-nights {
+  background: var(--bg2);
+  color: var(--text3);
+  font-size: .65rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+.hotel-row {
+  font-size: .75rem;
+  color: var(--text2);
+  margin-bottom: 4px;
+  line-height: 1.5;
+}
+.hotel-addr {
+  color: var(--text3);
+  font-size: .72rem;
+}
+.hotel-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+  padding: 6px 14px;
+  background: var(--bg2);
+  color: var(--text2);
+  border: none;
+  border-radius: 999px;
+  font-size: .72rem;
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.hotel-nav-btn:active { opacity: .7; }
+.hotel-note {
+  font-size: .72rem;
+  color: var(--text3);
+  border-left: 2px solid var(--accent);
+  padding-left: 10px;
+  margin-top: 8px;
+  line-height: 1.5;
+}

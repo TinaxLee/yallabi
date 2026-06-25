@@ -2418,41 +2418,59 @@ function renderFlights() {
   </div>`;
     return;
   }
-  container.innerHTML = flightsData.sort((a,b)=>(a.flightDate||'').localeCompare(b.flightDate||'')).map(f => `
-    <div class="flight-card">
-      <div class="flight-header">
-        <span class="flight-tag">${f.flightNo || '---'}</span>
-        <span class="flight-date-tag">${formatDateDisplay(f.flightDate)}</span>
-        ${f.seat ? `<span class="flight-date-tag">SEAT: ${f.seat}</span>` : ''}
-        <div style="flex:1"></div>
-        <button onclick="editFlight('${f.id}')" style="color:var(--text3);font-size:.9rem;margin-right:6px">✏️</button>
-        <button onclick="deleteFlight('${f.id}')" style="color:var(--text3);font-size:.9rem">✕</button>
-      </div>
-      <div class="flight-route">
-        <div>
-          <div class="flight-airport">${f.origin || '---'}</div>
-          <div class="flight-time">${f.departTime || '--:--'}</div>
-        </div>
-        <div class="flight-line">
-          <div class="flight-duration">${f.duration || ''}</div>
-          <div class="flight-dash"></div>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="var(--text3)"><path d="m16.3 3.45-1.4 1.4-7.98-1.33c-.32-.05-.64.05-.87.28L4.28 5.57c-.23.23-.33.56-.28.88s.26.59.56.73L10 9.76l-1.49 1.49-3.42-.31c-.29-.03-.59.08-.8.29l-1.41 1.41a.99.99 0 0 0-.27.9c.06.33.28.6.59.73l4.58 1.96 1.96 4.58c.13.31.4.53.73.59a1 1 0 0 0 .9-.27l1.41-1.41c.21-.21.32-.5.29-.8l-.31-3.42 1.49-1.49 2.57 5.44a.993.993 0 0 0 1.61.28l1.77-1.77c.23-.23.33-.55.28-.87l-1.33-7.98 1.4-1.4c.57-.57.88-1.32.88-2.12s-.31-1.55-.88-2.12a3 3 0 0 0-4.24 0Zm2.83 2.83-1.77 1.77c-.23.23-.33.55-.28.87l1.33 7.98-.4.4-2.57-5.43a.993.993 0 0 0-1.61-.28L11 14.42a.99.99 0 0 0-.29.8l.31 3.42-.04.04-1.54-3.59c-.1-.24-.29-.42-.52-.53l-3.59-1.54.04-.04 3.42.31c.3.03.59-.08.8-.29l2.83-2.83c.23-.23.33-.56.28-.88s-.26-.59-.56-.73L6.7 5.98l.4-.4 7.98 1.33c.32.05.64-.05.87-.28l1.77-1.77a.996.996 0 0 1 1.7.71c0 .27-.1.52-.29.71"/></svg>
-        </div>
-        <div style="text-align:right">
-          <div class="flight-airport">${f.destination || '---'}</div>
-          <div class="flight-time">${f.arriveTime || '--:--'}</div>
-        </div>
-      </div>
-      ${f.checkinTime ? `<div class="checkin-alert"><span>⌚ 報到提醒</span><span class="checkin-time">${f.checkinTime}</span></div>` : ''}
-      ${f.note ? `<div style="font-size:.78rem;color:var(--text2);margin-top:6px;padding-top:8px;border-top:1px solid var(--border)">📝 ${f.note}</div>` : ''}
-    </div>`).join('');
+  container.innerHTML = flightsData.sort((a,b)=>(a.flightDate||'').localeCompare(b.flightDate||'')).map(function(f) {
+    var dirLabel = f.direction === 'return' ? '回程' : '去程';
+    var dirColor = f.direction === 'return' ? '#7b9e8f' : 'var(--accent)';
+    var checkinRow = f.checkinTime
+      ? '<div class="fl-info-row"><span>⏰ 報到提醒</span><span class="fl-info-val">' + f.checkinTime + '</span></div>'
+      : '<div class="fl-info-row"><span>⏰ 報到提醒</span><span class="fl-info-val" style="color:var(--danger);opacity:.8">尚未設定</span></div>';
+    var baggageRow = f.baggage
+      ? '<div class="fl-info-row"><span>📋 ' + f.baggage + '</span></div>'
+      : '';
+    var noteRow = f.note
+      ? '<div class="fl-info-row"><span>📝 ' + f.note + '</span></div>'
+      : '';
+    return '<div class="flight-card-v2">'
+      + '<div class="fl-header">'
+      + '<div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">'
+      + '<span class="fl-dir-chip" style="background:' + (f.direction === 'return' ? 'rgba(123,158,143,.15);color:#7b9e8f' : 'rgba(var(--accent-rgb,.1));color:var(--accent)') + '">' + dirLabel + '</span>'
+      + '<span class="fl-no">' + (f.flightNo || '---') + '</span>'
+      + '<span class="fl-date">' + formatDateDisplay(f.flightDate) + '</span>'
+      + '</div>'
+      + '<div style="display:flex;gap:4px;align-items:center;flex-shrink:0">'
+      + (f.seat ? '<span class="fl-seat">座位 ' + f.seat + '</span>' : '')
+      + '<button onclick="editFlight(\'' + f.id + '\')" class="fl-action-btn">✏️</button>'
+      + '<button onclick="deleteFlight(\'' + f.id + '\')" class="fl-action-btn">✕</button>'
+      + '</div>'
+      + '</div>'
+      + '<div class="fl-route">'
+      + '<div class="fl-endpoint">'
+      + '<div class="fl-airport">' + (f.origin || '---') + '</div>'
+      + '<div class="fl-time">' + (f.departTime || '--:--') + '</div>'
+      + '</div>'
+      + '<div class="fl-middle">'
+      + '<div class="fl-duration">' + (f.duration || '') + '</div>'
+      + '<div class="fl-line"><svg width="18" height="18" viewBox="0 0 24 24" fill="var(--accent)"><path d="m16.3 3.45-1.4 1.4-7.98-1.33c-.32-.05-.64.05-.87.28L4.28 5.57c-.23.23-.33.56-.28.88s.26.59.56.73L10 9.76l-1.49 1.49-3.42-.31c-.29-.03-.59.08-.8.29l-1.41 1.41a.99.99 0 0 0-.27.9c.06.33.28.6.59.73l4.58 1.96 1.96 4.58c.13.31.4.53.73.59a1 1 0 0 0 .9-.27l1.41-1.41c.21-.21.32-.5.29-.8l-.31-3.42 1.49-1.49 2.57 5.44a.993.993 0 0 0 1.61.28l1.77-1.77c.23-.23.33-.55.28-.87l-1.33-7.98 1.4-1.4c.57-.57.88-1.32.88-2.12s-.31-1.55-.88-2.12a3 3 0 0 0-4.24 0Z"/></svg></div>'
+      + '</div>'
+      + '<div class="fl-endpoint fl-endpoint-right">'
+      + '<div class="fl-airport">' + (f.destination || '---') + '</div>'
+      + '<div class="fl-time">' + (f.arriveTime || '--:--') + '</div>'
+      + '</div>'
+      + '</div>'
+      + '<div class="fl-footer">'
+      + checkinRow + baggageRow + noteRow
+      + '</div>'
+      + '</div>';
+  }).join('');
 }
 
-function openAddFlight(editId = null) {
-  const form = document.getElementById('form-flight');
+function openAddFlight(editId) {
+  editId = editId || null;
+  var form = document.getElementById('form-flight');
   if (editId) {
-    const item = flightsData.find(f => f.id === editId);
+    var item = flightsData.find(function(f) { return f.id === editId; });
     if (!item) return;
+    form.querySelector('#fl-direction').value = item.direction || 'outbound';
     form.querySelector('#fl-no').value = item.flightNo || '';
     form.querySelector('#fl-origin').value = item.origin || '';
     form.querySelector('#fl-dest').value = item.destination || '';
@@ -2476,8 +2494,9 @@ function openAddFlight(editId = null) {
 function editFlight(id) { openAddFlight(id); }
 
 async function saveFlight() {
-  const form = document.getElementById('form-flight');
-  const data = {
+  var form = document.getElementById('form-flight');
+  var data = {
+    direction: form.querySelector('#fl-direction').value,
     flightNo: form.querySelector('#fl-no').value.trim(),
     origin: form.querySelector('#fl-origin').value.trim(),
     destination: form.querySelector('#fl-dest').value.trim(),
@@ -2491,7 +2510,7 @@ async function saveFlight() {
     updatedAt: Date.now()
   };
   try {
-    const editId = form.dataset.editId;
+    var editId = form.dataset.editId;
     if (editId) { await updateDoc(tripDoc('flights', editId), data); showToast('已更新 ✓'); }
     else { data.createdAt = Date.now(); await addDoc(tripCol('flights'), data); showToast('已新增 ✓'); }
     closeModal('modal-flight');
@@ -2504,40 +2523,48 @@ async function deleteFlight(id) {
   showToast('已刪除');
 }
 
-// --- HOTELS ---
+// ── HOTELS ──
 function renderHotels() {
-  const container = document.getElementById('hotels-list');
+  var container = document.getElementById('hotels-list');
   if (!container) return;
   if (hotelsData.length === 0) {
-    container.innerHTML = `<div class="empty-state">
-    <div style="width:60px;height:60px;border-radius:50%;border:1.5px solid var(--border2);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;background:var(--surface)">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-    </div>
-    <p style="color:var(--text3);font-size:.85rem;line-height:1.6">還沒有飯店<br>點右上角新增</p>
-  </div>`;
+    container.innerHTML = '<div class="empty-state"><div style="width:60px;height:60px;border-radius:50%;border:1.5px solid var(--border2);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;background:var(--surface)"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div><p style="color:var(--text3);font-size:.85rem;line-height:1.6">還沒有飯店<br>點右上角新增</p></div>';
     return;
   }
-  container.innerHTML = hotelsData.sort((a,b)=>(a.checkinDate||'').localeCompare(b.checkinDate||'')).map(h => `
-    <div class="card card-p mb-3">
-      <div class="flex justify-between items-start mb-2">
-        <div style="font-size:1.05rem;font-weight:700;color:var(--text);flex:1">${h.name||''}</div>
-        <div class="flex gap-2 ml-2">
-          <button onclick="editHotel('${h.id}')" style="color:var(--text3);font-size:.9rem">✏️</button>
-          <button onclick="deleteHotel('${h.id}')" style="color:var(--text3);font-size:.9rem">✕</button>
-        </div>
-      </div>
-      <div style="font-size:.78rem;color:var(--text2);margin-bottom:6px">📅 ${formatDateDisplay(h.checkinDate)} ~ ${formatDateDisplay(h.checkoutDate)}</div>
-      ${h.room ? `<div style="font-size:.78rem;background:var(--bg2);padding:5px 10px;border-radius:8px;margin-bottom:6px;color:var(--text2)">ROOM: <strong>${h.room}</strong></div>` : ''}
-      ${h.address ? `<div style="font-size:.75rem;color:var(--text2);margin-bottom:8px">📍 ${h.address}</div>` : ''}
-      ${h.address ? `<button class="btn btn-ghost btn-xs mb-2" onclick="openMaps('${encodeURIComponent(h.address)}')">🧭 開啟地圖導航</button>` : ''}
-      ${h.note ? `<div style="font-size:.74rem;color:var(--text3);border-left:2px solid var(--accent);padding-left:10px;margin-top:8px">${h.note}</div>` : ''}
-    </div>`).join('');
+  container.innerHTML = hotelsData.sort(function(a,b){ return (a.checkinDate||'').localeCompare(b.checkinDate||''); }).map(function(h) {
+    var nights = 0;
+    if (h.checkinDate && h.checkoutDate) {
+      var d1 = new Date(h.checkinDate), d2 = new Date(h.checkoutDate);
+      nights = Math.round((d2 - d1) / 86400000);
+    }
+    var nightsStr = nights > 0 ? '共 ' + nights + ' 晚' : '';
+    return '<div class="hotel-card-v2">'
+      + '<div class="hotel-header">'
+      + '<div class="hotel-name">' + (h.name || '') + '</div>'
+      + '<div style="display:flex;gap:4px;align-items:center;flex-shrink:0">'
+      + '<button onclick="editHotel(\'' + h.id + '\')" class="fl-action-btn">✏️</button>'
+      + '<button onclick="deleteHotel(\'' + h.id + '\')" class="fl-action-btn">✕</button>'
+      + '</div>'
+      + '</div>'
+      + '<div class="hotel-dates">'
+      + '<span>📅 ' + formatDateDisplay(h.checkinDate) + ' → ' + formatDateDisplay(h.checkoutDate) + '</span>'
+      + (nightsStr ? '<span class="hotel-nights">' + nightsStr + '</span>' : '')
+      + '</div>'
+      + (h.guestName ? '<div class="hotel-row">👤 ' + h.guestName + '</div>' : '')
+      + (h.bookingNo ? '<div class="hotel-row">🔖 確認碼：' + h.bookingNo + '</div>' : '')
+      + (h.room ? '<div class="hotel-row">🚪 ' + h.room + '</div>' : '')
+      + (h.address ? '<div class="hotel-row hotel-addr">📍 ' + h.address + '</div>' : '')
+      + (h.address ? '<button class="hotel-nav-btn" onclick="openMaps(\'' + encodeURIComponent(h.address) + '\')">🗺 導航</button>' : '')
+      + (h.note ? '<div class="hotel-note">' + h.note + '</div>' : '')
+      + '</div>';
+  }).join('');
 }
 
-function openAddHotel(editId = null) {
-  const form = document.getElementById('form-hotel');
+function openAddHotel(editId) {
+  editId = editId || null;
+  var form = document.getElementById('form-hotel');
   if (editId) {
-    const item = hotelsData.find(h => h.id === editId);
+    var item = hotelsData.find(function(h) { return h.id === editId; });
     if (!item) return;
     form.querySelector('#ht-name').value = item.name || '';
     form.querySelector('#ht-guest').value = item.guestName || '';
@@ -2560,11 +2587,12 @@ function openAddHotel(editId = null) {
 function editHotel(id) { openAddHotel(id); }
 
 async function saveHotel() {
-  const form = document.getElementById('form-hotel');
-  const name = form.querySelector('#ht-name').value.trim();
+  var form = document.getElementById('form-hotel');
+  var name = form.querySelector('#ht-name').value.trim();
   if (!name) { showToast('請輸入飯店名稱'); return; }
-  const data = {
-    name, guestName: form.querySelector('#ht-guest').value.trim(),
+  var data = {
+    name: name,
+    guestName: form.querySelector('#ht-guest').value.trim(),
     bookingNo: form.querySelector('#ht-booking').value.trim(),
     checkinDate: form.querySelector('#ht-checkin').value,
     checkoutDate: form.querySelector('#ht-checkout').value,
@@ -2574,7 +2602,7 @@ async function saveHotel() {
     updatedAt: Date.now()
   };
   try {
-    const editId = form.dataset.editId;
+    var editId = form.dataset.editId;
     if (editId) { await updateDoc(tripDoc('hotels', editId), data); showToast('已更新 ✓'); }
     else { data.createdAt = Date.now(); await addDoc(tripCol('hotels'), data); showToast('已新增 ✓'); }
     closeModal('modal-hotel');
@@ -2585,52 +2613,6 @@ async function deleteHotel(id) {
   if (!confirm('確定刪除飯店？')) return;
   await deleteDoc(tripDoc('hotels', id));
   showToast('已刪除');
-}
-
-// --- MISSIONS ---
-const MISSION_CATEGORIES = [
-  { id:'before',  label:'行前準備',  icon:'✈️' },
-  { id:'arrival', label:'旅途中',    icon:'🚩', dynamic: true },
-  { id:'during',  label:'必買清單',  icon:'🧾' },
-];
-
-// 收合狀態：預設行前準備展開，其他收起
-const missionCollapsed = { before: false, arrival: true, during: true };
-
-function getMissionCategories() {
-  const country = (currentTrip && currentTrip.country);
-  const flag = country && country !== 'default'
-    ? ((COUNTRY_THEMES[country] && COUNTRY_THEMES[country].flag) || '🚩')
-    : '🚩';
-  return MISSION_CATEGORIES.map(c => c.dynamic ? { ...c, icon: flag } : c);
-}
-
-function toggleMissionSection(catId) {
-  missionCollapsed[catId] = !missionCollapsed[catId];
-  renderMissions();
-}
-window.toggleMissionSection = toggleMissionSection;
-
-function renderMissionSections() {
-  const card = document.getElementById('missions-card');
-  if (!card) return;
-  const cats = getMissionCategories();
-  card.innerHTML = cats.map(cat => {
-    const collapsed = missionCollapsed[cat.id];
-    return '<div class="mission-section mb-3">'
-      + '<div class="mission-section-header" onclick="toggleMissionSection(\'' + cat.id + '\')">'  
-      + '<div style="display:flex;align-items:center;gap:7px">'
-      + '<span style="font-size:1rem">' + cat.icon + '</span>'
-      + '<span style="font-size:.85rem;font-weight:600;color:var(--text)">' + cat.label + '</span>'
-      + '</div>'
-      + '<div style="display:flex;align-items:center;gap:6px">'
-      + '<span id="missions-count-' + cat.id + '" class="mission-count-badge"></span>'
-      + '<span class="mission-arrow' + (collapsed ? '' : ' open') + '">›</span>'
-      + '</div>'
-      + '</div>'
-      + '<div id="missions-' + cat.id + '" class="mission-section-body' + (collapsed ? ' collapsed' : '') + '"></div>'
-      + '</div>';
-  }).join('');
 }
 
 function renderMissions() {
@@ -5862,6 +5844,13 @@ window.toggleWeatherForecast = toggleWeatherForecast;
     <div class="modal-body">
       <form id="form-flight" onsubmit="return false">
         <div class="card-dashed mb-4">
+          <div class="form-group">
+            <label class="form-label">去程 / 回程</label>
+            <select id="fl-direction" class="form-select">
+              <option value="outbound">✈️ 去程</option>
+              <option value="return">🏠 回程</option>
+            </select>
+          </div>
           <div class="form-group">
             <input id="fl-no" type="text" class="form-input" placeholder="航班號 (如 TG635)">
           </div>
