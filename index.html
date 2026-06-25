@@ -2142,6 +2142,10 @@ let journalUnsub = null;
 function subscribeJournal() {
   if (!currentUser || !currentTripId) return;
   if (journalUnsub) { journalUnsub(); journalUnsub = null; }
+  // 重置任務分類收合狀態
+  missionCollapsed.before = false;
+  missionCollapsed.arrival = true;
+  missionCollapsed.during = true;
   if (packingUnsub) { packingUnsub(); packingUnsub = null; }
   packingData = [];
   const ref = collection(db, 'users', currentUser.uid, 'journal');
@@ -2585,10 +2589,13 @@ async function deleteHotel(id) {
 
 // --- MISSIONS ---
 const MISSION_CATEGORIES = [
-  { id:'before',  label:'出發前',  icon:'✈️' },
-  { id:'arrival', label:'抵達當天', icon:'🚩', dynamic: true },
-  { id:'during',  label:'旅程中',  icon:'❤️' },
+  { id:'before',  label:'行前準備',  icon:'✈️' },
+  { id:'arrival', label:'旅途中',    icon:'🚩', dynamic: true },
+  { id:'during',  label:'必買清單',  icon:'🧾' },
 ];
+
+// 收合狀態：預設行前準備展開，其他收起
+const missionCollapsed = { before: false, arrival: true, during: true };
 
 function getMissionCategories() {
   const country = (currentTrip && currentTrip.country);
@@ -2598,21 +2605,32 @@ function getMissionCategories() {
   return MISSION_CATEGORIES.map(c => c.dynamic ? { ...c, icon: flag } : c);
 }
 
+function toggleMissionSection(catId) {
+  missionCollapsed[catId] = !missionCollapsed[catId];
+  renderMissions();
+}
+window.toggleMissionSection = toggleMissionSection;
+
 function renderMissionSections() {
   const card = document.getElementById('missions-card');
   if (!card) return;
   const cats = getMissionCategories();
-  card.innerHTML = cats.map(cat => `
-    <div class="card card-p mb-3">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)">
-        <div style="display:flex;align-items:center;gap:7px">
-          <span style="font-size:1rem">${cat.icon}</span>
-          <span style="font-size:.85rem;font-weight:600;color:var(--text)">${cat.label}</span>
-        </div>
-        <span id="missions-count-${cat.id}" style="font-size:.65rem;background:var(--bg2);color:var(--text3);padding:2px 8px;border-radius:999px;font-weight:600"></span>
-      </div>
-      <div id="missions-${cat.id}"></div>
-    </div>`).join('');
+  card.innerHTML = cats.map(cat => {
+    const collapsed = missionCollapsed[cat.id];
+    return '<div class="mission-section mb-3">'
+      + '<div class="mission-section-header" onclick="toggleMissionSection(\'' + cat.id + '\')">'  
+      + '<div style="display:flex;align-items:center;gap:7px">'
+      + '<span style="font-size:1rem">' + cat.icon + '</span>'
+      + '<span style="font-size:.85rem;font-weight:600;color:var(--text)">' + cat.label + '</span>'
+      + '</div>'
+      + '<div style="display:flex;align-items:center;gap:6px">'
+      + '<span id="missions-count-' + cat.id + '" class="mission-count-badge"></span>'
+      + '<span class="mission-arrow' + (collapsed ? '' : ' open') + '">›</span>'
+      + '</div>'
+      + '</div>'
+      + '<div id="missions-' + cat.id + '" class="mission-section-body' + (collapsed ? ' collapsed' : '') + '"></div>'
+      + '</div>';
+  }).join('');
 }
 
 function renderMissions() {
@@ -2625,11 +2643,33 @@ function renderMissions() {
     const countEl = document.getElementById(`missions-count-${cat.id}`);
     if (countEl) {
       const undone = items.filter(i => !i.done).length;
-      countEl.textContent = undone > 0 ? `${undone} 項待辦` : 'ALL CLEAR ✨';
-      countEl.style.background = undone > 0 ? 'var(--bg2)' : 'color-mix(in srgb, var(--green) 15%, transparent)';
-      countEl.style.color = undone > 0 ? 'var(--text3)' : 'var(--green)';
+      const collapsed = missionCollapsed[cat.id];
+      if (collapsed) {
+        // 收合時：只顯示數量徽章
+        if (undone > 0) {
+          countEl.textContent = undone + ' 項待辦';
+          countEl.style.background = 'var(--bg2)';
+          countEl.style.color = 'var(--text3)';
+        } else {
+          countEl.textContent = 'ALL CLEAR ✨';
+          countEl.style.background = 'color-mix(in srgb, var(--green) 15%, transparent)';
+          countEl.style.color = 'var(--green)';
+        }
+      } else {
+        // 展開時：顯示待辦數或 ALL CLEAR
+        if (undone > 0) {
+          countEl.textContent = undone + ' 項待辦';
+          countEl.style.background = 'var(--bg2)';
+          countEl.style.color = 'var(--text3)';
+        } else {
+          countEl.textContent = 'ALL CLEAR ✨';
+          countEl.style.background = 'color-mix(in srgb, var(--green) 15%, transparent)';
+          countEl.style.color = 'var(--green)';
+        }
+      }
     }
-    if (items.length === 0) { container.innerHTML = `<div style="text-align:center;padding:12px 0;color:var(--text3);font-size:.8rem">ALL CLEAR ✨</div>`; return; }
+    if (missionCollapsed[cat.id]) { container.innerHTML = ''; return; }
+    if (items.length === 0) { container.innerHTML = '<div style="text-align:center;padding:12px 0;color:var(--text3);font-size:.8rem">ALL CLEAR ✨</div>'; return; }
     container.innerHTML = items.map(m => `
       <div class="pack-item" style="${m.done ? 'opacity:.42' : ''}">
         <div class="pack-check ${m.done ? 'checked' : ''}" onclick="toggleMission('${m.id}',${!m.done})">
@@ -5907,7 +5947,9 @@ window.toggleWeatherForecast = toggleWeatherForecast;
           <div class="form-group">
             <label class="form-label">任務分類</label>
             <select id="ms-category" class="form-select">
-              ${MISSION_CATEGORIES.map(c => `<option value="${c.id}">${c.icon} ${c.label}</option>`).join('')}
+              <option value="before">✈️ 行前準備</option>
+              <option value="arrival">🚩 旅途中</option>
+              <option value="during">🧾 必買清單</option>
             </select>
           </div>
           <div class="form-group">

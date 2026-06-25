@@ -1171,3 +1171,48 @@ textarea.form-input{resize:none;white-space:pre-wrap;line-height:1.6;}
   white-space: nowrap;
 }
 .place-save-btn:active { opacity: .75; }
+
+/* ════════════════════════════════════════════════════════
+   MISSION SECTIONS — 可收合任務分類
+════════════════════════════════════════════════════════ */
+.mission-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+.mission-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.mission-section-header:active { opacity: .75; }
+.mission-arrow {
+  font-size: 1.1rem;
+  color: var(--text3);
+  transition: transform .22s var(--ease);
+  display: inline-block;
+  transform: rotate(0deg);
+  line-height: 1;
+}
+.mission-arrow.open {
+  transform: rotate(90deg);
+}
+.mission-count-badge {
+  font-size: .62rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.mission-section-body {
+  padding: 0 14px 12px;
+}
+.mission-section-body.collapsed {
+  display: none;
+}
