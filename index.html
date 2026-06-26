@@ -342,7 +342,7 @@ function switchTab(tab) {
   // render content
   if (tab === 'itinerary') renderItinerary();
   if (tab === 'expense')   renderExpenses();
-  if (tab === 'saved')     { renderPassport(); renderSavedPlaces(); }
+  if (tab === 'saved')     { renderSavedPlaces(); }
   if (tab === 'depart')    renderDepart();
   if (tab === 'bibi') {
     renderBibiQuickBtns();
@@ -533,7 +533,7 @@ function renderItinerary() {
     const detailHTML = (item.address || item.note)
       ? '<div class="it-new-detail-shown" style="border-top:1px solid var(--border);padding:10px 14px 12px;background:var(--bg2);border-radius:0 0 13px 13px">'
         + (item.address ? '<div style="display:flex;align-items:flex-start;gap:6px;font-size:.72rem;color:var(--text2);line-height:1.55;margin-bottom:8px"><span style="flex-shrink:0;margin-top:1px">📍</span><span>' + item.address + '</span></div>' : '')
-        + (item.note ? '<div style="display:flex;align-items:flex-start;gap:6px;font-size:.72rem;color:var(--text2);line-height:1.55;margin-bottom:8px"><span style="flex-shrink:0;margin-top:1px">📝</span><span style="white-space:pre-wrap">' + escapeHtml(item.note) + '</span></div>' : '')
+        + (item.note ? '<div style="display:flex;align-items:flex-start;gap:6px;font-size:.72rem;color:var(--text2);line-height:1.55;margin-bottom:8px"><span style="flex-shrink:0;margin-top:1px">📝</span><span style="white-space:pre-wrap">' + linkifyNote(item.note) + '</span></div>' : '')
         + '<div style="display:flex;gap:6px;flex-wrap:wrap">'
         + (item.address ? '<button class="it-col-btn" onclick="openMaps(\'' + encodeURIComponent(safeAddress) + '\')">📍 導航</button>' : '')
         + (item.address ? '<button class="it-col-btn" onclick="copyAddress(\'' + safeAddress + '\')">📋 複製</button>' : '')
@@ -593,7 +593,7 @@ function toggleItCard(id) {
     const detailHTML = hasDetail
       ? '<div class="it-new-detail-shown" style="border-top:1px solid var(--border);padding:10px 14px 12px;background:var(--bg2);border-radius:0 0 13px 13px">'
         + (item.address ? '<div style="display:flex;align-items:flex-start;gap:6px;font-size:.75rem;color:var(--text2);line-height:1.6;margin-bottom:8px"><span>📍</span><span>' + item.address + '</span></div>' : '')
-        + (item.note ? '<div style="display:flex;align-items:flex-start;gap:6px;font-size:.75rem;color:var(--text2);line-height:1.6;margin-bottom:8px"><span>📝</span><span style="white-space:pre-wrap">' + escapeHtml(item.note) + '</span></div>' : '')
+        + (item.note ? '<div style="display:flex;align-items:flex-start;gap:6px;font-size:.75rem;color:var(--text2);line-height:1.6;margin-bottom:8px"><span>📝</span><span style="white-space:pre-wrap">' + linkifyNote(item.note) + '</span></div>' : '')
         + '<div style="display:flex;gap:6px;flex-wrap:wrap">'
         + (item.address ? '<button class="it-col-btn" onclick="openMaps(\'' + encodeURIComponent(safeAddress) + '\')">📍 導航</button>' : '')
         + (item.address ? '<button class="it-col-btn" onclick="copyAddress(\'' + safeAddress + '\')">📋 複製</button>' : '')
@@ -621,12 +621,17 @@ function copyAddress(address) {
 }
 
 function openBibiStrategy(name, address) {
-  const query = '請給我關於「' + name + '」' + (address ? '（' + address + '）' : '') + '的旅遊攻略，包含必吃、必玩、注意事項';
+  var query = '請給我關於「' + name + '」' + (address ? '（' + address + '）' : '') + '的旅遊攻略，包含必吃、必玩、注意事項';
   openBibiDrawer();
-  setTimeout(() => {
-    document.getElementById('bibi-input').value = query;
-    sendBibiMessage();
-  }, 400);
+  // 等 drawer 動畫完成（320ms）再填入並送出
+  setTimeout(function() {
+    var input = document.getElementById('bibi-input');
+    if (input) {
+      input.value = query;
+      // 觸發 sendBibiMessage
+      sendBibiMessage();
+    }
+  }, 500);
 }
 
 // Add Itinerary Modal
@@ -652,7 +657,17 @@ function openAddItinerary(editId = null) {
     form.querySelector('#it-name').value = item.name || '';
     form.querySelector('#it-address').value = item.address || '';
     form.querySelector('#it-transport-icon').value = item.transportIcon || '';
-    form.querySelector('#it-transport-text').value = item.transportText || '';
+    // Parse existing transportText back into dist/hr/min
+    var ttext = item.transportText || '';
+    var distMatch = ttext.match(/([\d.]+)\s*km/);
+    var hrMatch = ttext.match(/(\d+)\s*h/);
+    var minMatch = ttext.match(/(\d+)\s*m(?!in)/);  // 分鐘
+    // Also try "約Xh YYm" or "約X小時Y分"
+    var hrMatch2 = ttext.match(/約?(\d+)h/);
+    var minMatch2 = ttext.match(/(\d+)m(?!in)/);
+    form.querySelector('#it-transport-dist').value = distMatch ? distMatch[1] : '';
+    form.querySelector('#it-transport-hr').value = (hrMatch && hrMatch[1]) || (hrMatch2 && hrMatch2[1]) || '';
+    form.querySelector('#it-transport-min').value = (minMatch && minMatch[1]) || (minMatch2 && minMatch2[1]) || '';
     form.querySelector('#it-transport-icon2').value = item.transportIcon2 || '';
     form.querySelector('#it-transport-text2').value = item.transportText2 || '';
     form.querySelector('#it-note').value = item.note || '';
@@ -678,7 +693,17 @@ async function saveItinerary() {
     name: form.querySelector('#it-name').value.trim(),
     address: form.querySelector('#it-address').value.trim(),
     transportIcon: form.querySelector('#it-transport-icon').value,
-    transportText: form.querySelector('#it-transport-text').value.trim(),
+    transportText: (function() {
+      var dist = form.querySelector('#it-transport-dist').value.trim();
+      var hr = form.querySelector('#it-transport-hr').value.trim();
+      var min = form.querySelector('#it-transport-min').value.trim();
+      var parts = [];
+      if (dist) parts.push(dist + 'km');
+      if (hr && min) parts.push('約' + hr + 'h' + min + 'm');
+      else if (hr) parts.push('約' + hr + 'h');
+      else if (min) parts.push('約' + min + 'm');
+      return parts.join('，');
+    })(),
     transportIcon2: form.querySelector('#it-transport-icon2').value,
     transportText2: form.querySelector('#it-transport-text2').value.trim(),
     note: form.querySelector('#it-note').value.trim(),
@@ -3299,6 +3324,8 @@ async function renderLobby() {
   if(upEl && window._lobbyUpcomingOpen!==false) upEl.style.maxHeight=upEl.scrollHeight+'px';
   const archEl=document.getElementById('lobby-arch-list2');
   if(archEl && window._lobbyArchOpen===true) archEl.style.maxHeight=archEl.scrollHeight+'px';
+  // 大廳底部渲染護照印章
+  renderPassport();
 }
 
 function lobbyCard(t, badgeTxt, badgeColor, daysVal) {
@@ -3918,6 +3945,14 @@ function showToast(msg) {
 // ════════════════════════════════════════
 // 🛠️ UTILITIES
 // ════════════════════════════════════════
+function linkifyNote(text) {
+  var escaped = escapeHtml(text);
+  // Replace URLs with clickable links
+  return escaped.replace(/(https?:\/\/[^\s<]+)/g, function(url) {
+    return '<a href="' + url + '" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:underline;word-break:break-all">' + url + '</a>';
+  });
+}
+
 function escapeHtml(str) {
   return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
@@ -5341,6 +5376,31 @@ window.toggleWeatherForecast = toggleWeatherForecast;
       </div>
     </div>
     <div id="lobby-trips-area"></div>
+
+    <!-- 護照 + 國家印章（大廳底部） -->
+    <div id="lobby-passport-section" style="padding:0 0 32px">
+      <div class="passport-cover mb-4 mt-4">
+        <div style="font-size:.65rem;letter-spacing:.14em;text-transform:uppercase;opacity:.7;margin-bottom:6px">Digital Passport</div>
+        <div style="font-family:var(--font-display);font-size:1.6rem;font-weight:300;letter-spacing:.02em">Yallabi</div>
+        <div style="font-size:.72rem;opacity:.65;margin-top:4px">every trip, a story ✦</div>
+        <div style="position:absolute;right:20px;top:50%;transform:translateY(-50%);text-align:right">
+          <div style="font-size:2.4rem;line-height:1" id="passport-flag">🌍</div>
+          <div style="font-size:.6rem;opacity:.6;margin-top:4px" id="passport-trips-count">0 trips</div>
+        </div>
+      </div>
+      <div class="flex items-center justify-between mb-3">
+        <div class="section-title">國家印章</div>
+      </div>
+      <!-- 封存旅行橫幅 -->
+      <div onclick="archiveTrip()" style="background:var(--primary);border-radius:var(--r-md);padding:16px 18px;display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;cursor:pointer;transition:opacity .15s ease;" onmousedown="this.style.opacity='.8'" onmouseup="this.style.opacity='1'" ontouchstart="this.style.opacity='.8'" ontouchend="this.style.opacity='1'">
+        <div>
+          <div style="font-size:.88rem;font-weight:600;color:white;margin-bottom:3px">旅行結束了嗎？</div>
+          <div style="font-size:.68rem;color:rgba(255,255,255,.6);letter-spacing:.02em">封存以解鎖護照印章 ✦</div>
+        </div>
+        <div style="font-size:2rem;margin-left:12px">🗂️</div>
+      </div>
+      <div id="stamp-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px"></div>
+    </div>
   </div>
 
   <!-- ══ PAGE: ITINERARY ══ -->
@@ -5404,7 +5464,7 @@ window.toggleWeatherForecast = toggleWeatherForecast;
         </div>
 
         <!-- Itinerary List -->
-        <div id="itinerary-list"></div>
+        <div id="itinerary-list" style="padding-bottom:32px"></div>
       </div>
 
       <!-- 日記模式（個人專屬） -->
@@ -5526,33 +5586,9 @@ window.toggleWeatherForecast = toggleWeatherForecast;
   <!-- ══ PAGE: BIBI (保留空殼，避免 switchTab 報錯) ══ -->
   <div id="page-bibi" class="page" style="display:none"></div>
 
-  <!-- ══ PAGE: SAVED（收藏 = 護照 + 景點收藏） ══ -->
+  <!-- ══ PAGE: SAVED（收藏 = 景點收藏） ══ -->
   <div id="page-saved" class="page">
     <div class="page-content pb-4">
-      <!-- Passport Cover -->
-      <div class="passport-cover mb-4 mt-4">
-        <div style="font-size:.65rem;letter-spacing:.14em;text-transform:uppercase;opacity:.7;margin-bottom:6px">Digital Passport</div>
-        <div style="font-family:var(--font-display);font-size:1.6rem;font-weight:300;letter-spacing:.02em">Yallabi</div>
-        <div style="font-size:.72rem;opacity:.65;margin-top:4px">every trip, a story ✦</div>
-        <div style="position:absolute;right:20px;top:50%;transform:translateY(-50%);text-align:right">
-          <div style="font-size:2.4rem;line-height:1" id="passport-flag">🌍</div>
-          <div style="font-size:.6rem;opacity:.6;margin-top:4px" id="passport-trips-count">0 trips</div>
-        </div>
-      </div>
-
-      <div class="flex items-center justify-between mb-3">
-        <div class="section-title">國家印章</div>
-      </div>
-      <!-- 封存旅行橫幅 -->
-      <div onclick="archiveTrip()" style="background:var(--primary);border-radius:var(--r-md);padding:16px 18px;display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;cursor:pointer;active:opacity:.8;transition:opacity .15s ease;" onmousedown="this.style.opacity='.8'" onmouseup="this.style.opacity='1'" ontouchstart="this.style.opacity='.8'" ontouchend="this.style.opacity='1'">
-        <div>
-          <div style="font-size:.88rem;font-weight:600;color:white;margin-bottom:3px">旅行結束了嗎？</div>
-          <div style="font-size:.68rem;color:rgba(255,255,255,.6);letter-spacing:.02em">封存以解鎖護照印章 ✦</div>
-        </div>
-        <div style="font-size:2rem;margin-left:12px">🗂️</div>
-      </div>
-      <div id="stamp-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px"></div>
-
     </div>
   </div>
 
@@ -5733,7 +5769,14 @@ window.toggleWeatherForecast = toggleWeatherForecast;
                 <option value="🛥️">🛥️ 船</option>
                 <option value="🏍️">🏍️ 摩托車</option>
               </select>
-              <input id="it-transport-text" type="text" class="form-input" placeholder="如：9.8km，約45分鐘">
+              <div style="display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:6px;align-items:center">
+                <input id="it-transport-dist" type="number" class="form-input" placeholder="距離" min="0" step="0.1" style="text-align:center">
+                <span style="font-size:.75rem;color:var(--text3);white-space:nowrap">km</span>
+                <input id="it-transport-hr" type="number" class="form-input" placeholder="時" min="0" max="99" style="text-align:center">
+                <span style="font-size:.75rem;color:var(--text3);white-space:nowrap">h</span>
+                <input id="it-transport-min" type="number" class="form-input" placeholder="分" min="0" max="59" style="text-align:center">
+              </div>
+              <div style="font-size:.65rem;color:var(--text3);margin-top:4px">前往下一個行程的交通距離與時間</div>
             </div>
             <!-- 第二組（選填）-->
             <div style="display:grid;grid-template-columns:88px 1fr;gap:8px">
