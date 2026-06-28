@@ -657,17 +657,16 @@ function openAddItinerary(editId = null) {
     form.querySelector('#it-name').value = item.name || '';
     form.querySelector('#it-address').value = item.address || '';
     form.querySelector('#it-transport-icon').value = item.transportIcon || '';
-    // Parse existing transportText back into dist/hr/min
+    // Parse existing transportText back into dist/hr/min/unit
     var ttext = item.transportText || '';
-    var distMatch = ttext.match(/([\d.]+)\s*km/);
-    var hrMatch = ttext.match(/(\d+)\s*h/);
-    var minMatch = ttext.match(/(\d+)\s*m(?!in)/);  // 分鐘
-    // Also try "約Xh YYm" or "約X小時Y分"
-    var hrMatch2 = ttext.match(/約?(\d+)h/);
-    var minMatch2 = ttext.match(/(\d+)m(?!in)/);
+    var distMatch = ttext.match(/([\d.]+)\s*(公里|公尺|km|m)/);
+    var hrMatch = ttext.match(/(\d+)\s*(小時|h)/);
+    var minMatch = ttext.match(/(\d+)\s*(分鐘|分(?!鐘)|min)/);
+    var unitVal = distMatch ? (distMatch[2] === 'km' ? '公里' : distMatch[2] === 'm' ? '公尺' : distMatch[2]) : '公里';
     form.querySelector('#it-transport-dist').value = distMatch ? distMatch[1] : '';
-    form.querySelector('#it-transport-hr').value = (hrMatch && hrMatch[1]) || (hrMatch2 && hrMatch2[1]) || '';
-    form.querySelector('#it-transport-min').value = (minMatch && minMatch[1]) || (minMatch2 && minMatch2[1]) || '';
+    form.querySelector('#it-transport-unit').value = unitVal;
+    form.querySelector('#it-transport-hr').value = hrMatch ? hrMatch[1] : '';
+    form.querySelector('#it-transport-min').value = minMatch ? minMatch[1] : '';
     form.querySelector('#it-transport-icon2').value = item.transportIcon2 || '';
     form.querySelector('#it-transport-text2').value = item.transportText2 || '';
     form.querySelector('#it-note').value = item.note || '';
@@ -695,13 +694,14 @@ async function saveItinerary() {
     transportIcon: form.querySelector('#it-transport-icon').value,
     transportText: (function() {
       var dist = form.querySelector('#it-transport-dist').value.trim();
+      var unit = form.querySelector('#it-transport-unit').value;
       var hr = form.querySelector('#it-transport-hr').value.trim();
       var min = form.querySelector('#it-transport-min').value.trim();
       var parts = [];
-      if (dist) parts.push(dist + 'km');
-      if (hr && min) parts.push('約' + hr + 'h' + min + 'm');
-      else if (hr) parts.push('約' + hr + 'h');
-      else if (min) parts.push('約' + min + 'm');
+      if (dist) parts.push(dist + unit);
+      if (hr && min) parts.push('約' + hr + '小時' + min + '分鐘');
+      else if (hr) parts.push('約' + hr + '小時');
+      else if (min) parts.push('約' + min + '分鐘');
       return parts.join('，');
     })(),
     transportIcon2: form.querySelector('#it-transport-icon2').value,
@@ -3105,6 +3105,8 @@ async function createNewTrip() {
 // ════════════════════════════════════════
 function showLobby() {
   currentView = 'lobby';
+  // 重置大廳 tab 到「我的旅行」
+  switchLobbyTab('trips');
   // 確保 lobby overlay 可見（從護照頁返回時）
   const lobbyEl = document.getElementById('lobby-overlay');
   if (lobbyEl) lobbyEl.style.display = '';
@@ -3190,6 +3192,29 @@ function renderLobbyAvatars(trip) {
     : '';
   return '<div style="display:flex;align-items:center">'+avatars+extraEl+'</div>';
 }
+
+function switchLobbyTab(tab) {
+  var tripsArea = document.getElementById('lobby-trips-area');
+  var passportSection = document.getElementById('lobby-passport-section');
+  var tripsBtn = document.getElementById('lobby-tab-trips');
+  var passportBtn = document.getElementById('lobby-tab-passport');
+  var lobbyAddBtn = document.querySelector('.lobby-add-btn');
+  if (tab === 'trips') {
+    if (tripsArea) tripsArea.style.display = '';
+    if (passportSection) passportSection.style.display = 'none';
+    if (tripsBtn) tripsBtn.classList.add('active');
+    if (passportBtn) passportBtn.classList.remove('active');
+    if (lobbyAddBtn) lobbyAddBtn.style.display = '';
+  } else {
+    if (tripsArea) tripsArea.style.display = 'none';
+    if (passportSection) passportSection.style.display = '';
+    if (tripsBtn) tripsBtn.classList.remove('active');
+    if (passportBtn) passportBtn.classList.add('active');
+    if (lobbyAddBtn) lobbyAddBtn.style.display = 'none';
+    renderPassport();
+  }
+}
+window.switchLobbyTab = switchLobbyTab;
 
 async function renderLobby() {
   const area=document.getElementById('lobby-trips-area');
@@ -5375,10 +5400,16 @@ window.toggleWeatherForecast = toggleWeatherForecast;
         <button class="lobby-add-btn" onclick="openModal('modal-new-trip')">＋ 新增旅行</button>
       </div>
     </div>
+    <!-- 大廳 tab 切換 -->
+    <div class="expense-mode-tabs" style="margin:12px 0 16px">
+      <button class="expense-mode-tab active" id="lobby-tab-trips" onclick="switchLobbyTab('trips')">🗺 我的旅行</button>
+      <button class="expense-mode-tab" id="lobby-tab-passport" onclick="switchLobbyTab('passport')">🛂 護照</button>
+    </div>
+
     <div id="lobby-trips-area"></div>
 
-    <!-- 護照 + 國家印章（大廳底部） -->
-    <div id="lobby-passport-section" style="padding:0 0 32px">
+    <!-- 護照 + 國家印章 -->
+    <div id="lobby-passport-section" style="padding:0 0 32px;display:none">
       <div class="passport-cover mb-4 mt-4">
         <div style="font-size:.65rem;letter-spacing:.14em;text-transform:uppercase;opacity:.7;margin-bottom:6px">Digital Passport</div>
         <div style="font-family:var(--font-display);font-size:1.6rem;font-weight:300;letter-spacing:.02em">Yallabi</div>
@@ -5771,10 +5802,14 @@ window.toggleWeatherForecast = toggleWeatherForecast;
               </select>
               <div style="display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:6px;align-items:center">
                 <input id="it-transport-dist" type="number" class="form-input" placeholder="距離" min="0" step="0.1" style="text-align:center">
-                <span style="font-size:.75rem;color:var(--text3);white-space:nowrap">km</span>
-                <input id="it-transport-hr" type="number" class="form-input" placeholder="時" min="0" max="99" style="text-align:center">
-                <span style="font-size:.75rem;color:var(--text3);white-space:nowrap">h</span>
-                <input id="it-transport-min" type="number" class="form-input" placeholder="分" min="0" max="59" style="text-align:center">
+                <select id="it-transport-unit" class="form-select" style="padding:0 8px;min-width:60px">
+                  <option value="公里">公里</option>
+                  <option value="公尺">公尺</option>
+                </select>
+                <input id="it-transport-hr" type="number" class="form-input" placeholder="小時" min="0" max="99" style="text-align:center">
+                <span style="font-size:.75rem;color:var(--text3);white-space:nowrap">時</span>
+                <input id="it-transport-min" type="number" class="form-input" placeholder="分鐘" min="0" max="59" style="text-align:center">
+                <span style="font-size:.75rem;color:var(--text3);white-space:nowrap">分</span>
               </div>
               <div style="font-size:.65rem;color:var(--text3);margin-top:4px">前往下一個行程的交通距離與時間</div>
             </div>
