@@ -622,16 +622,22 @@ function copyAddress(address) {
 
 function openBibiStrategy(name, address) {
   var query = '請給我關於「' + name + '」' + (address ? '（' + address + '）' : '') + '的旅遊攻略，包含必吃、必玩、注意事項';
-  openBibiDrawer();
-  // 等 drawer 動畫完成（320ms）再填入並送出
+  // 先開 drawer（不觸發問候語，因為下面會直接送訊息）
+  var overlay = document.getElementById('modal-bibi');
+  var drawer = document.getElementById('bibi-drawer');
+  overlay.classList.add('open');
+  document.body.style.overflow = 'hidden';
+  requestAnimationFrame(function() { drawer.style.transform = 'translateY(0)'; });
+  var nicknameField = document.getElementById('bibi-nickname-field');
+  if (nicknameField) nicknameField.value = userNickname || '';
+  renderBibiStyleChips();
+  // 等動畫完成後直接送出攻略問題（跳過問候語）
   setTimeout(function() {
     var input = document.getElementById('bibi-input');
-    if (input) {
-      input.value = query;
-      // 觸發 sendBibiMessage
-      sendBibiMessage();
-    }
-  }, 500);
+    if (!input) return;
+    input.value = query;
+    sendBibiMessage();
+  }, 350);
 }
 
 // Add Itinerary Modal
@@ -5800,16 +5806,18 @@ window.toggleWeatherForecast = toggleWeatherForecast;
                 <option value="🛥️">🛥️ 船</option>
                 <option value="🏍️">🏍️ 摩托車</option>
               </select>
-              <div style="display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:6px;align-items:center">
-                <input id="it-transport-dist" type="number" class="form-input" placeholder="距離" min="0" step="0.1" style="text-align:center">
-                <select id="it-transport-unit" class="form-select" style="padding:0 8px;min-width:60px">
+              <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">
+                <input id="it-transport-dist" type="number" class="form-input" placeholder="距離" min="0" step="0.1" style="flex:1;text-align:center">
+                <select id="it-transport-unit" class="form-select" style="width:76px;padding:0 8px;flex-shrink:0">
                   <option value="公里">公里</option>
                   <option value="公尺">公尺</option>
                 </select>
-                <input id="it-transport-hr" type="number" class="form-input" placeholder="小時" min="0" max="99" style="text-align:center">
-                <span style="font-size:.75rem;color:var(--text3);white-space:nowrap">時</span>
-                <input id="it-transport-min" type="number" class="form-input" placeholder="分鐘" min="0" max="59" style="text-align:center">
-                <span style="font-size:.75rem;color:var(--text3);white-space:nowrap">分</span>
+              </div>
+              <div style="display:flex;gap:6px;align-items:center">
+                <input id="it-transport-hr" type="number" class="form-input" placeholder="0" min="0" max="99" style="flex:1;text-align:center">
+                <span style="font-size:.78rem;color:var(--text3);white-space:nowrap;flex-shrink:0">小時</span>
+                <input id="it-transport-min" type="number" class="form-input" placeholder="0" min="0" max="59" style="flex:1;text-align:center">
+                <span style="font-size:.78rem;color:var(--text3);white-space:nowrap;flex-shrink:0">分鐘</span>
               </div>
               <div style="font-size:.65rem;color:var(--text3);margin-top:4px">前往下一個行程的交通距離與時間</div>
             </div>

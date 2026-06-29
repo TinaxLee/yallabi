@@ -4,7 +4,7 @@
    style.css | Morandi Dynamic Theme System
    ═══════════════════════════════════════════════════════ */
 
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700&family=Noto+Serif+TC:wght@300;400;500&family=Fraunces:ital,opsz,wght@1,9..144,300&family=Caveat:wght@500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700;900&family=Noto+Serif+TC:wght@300;400;500&family=Montserrat:wght@400;500;600;700;900&family=Playfair+Display:wght@400;700&family=Dancing+Script:wght@600&display=swap');
 
 /* ════════════════════════════════════════════════════════
    1. DEFAULT THEME — 暖米莫蘭迪
@@ -26,6 +26,9 @@
   --r-sm:8px; --r-md:14px; --r-lg:20px; --r-xl:28px; --r-2xl:36px;
   --font-display:'Noto Sans TC',sans-serif;
   --font-body:'Noto Sans TC',sans-serif;
+  --font-num:'Montserrat',sans-serif;
+  --font-brand:'Playfair Display',serif;
+  --font-tagline:'Dancing Script',cursive;
   --font-hand:'Caveat',cursive;
   --ease:cubic-bezier(.4,0,.2,1);
   --spring:cubic-bezier(.34,1.56,.64,1);
@@ -103,16 +106,18 @@ body { transition: background-color .4s cubic-bezier(.4,0,.2,1), color .4s cubic
   position: sticky; top: 0; background: var(--bg); z-index: 2;
 }
 .lobby-title {
-  font-size: 1.35rem; font-weight: 700;
-  color: var(--text); letter-spacing: .08em;
+  font-family: 'Playfair Display', serif;
+  font-size: 1.5rem; font-weight: 700;
+  color: var(--text); letter-spacing: .04em;
 }
 .lobby-logo-y {
   color: var(--accent);
 }
 .lobby-subtitle {
-  font-size: .72rem; color: var(--text3);
-  letter-spacing: .06em; margin-top: 2px;
-  font-style: italic;
+  font-family: 'Dancing Script', cursive;
+  font-size: .95rem; color: var(--text3);
+  letter-spacing: .02em; margin-top: 2px;
+  font-weight: 600;
 }
 .lobby-add-btn {
   display: inline-flex; align-items: center; gap: 5px;
@@ -535,7 +540,7 @@ a{color:inherit;text-decoration:none;}
 /* HEADER */
 .main-header{padding:calc(env(safe-area-inset-top) + 10px) 16px 10px;background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);transition:background-color var(--dur) var(--ease),border-color var(--dur) var(--ease);}
 .header-inner{max-width:480px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:8px;}
-.header-wordmark{font-family:var(--font-display);font-size:1.25rem;font-weight:300;color:var(--text);letter-spacing:-.01em;line-height:1;}
+.header-wordmark{font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:700;color:var(--text);letter-spacing:.02em;line-height:1;}
 .header-wordmark em{font-style:italic;color:var(--accent);}
 .country-pill{display:flex;align-items:center;gap:5px;background:var(--bg2);border:1px solid var(--border2);border-radius:999px;padding:5px 12px 5px 8px;font-size:.75rem;font-weight:500;color:var(--text2);cursor:pointer;transition:all var(--dur-fast) var(--ease);}
 .country-pill:active{transform:scale(.94);}
@@ -569,10 +574,10 @@ a{color:inherit;text-decoration:none;}
 .weather-card{background:var(--primary);border-radius:var(--r-lg);padding:18px 20px;color:white;position:relative;overflow:hidden;margin-bottom:16px;transition:background-color var(--dur) var(--ease);}
 .weather-card::before{content:'';position:absolute;top:-28px;right:-28px;width:100px;height:100px;border-radius:50%;background:rgba(255,255,255,.07);}
 .weather-card::after{content:'';position:absolute;bottom:-18px;left:-18px;width:68px;height:68px;border-radius:50%;background:rgba(255,255,255,.05);}
-.weather-city{font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;opacity:.7;margin-bottom:4px;}
-.weather-temp{font-family:var(--font-display);font-size:2.4rem;font-weight:300;line-height:1;}
-.weather-desc{font-size:.68rem;opacity:.85;margin-top:3px;}
-.weather-live{display:inline-flex;align-items:center;gap:4px;font-size:.58rem;font-weight:600;letter-spacing:.08em;opacity:.8;}
+.weather-city{font-family:'Montserrat',sans-serif;font-size:.75rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;opacity:.7;margin-bottom:4px;}
+.weather-temp{font-family:'Montserrat',sans-serif;font-size:3.25rem;font-weight:900;line-height:1;}
+.weather-desc{font-family:'Noto Sans TC',sans-serif;font-size:.9375rem;font-weight:700;opacity:.9;margin-top:3px;}
+.weather-live{display:inline-flex;align-items:center;gap:4px;font-family:'Montserrat',sans-serif;font-size:.6875rem;font-weight:700;letter-spacing:.08em;opacity:.8;}
 .weather-live::before{content:'';width:5px;height:5px;border-radius:50%;background:#7AE090;display:block;animation:pulse 2s ease infinite;}
 @keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.5;transform:scale(.7);}}
 
@@ -646,17 +651,17 @@ a{color:inherit;text-decoration:none;}
 .it-col-dot{width:9px;height:9px;border-radius:50%;background:var(--border2);border:2px solid var(--border2);flex-shrink:0;transition:all var(--fast) var(--ease);}
 .it-col-dot.open{background:var(--accent);border-color:var(--accent);}
 .it-col-info{flex:1;min-width:0;}
-.it-col-name{font-size:.88rem;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;}
-.it-col-meta{font-size:.62rem;color:var(--text3);margin-top:2px;letter-spacing:.02em;}
+.it-col-name{font-size:1.0625rem;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;}
+.it-col-meta{font-family:'Montserrat',sans-serif;font-size:.8125rem;font-weight:700;color:var(--text3);margin-top:2px;letter-spacing:.02em;}
 .it-col-arrow{font-size:.72rem;color:var(--text3);transition:transform var(--fast) var(--ease);flex-shrink:0;}
 .it-col-arrow.open{transform:rotate(180deg);}
 .it-col-body{padding:0 14px 13px 33px;border-top:1px solid var(--border);}
 .hidden{display:none !important;}
 .it-col-body.hidden{display:none;}
-.it-col-addr{font-size:.74rem;color:var(--text2);display:flex;gap:5px;align-items:flex-start;line-height:1.55;margin:9px 0 8px;word-break:break-word;}
-.it-col-note{font-size:.74rem;color:var(--text2);display:flex;gap:5px;align-items:flex-start;line-height:1.55;margin-bottom:8px;word-break:break-word;}
+.it-col-addr{font-size:.875rem;font-weight:600;color:var(--text2);display:flex;gap:5px;align-items:flex-start;line-height:1.55;margin:9px 0 8px;word-break:break-word;}
+.it-col-note{font-size:.875rem;font-weight:600;color:var(--text2);display:flex;gap:5px;align-items:flex-start;line-height:1.55;margin-bottom:8px;word-break:break-word;}
 .it-col-btns{display:flex;gap:6px;flex-wrap:wrap;}
-.it-col-btn{padding:5px 12px;border-radius:999px;background:var(--bg2);border:1px solid var(--border);font-size:.68rem;font-weight:500;color:var(--text2);cursor:pointer;transition:all var(--fast) var(--ease);white-space:nowrap;}
+.it-col-btn{padding:5px 12px;border-radius:999px;background:var(--bg2);border:1px solid var(--border);font-size:.8125rem;font-weight:700;color:var(--text2);cursor:pointer;transition:all var(--fast) var(--ease);white-space:nowrap;}
 .it-col-btn:active{transform:scale(.92);background:var(--accent-soft);}
 
 /* NOTO SERIF TC — 數字金額專用 */
@@ -936,7 +941,8 @@ textarea.form-input{resize:none;white-space:pre-wrap;line-height:1.6;}
   margin-bottom: 12px;
 }
 .tz-card-title {
-  font-size: .65rem; font-weight: 700;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: .6875rem; font-weight: 900;
   letter-spacing: .12em; text-transform: uppercase; opacity: .75;
 }
 .tz-toggle-btn {
@@ -955,15 +961,15 @@ textarea.form-input{resize:none;white-space:pre-wrap;line-height:1.6;}
 }
 .tz-city-row:last-child { border-bottom: none; }
 .tz-city-home { opacity: .65; }
-.tz-city-name { font-size: .82rem; font-weight: 400; opacity: .88; }
+.tz-city-name { font-family: 'Noto Sans TC', sans-serif; font-size: .6875rem; font-weight: 900; opacity: .88; }
 .tz-city-time {
-  font-family: 'Noto Serif TC', serif;
-  font-size: 1.05rem; font-weight: 400; color: white;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 1.375rem; font-weight: 900; color: white;
   display: flex; align-items: baseline; gap: 5px;
 }
 .tz-weekday {
-  font-family: var(--font-body);
-  font-size: .6rem; opacity: .6; font-weight: 400;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: .6875rem; opacity: .6; font-weight: 700;
 }
 .tz-converter {
   margin-top: 12px;
@@ -992,7 +998,7 @@ textarea.form-input{resize:none;white-space:pre-wrap;line-height:1.6;}
 }
 .tz-conv-row:last-child { border-bottom: none; }
 .tz-conv-home { opacity: .55; }
-.tz-conv-city { font-size: .82rem; opacity: .85; }
+.tz-conv-city { font-family: 'Noto Sans TC', sans-serif; font-size: .6875rem; font-weight: 700; opacity: .85; }
 .tz-conv-right { display: flex; align-items: baseline; gap: 8px; }
 .tz-conv-diff {
   font-size: .62rem; opacity: .55;
@@ -1000,8 +1006,8 @@ textarea.form-input{resize:none;white-space:pre-wrap;line-height:1.6;}
   padding: 2px 7px; border-radius: 999px;
 }
 .tz-conv-time {
-  font-family: 'Noto Serif TC', serif;
-  font-size: 1rem; font-weight: 400; color: white;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 1.125rem; font-weight: 900; color: white;
 }
 
 /* settle card — 換算幣別選單 */
