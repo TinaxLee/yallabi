@@ -522,7 +522,7 @@ function renderItinerary() {
           '<div style="display:flex;align-items:center;gap:0;margin-bottom:2px">'
           + '<div style="flex:1;height:1px;background:var(--border2)"></div>'
           + '<span style="font-size:.85rem;padding:0 7px">' + t.icon + '</span>'
-          + '<span style="font-size:.62rem;color:var(--text3);margin-right:4px">' + t.text + '</span>'
+          + '<span style="font-size:.8125rem;font-weight:600;color:var(--text3);margin-right:4px">' + t.text + '</span>'
           + '<div style="flex:1;height:1px;background:var(--border2)"></div>'
           + '</div>'
         ).join('')
@@ -532,8 +532,8 @@ function renderItinerary() {
 
     const detailHTML = (item.address || item.note)
       ? '<div class="it-new-detail-shown" style="border-top:1px solid var(--border);padding:10px 14px 12px;background:var(--bg2);border-radius:0 0 13px 13px">'
-        + (item.address ? '<div style="display:flex;align-items:flex-start;gap:6px;font-size:.72rem;color:var(--text2);line-height:1.55;margin-bottom:8px"><span style="flex-shrink:0;margin-top:1px">📍</span><span>' + item.address + '</span></div>' : '')
-        + (item.note ? '<div style="display:flex;align-items:flex-start;gap:6px;font-size:.72rem;color:var(--text2);line-height:1.55;margin-bottom:8px"><span style="flex-shrink:0;margin-top:1px">📝</span><span style="white-space:pre-wrap">' + linkifyNote(item.note) + '</span></div>' : '')
+        + (item.address ? '<div style="display:flex;align-items:flex-start;gap:6px;font-size:.875rem;font-weight:600;color:var(--text2);line-height:1.55;margin-bottom:8px"><span style="flex-shrink:0;margin-top:1px">📍</span><span>' + item.address + '</span></div>' : '')
+        + (item.note ? '<div style="display:flex;align-items:flex-start;gap:6px;font-size:.875rem;font-weight:600;color:var(--text2);line-height:1.55;margin-bottom:8px"><span style="flex-shrink:0;margin-top:1px">📝</span><span style="white-space:pre-wrap">' + linkifyNote(item.note) + '</span></div>' : '')
         + '<div style="display:flex;gap:6px;flex-wrap:wrap">'
         + (item.address ? '<button class="it-col-btn" onclick="openMaps(\'' + encodeURIComponent(safeAddress) + '\')">📍 導航</button>' : '')
         + (item.address ? '<button class="it-col-btn" onclick="copyAddress(\'' + safeAddress + '\')">📋 複製</button>' : '')
@@ -545,19 +545,19 @@ function renderItinerary() {
       + '<div style="display:flex;gap:12px">'
       + '<div style="width:38px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;padding-top:13px">'
       + '<div class="it-timeline-dot" style="width:10px;height:10px;border-radius:50%;background:' + (isOpen ? barColor : 'var(--border2)') + ';border:2px solid var(--surface);box-shadow:0 0 0 2px ' + (isOpen ? barColor : 'var(--border2)') + ';z-index:1;flex-shrink:0;transition:all .2s"></div>'
-      + (item.startTime ? '<div style="font-size:.58rem;font-weight:600;color:var(--text3);margin-top:5px;white-space:nowrap">' + item.startTime + '</div>' : '')
+      + (item.startTime ? '<div style="font-family:var(--font-num);font-size:.8125rem;font-weight:700;color:var(--text3);margin-top:5px;white-space:nowrap">' + item.startTime + '</div>' : '')
       + '</div>'
       + '<div style="flex:1;min-width:0;margin-bottom:4px">'
       + '<div style="background:var(--surface);border-radius:14px;border:1px solid var(--border);box-shadow:0 1px 3px rgba(80,68,48,.05),0 4px 14px rgba(80,68,48,.08),0 10px 24px rgba(80,68,48,.05);overflow:hidden">'
       + '<div style="display:flex;align-items:center;gap:0;cursor:pointer;user-select:none" data-cid="' + item.id + '" onclick="toggleItCard(this.dataset.cid)">'
       + '<div style="width:3px;background:' + barColor + ';align-self:stretch;flex-shrink:0;border-radius:0"></div>'
       + '<div style="flex:1;min-width:0;padding:12px 10px 12px 12px">'
-      + '<div style="font-size:.9rem;font-weight:700;color:var(--text);line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + (item.name||'未命名') + '</div>'
-      + (item.endTime ? '<div style="font-size:.62rem;color:var(--text3);margin-top:2px">' + (item.startTime||'') + ' – ' + item.endTime + '</div>' : '')
+      + '<div style="font-size:1.0625rem;font-weight:700;color:var(--text);line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + (item.name||'未命名') + '</div>'
+      + (item.endTime ? '<div style="font-family:var(--font-num);font-size:.6875rem;font-weight:600;color:var(--text3);margin-top:2px">' + (item.startTime||'') + ' – ' + item.endTime + '</div>' : '')
       + '</div>'
 
       + '<div style="display:flex;align-items:center;gap:4px;padding-right:10px;flex-shrink:0">'
-      + '<span style="font-size:.58rem;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--bg2);color:var(--text3);white-space:nowrap">' + typeLabel + '</span>'
+      + '<span style="font-size:.8125rem;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--bg2);color:var(--text3);white-space:nowrap">' + typeLabel + '</span>'
       + '<button onclick="event.stopPropagation();editItinerary(\'' + item.id + '\')" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:transparent;color:var(--text3);font-size:.78rem;flex-shrink:0;transition:background .15s" onmouseenter="this.style.background=\'var(--bg2)\'" onmouseleave="this.style.background=\'transparent\'">✏️</button>'
       + '<button onclick="event.stopPropagation();deleteItinerary(\'' + item.id + '\')" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:transparent;color:var(--text3);font-size:.78rem;flex-shrink:0;transition:background .15s" onmouseenter="this.style.background=\'var(--bg2)\'" onmouseleave="this.style.background=\'transparent\'">✕</button>'
       + '</div>'
@@ -592,8 +592,8 @@ function toggleItCard(id) {
   if (hiddenEl) {
     const detailHTML = hasDetail
       ? '<div class="it-new-detail-shown" style="border-top:1px solid var(--border);padding:10px 14px 12px;background:var(--bg2);border-radius:0 0 13px 13px">'
-        + (item.address ? '<div style="display:flex;align-items:flex-start;gap:6px;font-size:.75rem;color:var(--text2);line-height:1.6;margin-bottom:8px"><span>📍</span><span>' + item.address + '</span></div>' : '')
-        + (item.note ? '<div style="display:flex;align-items:flex-start;gap:6px;font-size:.75rem;color:var(--text2);line-height:1.6;margin-bottom:8px"><span>📝</span><span style="white-space:pre-wrap">' + linkifyNote(item.note) + '</span></div>' : '')
+        + (item.address ? '<div style="display:flex;align-items:flex-start;gap:6px;font-size:.875rem;font-weight:600;color:var(--text2);line-height:1.6;margin-bottom:8px"><span>📍</span><span>' + item.address + '</span></div>' : '')
+        + (item.note ? '<div style="display:flex;align-items:flex-start;gap:6px;font-size:.875rem;font-weight:600;color:var(--text2);line-height:1.6;margin-bottom:8px"><span>📝</span><span style="white-space:pre-wrap">' + linkifyNote(item.note) + '</span></div>' : '')
         + '<div style="display:flex;gap:6px;flex-wrap:wrap">'
         + (item.address ? '<button class="it-col-btn" onclick="openMaps(\'' + encodeURIComponent(safeAddress) + '\')">📍 導航</button>' : '')
         + (item.address ? '<button class="it-col-btn" onclick="copyAddress(\'' + safeAddress + '\')">📋 複製</button>' : '')
@@ -983,7 +983,7 @@ function renderExpenseSummary() {
   el.innerHTML = '<div class="settle-card">'
     + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'
     + '<div class="settle-section-label">各幣別合計</div>'
-    + '<div style="display:flex;align-items:center;gap:6px"><span style="font-size:.62rem;color:rgba(255,255,255,.5)">換算成</span>' + curSel + '</div>'
+    + '<div style="display:flex;align-items:center;gap:6px"><span style="font-size:.875rem;font-weight:600;color:rgba(255,255,255,.5)">換算成</span>' + curSel + '</div>'
     + '</div>'
     + '<div class="settle-cur-grid">' + curRows + '</div>'
     + twdRow
@@ -1065,10 +1065,10 @@ function renderExpenseList() {
         + '<div class="expense-icon">' + cat.icon + '</div>'
         + '<div style="flex:1">'
         + '<div style="font-size:.88rem;font-weight:500;color:var(--text)">' + (e.name||'') + '</div>'
-        + '<div style="font-size:.7rem;color:var(--text3)">' + cat.label + ' · ' + ((payer && payer.name)||'我') + ' 支付 · ' + getSplitLabel(e.splitType) + '</div>'
+        + '<div style="font-size:.8125rem;color:var(--text3)">' + cat.label + ' · ' + ((payer && payer.name)||'我') + ' 支付 · ' + getSplitLabel(e.splitType) + '</div>'
         + '</div>'
         + '<div style="text-align:right">'
-        + '<div style="font-family:&quot;Noto Serif TC&quot;,serif;font-size:1rem;font-weight:400;color:var(--text)">' + (e.currency||tripCurrency) + ' ' + parseFloat(e.amount||0).toLocaleString() + '</div>'
+        + '<div class="expense-amount">' + (e.currency||tripCurrency) + ' ' + parseFloat(e.amount||0).toLocaleString() + '</div>'
         + '<div style="display:flex;gap:6px;justify-content:flex-end;margin-top:4px">'
         + '<button onclick="editExpense(\'' + e.id + '\')" style="font-size:.7rem;color:var(--text3)">✏️</button>'
         + '<button onclick="deleteExpense(\'' + e.id + '\')" style="font-size:.7rem;color:var(--text3)">✕</button>'
@@ -2447,6 +2447,7 @@ function renderFlights() {
     </div>
     <p style="color:var(--text3);font-size:.85rem;line-height:1.6">還沒有航班<br>點右上角新增</p>
   </div>`;
+    updateDepartBadgeCount('flight');
     return;
   }
   container.innerHTML = flightsData.sort((a,b)=>(a.flightDate||'').localeCompare(b.flightDate||'')).map(function(f) {
@@ -2493,6 +2494,7 @@ function renderFlights() {
       + '</div>'
       + '</div>';
   }).join('');
+  updateDepartBadgeCount('flight');
 }
 
 function openAddFlight(editId) {
@@ -2560,6 +2562,7 @@ function renderHotels() {
   if (!container) return;
   if (hotelsData.length === 0) {
     container.innerHTML = '<div class="empty-state"><div style="width:60px;height:60px;border-radius:50%;border:1.5px solid var(--border2);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;background:var(--surface)"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div><p style="color:var(--text3);font-size:.85rem;line-height:1.6">還沒有飯店<br>點右上角新增</p></div>';
+    updateDepartBadgeCount('hotel');
     return;
   }
   container.innerHTML = hotelsData.sort(function(a,b){ return (a.checkinDate||'').localeCompare(b.checkinDate||''); }).map(function(h) {
@@ -2589,6 +2592,7 @@ function renderHotels() {
       + (h.note ? '<div class="hotel-note">' + h.note + '</div>' : '')
       + '</div>';
   }).join('');
+  updateDepartBadgeCount('hotel');
 }
 
 function openAddHotel(editId) {
@@ -2933,7 +2937,7 @@ function renderTripSelector() {
       +'<div style="display:flex;align-items:center;gap:12px;padding:13px 14px;cursor:pointer" onclick="selectTrip(\'' + t.id + '\')">'
       +'<span style="font-size:1.5rem;flex-shrink:0">'+info.flag+'</span>'
       +'<div style="flex:1;min-width:0">'
-      +'<div style="font-size:.9rem;font-weight:600;color:var(--text)">'+name_+badgeEl+'</div>'
+      +'<div style="font-size:1.0625rem;font-weight:700;color:var(--text)">'+name_+badgeEl+'</div>'
       +'<div style="font-size:.68rem;color:var(--text3);margin-top:2px">'+date+'</div>'
       +'</div>'+chk+'</div>'
       +'<div style="display:flex;border-top:1px solid var(--border);background:var(--bg2)">'
@@ -3428,12 +3432,12 @@ function lobbyCardNew(t, info, name_, dateRange, statusTxt, pct, subLine, badge,
   // 狀態 badge
   let statusBadge='';
   if(statusTxt) {
-    statusBadge='<span style="position:absolute;top:12px;right:12px;font-size:.7rem;font-weight:600;padding:3px 10px;border-radius:999px;'
+    statusBadge='<span style="position:absolute;top:12px;right:12px;font-family:var(--font-num);font-size:.8125rem;font-weight:700;padding:3px 10px;border-radius:999px;'
       +(isArchived?'background:var(--bg3,rgba(0,0,0,.06));color:var(--text3)':'background:rgba(255,255,255,.35);'+textStyle)
       +'">'+statusTxt+'</span>';
   }
   if(badge) {
-    statusBadge='<span style="position:absolute;top:12px;right:12px;font-size:.7rem;font-weight:600;padding:3px 10px;border-radius:999px;background:rgba(255,255,255,.35);'+textStyle+'">'+badge+'</span>';
+    statusBadge='<span style="position:absolute;top:12px;right:12px;font-family:var(--font-num);font-size:.8125rem;font-weight:700;padding:3px 10px;border-radius:999px;background:rgba(255,255,255,.35);'+textStyle+'">'+badge+'</span>';
   }
 
   // 進度條（進行中才有）
@@ -3454,8 +3458,8 @@ function lobbyCardNew(t, info, name_, dateRange, statusTxt, pct, subLine, badge,
     +'<div style="display:flex;align-items:center;gap:9px">'
     +'<span style="font-size:2.2rem;line-height:1;flex-shrink:0">'+info.flag+'</span>'
     +'<div style="flex:1;min-width:0">'
-    +'<div style="font-size:1rem;font-weight:600;'+textStyle+'white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+name_+'</div>'
-    +'<div style="font-size:.78rem;margin-top:3px;opacity:.72;'+textStyle+'">'+dateRange+'</div>'
+    +'<div style="font-size:1.0625rem;font-weight:700;'+textStyle+'white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+name_+'</div>'
+    +'<div style="font-family:var(--font-num);font-size:.875rem;font-weight:600;margin-top:3px;opacity:.72;'+textStyle+'">'+dateRange+'</div>'
     +'</div>'
     +'</div>'
     +'</div>'
@@ -3463,7 +3467,7 @@ function lobbyCardNew(t, info, name_, dateRange, statusTxt, pct, subLine, badge,
     +progressBar
     // 下半部：白底資訊列
     +'<div style="padding:9px 14px 11px;background:var(--surface);display:flex;justify-content:space-between;align-items:center">'
-    +'<span style="font-size:.75rem;color:var(--text3)">'+subLine+'</span>'
+    +'<span style="font-size:.8125rem;font-weight:600;color:var(--text3)">'+subLine+'</span>'
     +bottomRight
     +'</div>'
     // 快速操作列
@@ -4457,6 +4461,36 @@ window._toggleLobbySection = function(id) {
     if(chev2) chev2.style.transform=window._lobbyUpcomingOpen?'rotate(180deg)':'rotate(0deg)';
   }
 };
+// ── 出發頁：航班／住宿 可收合區塊 ──────────────────────
+window._toggleDepartSection = function(id) {
+  var isFlight = id === 'flight';
+  var openKey = isFlight ? '_departFlightOpen' : '_departHotelOpen';
+  var wrapId = isFlight ? 'flights-list-wrap' : 'hotels-list-wrap';
+  var chevId = isFlight ? 'depart-flight-chev' : 'depart-hotel-chev';
+  var wasOpen = window[openKey] !== false;
+  var nowOpen = !wasOpen;
+  window[openKey] = nowOpen;
+  var wrap = document.getElementById(wrapId);
+  var chev = document.getElementById(chevId);
+  if (wrap) wrap.style.display = nowOpen ? '' : 'none';
+  if (chev) chev.style.transform = nowOpen ? 'rotate(180deg)' : 'rotate(0deg)';
+  updateDepartBadgeCount(id);
+};
+
+function updateDepartBadgeCount(id) {
+  var isFlight = id === 'flight';
+  var openKey = isFlight ? '_departFlightOpen' : '_departHotelOpen';
+  var isOpen = window[openKey] !== false;
+  var badge = document.getElementById(isFlight ? 'depart-flight-badge' : 'depart-hotel-badge');
+  if (!badge) return;
+  if (isOpen) {
+    badge.style.display = 'none';
+    return;
+  }
+  var count = isFlight ? flightsData.length : hotelsData.length;
+  badge.textContent = count + ' 項';
+  badge.style.display = 'inline-block';
+}
 window.toggleCustomCountry = window.toggleCustomCountry || function(v){var g=document.getElementById("custom-country-group");if(g)g.style.display=v==="other"?"block":"none";};
 window.deleteTripById = deleteTripById;
 window.openEditTrip = openEditTrip;
@@ -4645,7 +4679,7 @@ function renderWeatherCard(weatherList, activeIdx) {
   var tabsHTML = weatherList.length > 1
     ? '<div style="display:flex;gap:7px;margin-bottom:14px;flex-wrap:wrap" onclick="event.stopPropagation()">'
       + weatherList.map(function(city, i) {
-          return '<button onclick="event.stopPropagation();switchWeatherCity('+i+')" style="padding:5px 14px;border-radius:999px;font-size:.72rem;font-weight:600;cursor:pointer;letter-spacing:.02em;border:1.5px solid '+(i===activeIdx?'rgba(255,255,255,.8)':'rgba(255,255,255,.25)')+';background:'+(i===activeIdx?'rgba(255,255,255,.18)':'transparent')+';color:'+(i===activeIdx?'white':'rgba(255,255,255,.5)')+'">'+city.displayName+'</button>';
+          return '<button onclick="event.stopPropagation();switchWeatherCity('+i+')" style="padding:5px 14px;border-radius:999px;font-family:var(--font-num);font-size:.875rem;font-weight:700;cursor:pointer;letter-spacing:.02em;border:1.5px solid '+(i===activeIdx?'rgba(255,255,255,.8)':'rgba(255,255,255,.25)')+';background:'+(i===activeIdx?'rgba(255,255,255,.18)':'transparent')+';color:'+(i===activeIdx?'white':'rgba(255,255,255,.5)')+'">'+city.displayName+'</button>';
         }).join('') + '</div>'
     : '';
 
@@ -4656,10 +4690,10 @@ function renderWeatherCard(weatherList, activeIdx) {
     w.forecast.forEach(function(fc) {
       var rainColor = fc.rain >= 50 ? '#7dd3fc' : 'rgba(255,255,255,.38)';
       forecastHTML += '<div style="display:flex;flex-direction:column;align-items:center;gap:3px;flex:1">'
-        + '<div style="font-size:.6rem;color:rgba(255,255,255,.55);font-weight:600">' + fc.dow + '</div>'
+        + '<div style="font-family:var(--font-num);font-size:.8125rem;color:rgba(255,255,255,.55);font-weight:700">' + fc.dow + '</div>'
         + '<div style="font-size:1.15rem;line-height:1.2">' + fc.icon + '</div>'
-        + '<div style="font-size:.55rem;font-weight:700;color:' + rainColor + '">' + fc.rain + '%</div>'
-        + '<div style="font-size:.62rem;color:rgba(255,255,255,.85);text-align:center;line-height:1.5">' + fc.hi + '°<br><span style="color:rgba(255,255,255,.4)">' + fc.lo + '°</span></div>'
+        + '<div style="font-family:var(--font-num);font-size:.8125rem;font-weight:700;color:' + rainColor + '">' + fc.rain + '%</div>'
+        + '<div style="text-align:center;line-height:1.5"><span style="font-family:var(--font-num);font-size:.8125rem;font-weight:900;color:rgba(255,255,255,.85)">' + fc.hi + '°</span><br><span style="font-family:var(--font-num);font-size:.6875rem;font-weight:500;color:rgba(255,255,255,.4)">' + fc.lo + '°</span></div>'
         + '</div>';
     });
     forecastHTML += '</div></div>';
@@ -4673,16 +4707,16 @@ function renderWeatherCard(weatherList, activeIdx) {
     + '<div style="display:flex;align-items:flex-end;gap:18px">'
     + '<div>'
     + '<div style="font-size:.68rem;opacity:.7;letter-spacing:.12em;text-transform:uppercase;color:white;margin-bottom:8px">' + w.displayName.toUpperCase() + '</div>'
-    + '<div style="font-family:var(--font-display);font-size:2.8rem;font-weight:300;color:white;line-height:1">' + w.temp + '°</div>'
-    + '<div style="font-size:.75rem;color:rgba(255,255,255,.65);margin-top:5px">' + w.tempMin + '° – ' + w.tempMax + '°</div>'
-    + '<div style="font-size:.82rem;color:rgba(255,255,255,.9);margin-top:3px;font-weight:500">' + w.desc + '</div>'
+    + '<div style="font-family:var(--font-num);font-size:3.25rem;font-weight:900;color:white;line-height:1">' + w.temp + '°</div>'
+    + '<div style="font-family:var(--font-num);font-size:.8125rem;font-weight:600;color:rgba(255,255,255,.65);margin-top:5px">' + w.tempMin + '° – ' + w.tempMax + '°</div>'
+    + '<div style="font-size:.9375rem;color:rgba(255,255,255,.9);margin-top:3px;font-weight:700">' + w.desc + '</div>'
     + '</div>'
     + '<div style="font-size:3rem;margin-bottom:8px;line-height:1">' + w.icon + '</div>'
     + '</div>'
     + forecastHTML
     + '<div style="display:flex;align-items:center;gap:6px;margin-top:14px">'
     + '<div style="width:6px;height:6px;border-radius:50%;background:#4ade80;animation:pulse 2s ease infinite"></div>'
-    + '<span style="font-size:.62rem;color:rgba(255,255,255,.5);letter-spacing:.06em">SYNC · ' + timeStr + '</span>'
+    + '<span style="font-family:var(--font-num);font-size:.8125rem;font-weight:700;color:rgba(255,255,255,.5);letter-spacing:.06em">SYNC · ' + timeStr + '</span>'
     + '</div>'
     + '</div>';
 
@@ -5028,7 +5062,7 @@ function renderPersonalSummary() {
   el.innerHTML = '<div class="settle-card">'
     + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'
     + '<div class="settle-section-label">個人消費合計</div>'
-    + '<div style="display:flex;align-items:center;gap:6px"><span style="font-size:.62rem;color:rgba(255,255,255,.5)">換算成</span>' + curSel + '</div>'
+    + '<div style="display:flex;align-items:center;gap:6px"><span style="font-size:.875rem;font-weight:600;color:rgba(255,255,255,.5)">換算成</span>' + curSel + '</div>'
     + '</div>'
     + '<div class="settle-cur-grid">' + curRows + '</div>' + twdRow + '</div>';
 }
@@ -5422,7 +5456,7 @@ window.toggleWeatherForecast = toggleWeatherForecast;
         <div style="font-size:.72rem;opacity:.65;margin-top:4px">every trip, a story ✦</div>
         <div style="position:absolute;right:20px;top:50%;transform:translateY(-50%);text-align:right">
           <div style="font-size:2.4rem;line-height:1" id="passport-flag">🌍</div>
-          <div style="font-size:.6rem;opacity:.6;margin-top:4px" id="passport-trips-count">0 trips</div>
+          <div style="font-size:.875rem;font-weight:600;opacity:.6;margin-top:4px" id="passport-trips-count">0 trips</div>
         </div>
       </div>
       <div class="flex items-center justify-between mb-3">
@@ -5537,8 +5571,8 @@ window.toggleWeatherForecast = toggleWeatherForecast;
         <!-- 標題列，可點擊收合 -->
         <div onclick="toggleConverter()" style="display:flex;align-items:center;justify-content:space-between;padding:13px 16px;cursor:pointer;user-select:none">
           <div style="display:flex;align-items:center;gap:8px">
-            <span style="font-size:.88rem;font-weight:600;color:var(--text)">💱 匯率換算</span>
-            <span id="converter-rate-display" style="font-size:.72rem;color:var(--text3);background:var(--bg2);padding:2px 8px;border-radius:999px">載入中...</span>
+            <span style="font-size:.875rem;font-weight:700;color:var(--text)">💱 匯率換算</span>
+            <span id="converter-rate-display" style="font-size:.875rem;font-weight:600;color:var(--text3);background:var(--bg2);padding:2px 8px;border-radius:999px">載入中...</span>
           </div>
           <div style="display:flex;align-items:center;gap:8px">
             <span id="rates-updated-at" style="font-size:.62rem;color:var(--text3)"></span>
@@ -5567,7 +5601,7 @@ window.toggleWeatherForecast = toggleWeatherForecast;
           </div>
           <!-- 目標幣別 -->
           <div style="margin-bottom:12px">
-            <div style="font-size:.62rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:6px">換算成</div>
+            <div style="font-size:.875rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:6px">換算成</div>
             <select id="convert-to" class="form-select" onchange="quickConvert()">
               <option value="TWD">🇹🇼 TWD 台幣</option>
               <option value="THB">🇹🇭 THB 泰銖</option>
@@ -5650,7 +5684,7 @@ window.toggleWeatherForecast = toggleWeatherForecast;
 
   <!-- ══ PAGE: DEPART ══ -->
   <div id="page-depart" class="page">
-    <div class="page-content pb-4">
+    <div class="page-content pb-4" style="padding-bottom:calc(env(safe-area-inset-bottom) + 48px)">
 
       <!-- 旅程資訊 / 我的行李 切換 -->
       <div class="expense-mode-tabs" style="margin:16px 0 12px">
@@ -5661,18 +5695,34 @@ window.toggleWeatherForecast = toggleWeatherForecast;
       <!-- 旅程資訊（群體共享） -->
       <div id="depart-trip-wrap">
         <!-- 航班 -->
-        <div class="flex items-center justify-between" style="padding:4px 0 10px">
-          <div class="section-title">航班資訊 ✈️</div>
-          <button class="btn-add" onclick="openAddFlight()">＋ 新增</button>
+        <div class="flex items-center justify-between" style="padding:4px 0 10px;cursor:pointer" onclick="window._toggleDepartSection('flight')">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div class="section-title">航班資訊 ✈️</div>
+            <span id="depart-flight-badge" style="display:none;font-size:.65rem;font-weight:700;color:var(--text3);background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:1px 8px;line-height:1.5"></span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <button class="btn-add" onclick="event.stopPropagation();openAddFlight()">＋ 新增</button>
+            <span id="depart-flight-chev" style="font-size:.7rem;color:var(--text3);transition:transform .2s;transform:rotate(180deg)">▼</span>
+          </div>
         </div>
-        <div id="flights-list"></div>
+        <div id="flights-list-wrap">
+          <div id="flights-list"></div>
+        </div>
 
         <!-- 飯店 -->
-        <div class="flex items-center justify-between" style="padding:16px 0 10px">
-          <div class="section-title">入住飯店 🏨</div>
-          <button class="btn-add" onclick="openAddHotel()">＋ 新增</button>
+        <div class="flex items-center justify-between" style="padding:16px 0 10px;cursor:pointer" onclick="window._toggleDepartSection('hotel')">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div class="section-title">住宿資訊 🏨</div>
+            <span id="depart-hotel-badge" style="display:none;font-size:.65rem;font-weight:700;color:var(--text3);background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:1px 8px;line-height:1.5"></span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <button class="btn-add" onclick="event.stopPropagation();openAddHotel()">＋ 新增</button>
+            <span id="depart-hotel-chev" style="font-size:.7rem;color:var(--text3);transition:transform .2s;transform:rotate(180deg)">▼</span>
+          </div>
         </div>
-        <div id="hotels-list"></div>
+        <div id="hotels-list-wrap">
+          <div id="hotels-list"></div>
+        </div>
 
         <!-- 任務 -->
         <div class="flex items-center justify-between" style="padding:16px 0 10px">
@@ -5737,8 +5787,8 @@ window.toggleWeatherForecast = toggleWeatherForecast;
     </button>
   </nav>
 
-  <!-- BIBI 浮動按鈕 -->
-  <button id="bibi-fab" onclick="openBibiDrawer()" style="position:fixed;bottom:calc(86px + env(safe-area-inset-bottom));right:20px;width:52px;height:52px;border-radius:50%;background:var(--primary);border:none;cursor:pointer;z-index:450;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px var(--shadow-md);transition:transform .2s cubic-bezier(.34,1.56,.64,1),background-color var(--dur) var(--ease)" onmousedown="this.style.transform='scale(.88)'" onmouseup="this.style.transform=''" ontouchstart="this.style.transform='scale(.88)'" ontouchend="this.style.transform=''">
+  <!-- BIBI 浮動按鈕（可拖曳定位） -->
+  <button id="bibi-fab" onclick="openBibiDrawer()" style="position:fixed;bottom:calc(86px + env(safe-area-inset-bottom));right:20px;width:52px;height:52px;border-radius:50%;background:var(--primary);border:none;cursor:pointer;z-index:450;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px var(--shadow-md);transition:transform .2s cubic-bezier(.34,1.56,.64,1),background-color var(--dur) var(--ease);touch-action:none" onmousedown="this.style.transform='scale(.88)'" onmouseup="this.style.transform=''">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M8.5 10a1.5 2 0 1 0 0 4 1.5 2 0 1 0 0-4m7 0a1.5 2 0 1 0 0 4 1.5 2 0 1 0 0-4M8 16h8v2H8z"/><path d="M21 11V8c0-1.1-.9-2-2-2h-6V4.61c.3-.27.5-.67.5-1.11 0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5c0 .44.2.84.5 1.11V6H5c-1.1 0-2 .9-2 2v3c-.55 0-1 .45-1 1v4c0 .55.45 1 1 1v3c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-3c.55 0 1-.45 1-1v-4c0-.55-.45-1-1-1M5 20V8h14v12z"/></svg>
   </button>
 </div>
@@ -6359,7 +6409,7 @@ window.toggleWeatherForecast = toggleWeatherForecast;
         </div>
         <div style="flex:1">
           <div style="font-size:1rem;font-weight:700;color:var(--text);letter-spacing:.01em">Bibi</div>
-          <div style="font-size:.97rem;color:var(--text3);letter-spacing:.04em">AI 旅遊管家 · 隨時在線</div>
+          <div style="font-size:.875rem;font-weight:500;color:var(--text3);letter-spacing:.04em">AI 旅遊管家 · 隨時在線</div>
         </div>
         <button onclick="clearChat()" style="font-size:.78rem;color:var(--text3);background:var(--bg2);border:1px solid var(--border);padding:5px 10px;border-radius:999px;margin-right:6px">清除</button>
         <button onclick="closeBibiDrawer()" style="width:28px;height:28px;border-radius:50%;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:.95rem;color:var(--text2)">✕</button>
@@ -6367,10 +6417,10 @@ window.toggleWeatherForecast = toggleWeatherForecast;
 
       <!-- Tab bar -->
       <div style="display:flex;gap:0;border-bottom:1px solid var(--border);padding:0 16px">
-        <button class="bibi-tab active" id="btab-chat" onclick="switchBibiTab('chat')" style="flex:1;padding:9px 4px;font-size:.97rem;font-weight:600;color:var(--accent);border-bottom:2px solid var(--accent);background:none;border-top:none;border-left:none;border-right:none;cursor:pointer;transition:all .2s">💬 聊天</button>
-        <button class="bibi-tab" id="btab-translate" onclick="switchBibiTab('translate')" style="flex:1;padding:9px 4px;font-size:.97rem;font-weight:600;color:var(--text3);border-bottom:2px solid transparent;background:none;border-top:none;border-left:none;border-right:none;cursor:pointer;transition:all .2s">🔤 翻譯</button>
-        <button class="bibi-tab" id="btab-cards" onclick="switchBibiTab('cards')" style="flex:1;padding:9px 4px;font-size:.97rem;font-weight:600;color:var(--text3);border-bottom:2px solid transparent;background:none;border-top:none;border-left:none;border-right:none;cursor:pointer;transition:all .2s">🃏 字卡</button>
-        <button class="bibi-tab" id="btab-photo" onclick="switchBibiTab('photo')" style="flex:1;padding:9px 4px;font-size:.97rem;font-weight:600;color:var(--text3);border-bottom:2px solid transparent;background:none;border-top:none;border-left:none;border-right:none;cursor:pointer;transition:all .2s">📷 拍照</button>
+        <button class="bibi-tab active" id="btab-chat" onclick="switchBibiTab('chat')" style="flex:1;padding:9px 4px;font-size:.875rem;font-weight:700;color:var(--accent);border-bottom:2px solid var(--accent);background:none;border-top:none;border-left:none;border-right:none;cursor:pointer;transition:all .2s">💬 聊天</button>
+        <button class="bibi-tab" id="btab-translate" onclick="switchBibiTab('translate')" style="flex:1;padding:9px 4px;font-size:.875rem;font-weight:700;color:var(--text3);border-bottom:2px solid transparent;background:none;border-top:none;border-left:none;border-right:none;cursor:pointer;transition:all .2s">🔤 翻譯</button>
+        <button class="bibi-tab" id="btab-cards" onclick="switchBibiTab('cards')" style="flex:1;padding:9px 4px;font-size:.875rem;font-weight:700;color:var(--text3);border-bottom:2px solid transparent;background:none;border-top:none;border-left:none;border-right:none;cursor:pointer;transition:all .2s">🃏 字卡</button>
+        <button class="bibi-tab" id="btab-photo" onclick="switchBibiTab('photo')" style="flex:1;padding:9px 4px;font-size:.875rem;font-weight:700;color:var(--text3);border-bottom:2px solid transparent;background:none;border-top:none;border-left:none;border-right:none;cursor:pointer;transition:all .2s">📷 拍照</button>
       </div>
     </div>
 
@@ -6379,12 +6429,12 @@ window.toggleWeatherForecast = toggleWeatherForecast;
       <!-- 暱稱 + 風格設定列 -->
       <div id="bibi-nickname-bar" style="padding:8px 14px 6px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--bg2)">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-          <div style="font-size:.78rem;color:var(--text3);white-space:nowrap">叫我</div>
-          <input id="bibi-nickname-field" type="text" placeholder="輸入暱稱..." style="flex:1;background:var(--surface);border:1.5px solid var(--border);border-radius:999px;padding:5px 12px;font-size:.92rem;color:var(--text);outline:none;transition:border-color .2s;min-width:0" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" onkeydown="if(event.key==='Enter')saveBibiNickname()">
-          <button onclick="saveBibiNickname()" style="flex-shrink:0;font-size:.84rem;font-weight:600;color:var(--accent);background:none;border:none;padding:0 2px;white-space:nowrap">儲存</button>
+          <div style="font-size:.8125rem;font-weight:600;color:var(--text3);white-space:nowrap">叫我</div>
+          <input id="bibi-nickname-field" type="text" placeholder="輸入暱稱..." style="flex:1;background:var(--surface);border:1.5px solid var(--border);border-radius:999px;padding:5px 12px;font-size:.875rem;font-weight:600;color:var(--text);outline:none;transition:border-color .2s;min-width:0" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" onkeydown="if(event.key==='Enter')saveBibiNickname()">
+          <button onclick="saveBibiNickname()" style="flex-shrink:0;font-size:.8125rem;font-weight:700;color:var(--accent);background:none;border:none;padding:0 2px;white-space:nowrap">儲存</button>
         </div>
         <div style="display:flex;align-items:center;gap:6px">
-          <div style="font-size:.97rem;color:var(--text3)">Bibi 風格</div>
+          <div style="font-size:.8125rem;font-weight:700;color:var(--text3)">Bibi 風格</div>
           <div id="bibi-style-chips" style="display:flex;gap:5px;overflow-x:auto;scrollbar-width:none;flex:1"></div>
         </div>
       </div>
@@ -6392,7 +6442,7 @@ window.toggleWeatherForecast = toggleWeatherForecast;
       <div id="bibi-chat" style="flex:1;overflow-y:auto;padding:12px 16px;-webkit-overflow-scrolling:touch"></div>
       <!-- 輸入列 -->
       <div style="padding:10px 14px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:flex-end;flex-shrink:0;background:var(--bg)">
-        <input id="bibi-input" type="text" placeholder="問問 Bibi..." style="flex:1;background:var(--bg2);border:1.5px solid var(--border);border-radius:22px;padding:10px 16px;font-size:1rem;color:var(--text);outline:none;transition:border-color .2s" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" onkeydown="if(event.key==='Enter')sendBibiMessage()">
+        <input id="bibi-input" type="text" placeholder="問問 Bibi..." style="flex:1;background:var(--bg2);border:1.5px solid var(--border);border-radius:22px;padding:10px 16px;font-size:.875rem;font-weight:500;color:var(--text);outline:none;transition:border-color .2s" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" onkeydown="if(event.key==='Enter')sendBibiMessage()">
         <button onclick="sendBibiMessage()" style="width:42px;height:42px;border-radius:50%;background:var(--primary);color:white;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;border:none;transition:transform .15s" onmousedown="this.style.transform='scale(.88)'" onmouseup="this.style.transform=''">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
         </button>
@@ -6739,6 +6789,106 @@ async function saveNickname() {
   showToast(`好的，${name}！Bibi 記住你了 ✦`);
 }
 
+// ── BIBI 浮動按鈕：可拖曳定位（touch 事件 + localStorage 儲存）──
+(function() {
+  var FAB_POS_KEY = 'yallabiBibiFabPos';
+  var fab = null;
+  var dragState = null;
+  var DRAG_THRESHOLD = 6;
+
+  function clamp(val, min, max) { return Math.min(Math.max(val, min), max); }
+
+  function applyPosition(left, top) {
+    if (!fab) return;
+    var w = fab.offsetWidth || 52;
+    var h = fab.offsetHeight || 52;
+    var maxLeft = Math.max(6, window.innerWidth - w - 6);
+    var maxTop = Math.max(6, window.innerHeight - h - 6);
+    left = clamp(left, 6, maxLeft);
+    top = clamp(top, 6, maxTop);
+    fab.style.left = left + 'px';
+    fab.style.top = top + 'px';
+    fab.style.right = 'auto';
+    fab.style.bottom = 'auto';
+    return { left: left, top: top };
+  }
+
+  function savePosition(left, top) {
+    try { localStorage.setItem(FAB_POS_KEY, JSON.stringify({ left: left, top: top })); } catch (e) {}
+  }
+
+  function loadPosition() {
+    try {
+      var raw = localStorage.getItem(FAB_POS_KEY);
+      if (!raw) return null;
+      var pos = JSON.parse(raw);
+      if (typeof pos.left === 'number' && typeof pos.top === 'number') return pos;
+    } catch (e) {}
+    return null;
+  }
+
+  function onTouchStart(e) {
+    if (!e.touches || e.touches.length !== 1) return;
+    var t = e.touches[0];
+    var rect = fab.getBoundingClientRect();
+    dragState = {
+      startX: t.clientX,
+      startY: t.clientY,
+      startLeft: rect.left,
+      startTop: rect.top,
+      moved: false
+    };
+  }
+
+  function onTouchMove(e) {
+    if (!dragState || !e.touches || e.touches.length !== 1) return;
+    var t = e.touches[0];
+    var dx = t.clientX - dragState.startX;
+    var dy = t.clientY - dragState.startY;
+    if (!dragState.moved && (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD)) {
+      dragState.moved = true;
+      fab.style.transition = 'none';
+    }
+    if (dragState.moved) {
+      e.preventDefault();
+      applyPosition(dragState.startLeft + dx, dragState.startTop + dy);
+    }
+  }
+
+  function onTouchEnd(e) {
+    if (!dragState) return;
+    if (dragState.moved) {
+      e.preventDefault();
+      fab.style.transition = '';
+      var rect = fab.getBoundingClientRect();
+      savePosition(rect.left, rect.top);
+    }
+    dragState = null;
+  }
+
+  function onWindowResize() {
+    var pos = loadPosition();
+    if (pos) applyPosition(pos.left, pos.top);
+  }
+
+  function initBibiFabDrag() {
+    fab = document.getElementById('bibi-fab');
+    if (!fab) return;
+    var saved = loadPosition();
+    if (saved) applyPosition(saved.left, saved.top);
+    fab.addEventListener('touchstart', onTouchStart, { passive: true });
+    fab.addEventListener('touchmove', onTouchMove, { passive: false });
+    fab.addEventListener('touchend', onTouchEnd, { passive: false });
+    fab.addEventListener('touchcancel', function() { dragState = null; }, { passive: true });
+    window.addEventListener('resize', onWindowResize);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initBibiFabDrag);
+  } else {
+    initBibiFabDrag();
+  }
+})();
 
 </script>
 <script>
