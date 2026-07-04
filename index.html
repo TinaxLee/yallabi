@@ -6592,7 +6592,7 @@ if ('serviceWorker' in navigator) {
     }
   }
 
-  navigator.serviceWorker.register('./sw.js').then(function(reg) {
+  navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).then(function(reg) {
 
     /* 每次開啟 App 主動比對 sw.js 是否有新版 */
     reg.update().catch(function(){});
@@ -6898,4 +6898,3 @@ document.body.classList.add('splash-open');
 </script>
 </body>
 </html>
- 
