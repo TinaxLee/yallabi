@@ -1105,10 +1105,10 @@ textarea.form-input{resize:none;white-space:pre-wrap;line-height:1.6;}
   display: flex; gap: 6px; flex-wrap: wrap;
 }
 .place-cat-tab {
-  padding: 5px 12px; border-radius: 999px;
+  padding: 6px 14px; border-radius: 999px;
   border: 1.5px solid var(--border);
   background: var(--bg2); color: var(--text3);
-  font-size: .8125rem; font-weight: 700;
+  font-size: .9375rem; font-weight: 700;
   cursor: pointer; -webkit-tap-highlight-color: transparent;
   transition: all .15s var(--ease);
   white-space: nowrap;
