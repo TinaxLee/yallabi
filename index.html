@@ -199,6 +199,7 @@ window.toggleDarkMode = toggleDarkMode;
 let tripsData = [];
 let itineraryData = [];
 let missionsData = [];
+let missionCollapsed = {};
 let packingData = [];
 let expensesData = [];
 let flightsData = [];
@@ -255,54 +256,50 @@ function updateCountryBadge(trip) {
 // 📅 DATE & COUNTDOWN
 // ════════════════════════════════════════
 function renderHero(trip) {
-  const pill = document.getElementById('countdown-pill');
-  const tripLabelEl = document.getElementById('trip-label');
-  if (!pill || !tripLabelEl) return;
+  const row = document.getElementById('trip-hero-row');
+  if (!row) return;
 
   if (!trip) {
-    pill.style.display = 'none';
-    tripLabelEl.innerHTML = '<button onclick="openModal(\'modal-new-trip\')" style="color:var(--accent);font-size:.78rem;font-weight:600;border:1.5px solid var(--accent);border-radius:999px;padding:6px 16px;background:var(--accent-soft)">＋ 新增第一趟旅行</button>';
+    row.innerHTML = '<div style="text-align:center"><button onclick="openModal(\'modal-new-trip\')" style="color:var(--accent);font-size:.78rem;font-weight:600;border:1.5px solid var(--accent);border-radius:999px;padding:6px 16px;background:var(--accent-soft)">＋ 新增第一趟旅行</button></div>';
     return;
   }
 
-  // 倒數
-  const departureDate = trip.departureDate;
-  if (departureDate) {
-    const dep = new Date(departureDate);
-    const now = new Date();
-    const diff = Math.ceil((dep - now) / (1000 * 60 * 60 * 24));
-    const countdownEl = document.getElementById('countdown-display');
-    if (diff > 0) {
-      if (countdownEl) countdownEl.innerHTML = `距離出發還有 <strong>${diff}</strong> 天`;
-      pill.style.display = 'inline-flex';
-    } else if (diff === 0) {
-      if (countdownEl) countdownEl.innerHTML = '🎉 今天出發！';
-      pill.style.display = 'inline-flex';
-    } else {
-      pill.style.display = 'none';
-    }
-  } else {
-    pill.style.display = 'none';
-  }
-
-  // 旅行標籤（A+C 混合風格）
+  // 國家 + 城市合併一行文字
   const info = COUNTRY_THEMES[trip.country] || { flag:'🌍', name: trip.countryName || '' };
   const year = trip.departureDate ? new Date(trip.departureDate).getFullYear() : '';
-  const days = (trip.days && trip.days.length) ? trip.days.length + ' 天' : '';
   const cities = (trip.cities && trip.cities.length) ? trip.cities.slice(0,3).join('、') : '';
-
-  // 精簡標籤：國旗 + 國家 · 城市（不重複顯示天數）
-  var cityStr = cities ? cities : '';
   var labelParts = [info.name];
   if (year) labelParts.push(year);
-  var mainLabel = labelParts.join(' ');
+  var mainLabel = labelParts.join(' ') + (cities ? ' · ' + cities : '');
 
-  tripLabelEl.innerHTML = '<div style="display:inline-flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:7px 14px;margin-top:2px">'
-    + '<span style="font-size:1rem;filter:grayscale(.2)">' + info.flag + '</span>'
-    + '<div style="text-align:left;line-height:1.25">'
-    + '<div style="font-size:.8rem;font-weight:700;color:var(--text);letter-spacing:.02em">' + mainLabel + '</div>'
-    + (cityStr ? '<div style="font-size:.65rem;color:var(--text3);margin-top:1px">' + cityStr + '</div>' : '')
+  // 狀態徽章：尚未出發 / 出發當天 / 旅行中（結束後不顯示）
+  var badgeHtml = '';
+  const departureDate = trip.departureDate;
+  if (departureDate) {
+    const dep = new Date(departureDate); dep.setHours(0,0,0,0);
+    const now = new Date(); now.setHours(0,0,0,0);
+    const totalDays = (trip.days && trip.days.length) || 1;
+    const end = new Date(dep); end.setDate(dep.getDate() + totalDays - 1);
+    const diff = Math.round((dep - now) / (1000 * 60 * 60 * 24));
+
+    if (diff > 0) {
+      badgeHtml = '<div style="font-size:.625rem;color:rgba(255,255,255,.8);line-height:1.2">距離出發</div>'
+        + '<div style="font-size:.9375rem;font-weight:900;color:#fff;line-height:1.3">' + diff + ' 天</div>';
+    } else if (diff === 0) {
+      badgeHtml = '<div style="font-size:.9375rem;font-weight:900;color:#fff;line-height:1.3">今天出發!!!</div>';
+    } else if (now <= end) {
+      const dayNum = Math.round((now - dep) / (1000 * 60 * 60 * 24)) + 1;
+      badgeHtml = '<div style="font-size:.625rem;color:rgba(255,255,255,.8);line-height:1.2">旅行中</div>'
+        + '<div style="font-size:.9375rem;font-weight:900;color:#fff;line-height:1.3">Day ' + dayNum + '</div>';
+    }
+  }
+
+  row.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--surface);border:1px solid var(--border2);border-radius:14px;padding:12px 16px">'
+    + '<div style="display:flex;align-items:center;gap:8px;min-width:0">'
+    + '<span style="font-size:1.1rem;flex-shrink:0">' + info.flag + '</span>'
+    + '<span style="font-size:.9375rem;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + mainLabel + '</span>'
     + '</div>'
+    + (badgeHtml ? '<div style="background:var(--primary);border-radius:12px;padding:6px 14px;text-align:center;flex-shrink:0">' + badgeHtml + '</div>' : '')
     + '</div>';
 }
 
@@ -2649,6 +2646,42 @@ async function deleteHotel(id) {
   await deleteDoc(tripDoc('hotels', id));
   showToast('已刪除');
 }
+
+function getMissionCategories() {
+  return [
+    { id: 'before',   icon: '✈️', label: '行前準備' },
+    { id: 'arrival',  icon: '🚩', label: '旅途中' },
+    { id: 'during',   icon: '🧾', label: '必買清單' }
+  ];
+}
+window.getMissionCategories = getMissionCategories;
+
+function renderMissionSections() {
+  const container = document.getElementById('missions-card');
+  if (!container) return;
+  container.innerHTML = getMissionCategories().map(function(cat, i) {
+    const collapsed = !!missionCollapsed[cat.id];
+    return '<div style="' + (i > 0 ? 'margin-top:14px;padding-top:14px;border-top:1px solid var(--border)' : '') + '">'
+      + '<div onclick="toggleMissionSection(\'' + cat.id + '\')" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent">'
+      + '<div style="display:flex;align-items:center;gap:6px">'
+      + '<span id="missions-arrow-' + cat.id + '" style="font-size:.7rem;color:var(--text3);transition:transform .2s;display:inline-block;transform:' + (collapsed ? '' : 'rotate(90deg)') + '">›</span>'
+      + '<span style="font-size:.875rem;font-weight:700;color:var(--text)">' + cat.icon + ' ' + cat.label + '</span>'
+      + '</div>'
+      + '<span id="missions-count-' + cat.id + '" style="font-size:.75rem;font-weight:700;padding:2px 9px;border-radius:999px"></span>'
+      + '</div>'
+      + '<div id="missions-' + cat.id + '" style="margin-top:8px"></div>'
+      + '</div>';
+  }).join('');
+}
+window.renderMissionSections = renderMissionSections;
+
+function toggleMissionSection(catId) {
+  missionCollapsed[catId] = !missionCollapsed[catId];
+  const arrow = document.getElementById('missions-arrow-' + catId);
+  if (arrow) arrow.style.transform = missionCollapsed[catId] ? '' : 'rotate(90deg)';
+  renderMissions();
+}
+window.toggleMissionSection = toggleMissionSection;
 
 function renderMissions() {
   renderMissionSections();
@@ -5481,18 +5514,8 @@ window.toggleWeatherForecast = toggleWeatherForecast;
       <!-- Hero + Weather 合一區塊 -->
       <div style="padding:10px 0 14px">
 
-        <!-- Hero：緊湊置中，無多餘空白 -->
-        <div style="text-align:center;margin-bottom:14px">
-          <div style="font-size:.58rem;letter-spacing:.18em;text-transform:uppercase;color:var(--text3);margin-bottom:8px;display:flex;align-items:center;justify-content:center;gap:8px">
-            <span style="display:inline-block;width:16px;height:1px;background:var(--accent);opacity:.4"></span>
-            every trip, a story
-            <span style="display:inline-block;width:16px;height:1px;background:var(--accent);opacity:.4"></span>
-          </div>
-          <div id="countdown-pill" style="display:inline-flex;align-items:center;gap:6px;background:var(--primary);color:white;border-radius:999px;padding:8px 20px;font-size:.88rem;font-weight:600;margin-bottom:8px;letter-spacing:.02em">
-            <span id="countdown-display">距離出發還有 — 天</span>
-          </div>
-          <div id="trip-label">選擇旅行開始規劃</div>
-        </div>
+        <!-- Hero：國家/城市 + 倒數徽章合併一行 -->
+        <div id="trip-hero-row" style="margin-bottom:14px"></div>
 
         <!-- Weather -->
         <div class="weather-card" id="weather-card">
