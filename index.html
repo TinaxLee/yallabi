@@ -463,9 +463,12 @@ function renderItinerary() {
     const container = document.getElementById('itinerary-list');
     if (container) container.innerHTML = noTripHTML('🗺️', '建立你的第一趟旅行<br>開始規劃行程吧');
     document.getElementById('day-tabs') && document.getElementById('day-tabs').replaceChildren();
+    const arrivalList = document.getElementById('itin-arrival-list');
+    if (arrivalList) arrivalList.innerHTML = '';
     return;
   }
   renderDayTabs();
+  renderArrivalMissions();
   const container = document.getElementById('itinerary-list');
   if (!container) return;
   const filtered = itineraryData
@@ -862,7 +865,23 @@ function renderExpenses() {
     if (conv) conv.style.display = 'none';
     return;
   }
-  // 每次進入花費頁都重置回群體帳，確保按鈕狀態正確
+  const tabsWrap = document.getElementById('expense-mode-tabs-wrap');
+  const isSolo = !currentTrip || !currentTrip.members || currentTrip.members.length <= 1;
+
+  if (isSolo) {
+    // 沒有旅伴：隱藏群體/個人切換，直接顯示個人帳視角
+    if (tabsWrap) tabsWrap.style.display = 'none';
+    if (expenseMode !== 'personal') {
+      switchExpenseMode('personal');
+    } else {
+      renderPersonalExpenses();
+      subscribePersonalExpenses();
+    }
+    return;
+  }
+
+  // 有旅伴：顯示切換，每次進入花費頁都重置回群體帳，確保按鈕狀態正確
+  if (tabsWrap) tabsWrap.style.display = '';
   if (expenseMode !== 'group') {
     expenseMode = 'group';
     var gBtn = document.getElementById('tab-group-exp');
@@ -985,6 +1004,9 @@ function renderExpenseSummary() {
     + '<div class="settle-cur-grid">' + curRows + '</div>'
     + twdRow
     + transfersHTML
+    + '<div style="margin-top:12px;text-align:center">'
+    + '<button onclick="settleExpenses()" style="font-size:.8125rem;font-weight:700;color:#fff;padding:7px 18px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.28);border-radius:999px">標記結清</button>'
+    + '</div>'
     + '</div>';
 }
 
@@ -1147,6 +1169,39 @@ function toggleExpChart() {
   if (!isOpen) renderExpenseChart();
 }
 window.toggleExpChart = toggleExpChart;
+
+function togglePersonalExpChart() {
+  var body = document.getElementById('personal-exp-chart-body');
+  var arrow = document.getElementById('personal-exp-chart-arrow');
+  if (!body) return;
+  var isOpen = body.style.display !== 'none';
+  body.style.display = isOpen ? 'none' : 'block';
+  if (arrow) arrow.style.transform = isOpen ? '' : 'rotate(90deg)';
+  if (!isOpen) renderPersonalExpenseChart();
+}
+window.togglePersonalExpChart = togglePersonalExpChart;
+
+function renderPersonalExpenseChart() {
+  const canvas = document.getElementById('personal-expense-chart');
+  if (!canvas) return;
+  const totals = {};
+  personalExpensesData.forEach(e => {
+    const cat = e.category || 'other';
+    totals[cat] = (totals[cat] || 0) + (parseFloat(e.amount)||0);
+  });
+  const cats = EXPENSE_CATEGORIES.filter(c => totals[c.id]);
+  if (window._personalExpChart) window._personalExpChart.destroy();
+  if (cats.length === 0) return;
+  const morandiColors = ['#A8895C','#9A6A6E','#5080A8','#507848','#9A5E30','#3A6890','#484890'];
+  window._personalExpChart = new Chart(canvas, {
+    type: 'doughnut',
+    data: {
+      labels: cats.map(c => c.icon + ' ' + c.label),
+      datasets: [{ data: cats.map(c => totals[c.id]), backgroundColor: morandiColors.slice(0, cats.length), borderWidth: 0 }]
+    },
+    options: { cutout:'68%', plugins:{ legend:{ position:'bottom', labels:{ font:{size:11}, padding:12 }}}}
+  });
+}
 
 function renderExpenseChart() {
   const canvas = document.getElementById('expense-chart');
@@ -2382,41 +2437,33 @@ function previewJournalPhoto(input) {
 // ════════════════════════════════════════
 // ✈️ PAGE: DEPART (航班/飯店/行李/任務)
 // ════════════════════════════════════════
-let departMode = 'trip'; // 'trip' | 'packing'
+let departMode = 'trip'; // 'trip' | 'todo' | 'packing'
 
 function switchDepartMode(mode) {
   departMode = mode;
   var tripWrap = document.getElementById('depart-trip-wrap');
+  var todoWrap = document.getElementById('depart-todo-wrap');
   var packWrap = document.getElementById('depart-packing-wrap');
   var tripBtn = document.getElementById('tab-dp-trip');
+  var todoBtn = document.getElementById('tab-dp-todo');
   var packBtn = document.getElementById('tab-dp-packing');
-  if (mode === 'trip') {
-    if (tripWrap) tripWrap.style.display = '';
-    if (packWrap) packWrap.style.display = 'none';
-    if (tripBtn) tripBtn.classList.add('active');
-    if (packBtn) packBtn.classList.remove('active');
-  } else {
-    if (tripWrap) tripWrap.style.display = 'none';
-    if (packWrap) packWrap.style.display = '';
-    if (tripBtn) tripBtn.classList.remove('active');
-    if (packBtn) packBtn.classList.add('active');
-    subscribePackingList();
-  }
+
+  if (tripWrap) tripWrap.style.display = mode === 'trip' ? '' : 'none';
+  if (todoWrap) todoWrap.style.display = mode === 'todo' ? '' : 'none';
+  if (packWrap) packWrap.style.display = mode === 'packing' ? '' : 'none';
+  if (tripBtn) tripBtn.classList.toggle('active', mode === 'trip');
+  if (todoBtn) todoBtn.classList.toggle('active', mode === 'todo');
+  if (packBtn) packBtn.classList.toggle('active', mode === 'packing');
+
+  if (mode === 'todo') renderMissions();
+  if (mode === 'packing') subscribePackingList();
 }
 window.switchDepartMode = switchDepartMode;
 
 function renderDepart() {
   // 進入出發頁重置回「旅程資訊」模式
   if (departMode !== 'trip') {
-    departMode = 'trip';
-    var tw = document.getElementById('depart-trip-wrap');
-    var pw = document.getElementById('depart-packing-wrap');
-    var tb = document.getElementById('tab-dp-trip');
-    var pb = document.getElementById('tab-dp-packing');
-    if (tw) tw.style.display = '';
-    if (pw) pw.style.display = 'none';
-    if (tb) tb.classList.add('active');
-    if (pb) pb.classList.remove('active');
+    switchDepartMode('trip');
   }
   if (!currentTripId) {
     ['flights-list','hotels-list','missions-card','packing-list'].forEach(id => {
@@ -2656,10 +2703,15 @@ function getMissionCategories() {
 }
 window.getMissionCategories = getMissionCategories;
 
+// 出發頁「待辦清單」只放行前準備＋必買清單；旅途中提醒移到行程頁單獨呈現
+function getDepartTodoCategories() {
+  return getMissionCategories().filter(c => c.id !== 'arrival');
+}
+
 function renderMissionSections() {
   const container = document.getElementById('missions-card');
   if (!container) return;
-  container.innerHTML = getMissionCategories().map(function(cat, i) {
+  container.innerHTML = getDepartTodoCategories().map(function(cat, i) {
     const collapsed = !!missionCollapsed[cat.id];
     return '<div style="' + (i > 0 ? 'margin-top:14px;padding-top:14px;border-top:1px solid var(--border)' : '') + '">'
       + '<div onclick="toggleMissionSection(\'' + cat.id + '\')" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent">'
@@ -2679,16 +2731,21 @@ function toggleMissionSection(catId) {
   missionCollapsed[catId] = !missionCollapsed[catId];
   const arrow = document.getElementById('missions-arrow-' + catId);
   if (arrow) arrow.style.transform = missionCollapsed[catId] ? '' : 'rotate(90deg)';
-  renderMissions();
+  if (catId === 'arrival') { renderArrivalMissions(); } else { renderMissions(); }
 }
 window.toggleMissionSection = toggleMissionSection;
 
 function renderMissions() {
   renderMissionSections();
-  getMissionCategories().forEach(cat => {
+  getDepartTodoCategories().forEach(cat => {
     const container = document.getElementById(`missions-${cat.id}`);
     if (!container) return;
-    const items = missionsData.filter(m => m.category === cat.id).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
+    const items = missionsData.filter(m => m.category === cat.id).sort((a,b) => {
+      if (a.time && b.time) return a.time.localeCompare(b.time);
+      if (a.time && !b.time) return -1;
+      if (!a.time && b.time) return 1;
+      return (a.createdAt||0)-(b.createdAt||0);
+    });
     // update count badge
     const countEl = document.getElementById(`missions-count-${cat.id}`);
     if (countEl) {
@@ -2725,6 +2782,7 @@ function renderMissions() {
         <div class="pack-check ${m.done ? 'checked' : ''}" onclick="toggleMission('${m.id}',${!m.done})">
           ${m.done ? '✓' : ''}
         </div>
+        ${m.time ? `<span style="flex-shrink:0;font-family:var(--font-num);font-size:.8125rem;font-weight:700;color:var(--accent);background:var(--accent-soft);border-radius:6px;padding:2px 7px;margin-right:2px">${m.time}</span>` : ''}
         <span class="pack-name" style="flex:1;font-size:.85rem;color:var(--text);${m.done?'text-decoration:line-through':''};word-break:break-word;line-height:1.5">${m.name}</span>
         <div class="flex gap-1">
           ${m.done ? `<button onclick="deleteMission('${m.id}')" style="color:var(--red);font-size:.9rem;padding:4px">✕</button>` : ''}
@@ -2735,13 +2793,56 @@ function renderMissions() {
   });
 }
 
-function openAddMission() {
+// 旅途中提醒（獨立呈現在行程頁，依時間排序；方案 A，暫不併入行程卡片）
+function renderArrivalMissions() {
+  const countEl = document.getElementById('itin-arrival-count');
+  const arrow = document.getElementById('itin-arrival-arrow');
+  const container = document.getElementById('itin-arrival-list');
+  if (!container) return;
+  const collapsed = !!missionCollapsed.arrival;
+  if (arrow) arrow.style.transform = collapsed ? '' : 'rotate(90deg)';
+  const items = missionsData.filter(m => m.category === 'arrival').sort((a,b) => {
+    if (a.time && b.time) return a.time.localeCompare(b.time);
+    if (a.time && !b.time) return -1;
+    if (!a.time && b.time) return 1;
+    return (a.createdAt||0)-(b.createdAt||0);
+  });
+  const undone = items.filter(i => !i.done).length;
+  if (countEl) {
+    if (undone > 0) {
+      countEl.textContent = undone + ' 項待辦';
+      countEl.style.background = 'var(--bg2)';
+      countEl.style.color = 'var(--text3)';
+    } else {
+      countEl.textContent = 'ALL CLEAR ✨';
+      countEl.style.background = 'color-mix(in srgb, var(--green) 15%, transparent)';
+      countEl.style.color = 'var(--green)';
+    }
+  }
+  if (collapsed) { container.innerHTML = ''; return; }
+  if (items.length === 0) { container.innerHTML = '<div style="text-align:center;padding:12px 0;color:var(--text3);font-size:.8rem">ALL CLEAR ✨</div>'; return; }
+  container.innerHTML = items.map(m => `
+      <div class="pack-item" style="${m.done ? 'opacity:.42' : ''}">
+        <div class="pack-check ${m.done ? 'checked' : ''}" onclick="toggleMission('${m.id}',${!m.done})">
+          ${m.done ? '✓' : ''}
+        </div>
+        ${m.time ? `<span style="flex-shrink:0;font-family:var(--font-num);font-size:.8125rem;font-weight:700;color:var(--accent);background:var(--accent-soft);border-radius:6px;padding:2px 7px;margin-right:2px">${m.time}</span>` : ''}
+        <span class="pack-name" style="flex:1;font-size:.85rem;color:var(--text);${m.done?'text-decoration:line-through':''};word-break:break-word;line-height:1.5">${m.name}</span>
+        <div class="flex gap-1">
+          ${m.done ? `<button onclick="deleteMission('${m.id}')" style="color:var(--red);font-size:.9rem;padding:4px">✕</button>` : ''}
+          <button onclick="editMissionItem('${m.id}')" style="color:var(--text3);font-size:.85rem;padding:4px">✏️</button>
+          ${!m.done ? `<button onclick="deleteMission('${m.id}')" style="color:var(--text3);font-size:.85rem;padding:4px">✕</button>` : ''}
+        </div>
+      </div>`).join('');
+}
+window.renderArrivalMissions = renderArrivalMissions;
   const form = document.getElementById('form-mission');
   form.reset();
   delete form.dataset.editId;
-  // Update category options dynamically
+  // Update category options dynamically（依來源頁面限制可選分類，避免新增後找不到）
+  const cats = allowedCategories ? getMissionCategories().filter(c => allowedCategories.includes(c.id)) : getMissionCategories();
   const sel = form.querySelector('#ms-category');
-  sel.innerHTML = getMissionCategories().map(c => `<option value="${c.id}">${c.icon} ${c.label}</option>`).join('');
+  sel.innerHTML = cats.map(c => `<option value="${c.id}">${c.icon} ${c.label}</option>`).join('');
   openModal('modal-mission');
 }
 
@@ -2749,8 +2850,11 @@ function editMissionItem(id) {
   const item = missionsData.find(m => m.id === id);
   if (!item) return;
   const form = document.getElementById('form-mission');
+  const sel = form.querySelector('#ms-category');
+  sel.innerHTML = getMissionCategories().map(c => `<option value="${c.id}">${c.icon} ${c.label}</option>`).join('');
   form.querySelector('#ms-name').value = item.name || '';
-  form.querySelector('#ms-category').value = item.category || 'before';
+  sel.value = item.category || 'before';
+  form.querySelector('#ms-time').value = item.time || '';
   form.dataset.editId = id;
   openModal('modal-mission');
 }
@@ -2759,10 +2863,11 @@ async function saveMission() {
   const form = document.getElementById('form-mission');
   const name = form.querySelector('#ms-name').value.trim();
   if (!name) { showToast('請輸入任務名稱'); return; }
-  const data = { name, category: form.querySelector('#ms-category').value, done: false, updatedAt: Date.now() };
+  const time = form.querySelector('#ms-time').value || '';
+  const data = { name, category: form.querySelector('#ms-category').value, time, done: false, updatedAt: Date.now() };
   try {
     const editId = form.dataset.editId;
-    if (editId) { await updateDoc(tripDoc('missions', editId), { name: data.name, category: data.category }); showToast('已更新 ✓'); }
+    if (editId) { await updateDoc(tripDoc('missions', editId), { name: data.name, category: data.category, time: data.time }); showToast('已更新 ✓'); }
     else { data.createdAt = Date.now(); await addDoc(tripCol('missions'), data); showToast('已新增 ✓'); }
     closeModal('modal-mission');
   } catch(e) { showToast('儲存失敗'); }
@@ -5059,6 +5164,7 @@ async function deletePersonalExpense(id) {
 function renderPersonalExpenses() {
   renderPersonalSummary();
   renderPersonalList();
+  renderPersonalExpenseChart();
 }
 
 function renderPersonalSummary() {
@@ -5551,6 +5657,21 @@ window.toggleWeatherForecast = toggleWeatherForecast;
         <!-- Day Tabs -->
         <div id="day-tabs" class="day-tabs no-scrollbar"></div>
 
+        <!-- 旅途中提醒（跨整趟旅行，不分 Day） -->
+        <div class="card card-p mb-3" style="padding:12px 14px">
+          <div onclick="toggleMissionSection('arrival')" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent">
+            <div style="display:flex;align-items:center;gap:6px">
+              <span id="itin-arrival-arrow" style="font-size:.7rem;color:var(--text3);transition:transform .2s;display:inline-block">›</span>
+              <span style="font-size:.875rem;font-weight:700;color:var(--text)">🚩 旅途中提醒</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <button class="btn-add" onclick="event.stopPropagation();openAddMission(['arrival'])">＋ 新增</button>
+              <span id="itin-arrival-count" style="font-size:.75rem;font-weight:700;padding:2px 9px;border-radius:999px"></span>
+            </div>
+          </div>
+          <div id="itin-arrival-list" style="margin-top:8px"></div>
+        </div>
+
         <!-- Section Header -->
         <div class="flex items-center justify-between mb-3">
           <div class="section-title">今日行程</div>
@@ -5583,8 +5704,8 @@ window.toggleWeatherForecast = toggleWeatherForecast;
         <div class="section-title">花費記帳</div>
         <button class="btn-add" id="expense-add-btn" onclick="openAddExpense()">＋ 新增</button>
       </div>
-      <!-- 群體帳 / 個人帳 切換 -->
-      <div class="expense-mode-tabs" style="margin-bottom:12px">
+      <!-- 群體帳 / 個人帳 切換（無旅伴時自動隱藏，見 renderExpenses） -->
+      <div class="expense-mode-tabs" id="expense-mode-tabs-wrap" style="margin-bottom:12px">
         <button class="expense-mode-tab active" id="tab-group-exp" onclick="switchExpenseMode('group')">👫 群體帳</button>
         <button class="expense-mode-tab" id="tab-personal-exp" onclick="switchExpenseMode('personal')">👤 個人帳</button>
       </div>
@@ -5653,14 +5774,11 @@ window.toggleWeatherForecast = toggleWeatherForecast;
       <!-- Person filter -->
       <div id="expense-person-tabs" class="person-tabs"></div>
 
-      <!-- Chart — collapsible -->
+      <!-- Chart — collapsible（僅分析，不含操作按鈕） -->
       <div style="background:var(--surface);border-radius:var(--r-md);border:1px solid var(--border);box-shadow:0 2px 8px var(--shadow);margin-bottom:12px;overflow:hidden">
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;cursor:pointer" onclick="toggleExpChart()">
-          <div style="display:flex;align-items:center;gap:6px">
-            <span id="exp-chart-arrow" style="font-size:.7rem;color:var(--text3);transition:transform .2s;display:inline-block">›</span>
-            <span style="font-size:.78rem;font-weight:600;color:var(--text)">支出比例分析</span>
-          </div>
-          <button onclick="event.stopPropagation();settleExpenses()" style="font-size:.7rem;color:var(--text3);padding:4px 8px;background:var(--bg2);border-radius:6px">標記結清</button>
+        <div style="display:flex;align-items:center;gap:6px;padding:12px 16px;cursor:pointer" onclick="toggleExpChart()">
+          <span id="exp-chart-arrow" style="font-size:.7rem;color:var(--text3);transition:transform .2s;display:inline-block">›</span>
+          <span style="font-size:.875rem;font-weight:700;color:var(--text)">支出比例分析</span>
         </div>
         <div id="exp-chart-body" style="display:none;padding:0 16px 14px">
           <canvas id="expense-chart" height="160"></canvas>
@@ -5672,6 +5790,18 @@ window.toggleWeatherForecast = toggleWeatherForecast;
       <!-- 個人帳區塊（登入用戶才可見） -->
       <div id="personal-expense-wrap" style="display:none">
         <div id="personal-expense-summary" style="margin-bottom:12px"></div>
+
+        <!-- 個人帳 Chart — collapsible -->
+        <div style="background:var(--surface);border-radius:var(--r-md);border:1px solid var(--border);box-shadow:0 2px 8px var(--shadow);margin-bottom:12px;overflow:hidden">
+          <div style="display:flex;align-items:center;gap:6px;padding:12px 16px;cursor:pointer" onclick="togglePersonalExpChart()">
+            <span id="personal-exp-chart-arrow" style="font-size:.7rem;color:var(--text3);transition:transform .2s;display:inline-block">›</span>
+            <span style="font-size:.875rem;font-weight:700;color:var(--text)">支出比例分析</span>
+          </div>
+          <div id="personal-exp-chart-body" style="display:none;padding:0 16px 14px">
+            <canvas id="personal-expense-chart" height="160"></canvas>
+          </div>
+        </div>
+
         <div id="personal-expense-list"></div>
       </div>
     </div>
@@ -5709,9 +5839,10 @@ window.toggleWeatherForecast = toggleWeatherForecast;
   <div id="page-depart" class="page">
     <div class="page-content pb-4" style="padding-bottom:calc(env(safe-area-inset-bottom) + 48px)">
 
-      <!-- 旅程資訊 / 我的行李 切換 -->
+      <!-- 旅程資訊 / 待辦清單 / 我的行李 切換 -->
       <div class="expense-mode-tabs" style="margin:16px 0 12px">
         <button class="expense-mode-tab active" id="tab-dp-trip" onclick="switchDepartMode('trip')">📋 旅程資訊</button>
+        <button class="expense-mode-tab" id="tab-dp-todo" onclick="switchDepartMode('todo')">✅ 待辦清單</button>
         <button class="expense-mode-tab" id="tab-dp-packing" onclick="switchDepartMode('packing')">🧳 我的行李</button>
       </div>
 
@@ -5746,11 +5877,13 @@ window.toggleWeatherForecast = toggleWeatherForecast;
         <div id="hotels-list-wrap">
           <div id="hotels-list"></div>
         </div>
+      </div>
 
-        <!-- 任務 -->
-        <div class="flex items-center justify-between" style="padding:16px 0 10px">
-          <div class="section-title">重要任務 🔔</div>
-          <button class="btn-add" onclick="openAddMission()">＋ 新增任務</button>
+      <!-- 待辦清單（行前準備＋必買清單；旅途中提醒在行程頁） -->
+      <div id="depart-todo-wrap" style="display:none">
+        <div class="flex items-center justify-between" style="padding:4px 0 10px">
+          <div class="section-title">待辦清單 ✅</div>
+          <button class="btn-add" onclick="openAddMission(['before','during'])">＋ 新增任務</button>
         </div>
         <div class="card card-p mb-3" id="missions-card">
           <!-- rendered dynamically by renderMissionSections() -->
@@ -6103,6 +6236,10 @@ window.toggleWeatherForecast = toggleWeatherForecast;
           <div class="form-group">
             <label class="form-label">任務內容</label>
             <input id="ms-name" type="text" class="form-input" placeholder="例如：買 eSIM 網路">
+          </div>
+          <div class="form-group">
+            <label class="form-label">時間（選填）</label>
+            <input id="ms-time" type="time" class="form-input">
           </div>
         </div>
         <button class="btn btn-primary btn-full" onclick="saveMission()">指 派 任 務</button>
