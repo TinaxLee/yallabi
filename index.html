@@ -2836,6 +2836,8 @@ function renderArrivalMissions() {
       </div>`).join('');
 }
 window.renderArrivalMissions = renderArrivalMissions;
+
+function openAddMission(allowedCategories) {
   const form = document.getElementById('form-mission');
   form.reset();
   delete form.dataset.editId;
