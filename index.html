@@ -4857,17 +4857,17 @@ function renderWeatherCard(weatherList, activeIdx) {
 
   content.innerHTML = '<div id="weather-card-inner"' + (hasForecast ? ' onclick="toggleWeatherForecast()" style="cursor:pointer;position:relative"' : ' style="position:relative"') + '>'
     + chevron + tabsHTML
-    + '<div style="display:flex;align-items:flex-end;gap:18px">'
+    + '<div style="display:flex;align-items:flex-end;gap:16px">'
     + '<div>'
-    + '<div style="font-size:.68rem;opacity:.7;letter-spacing:.12em;text-transform:uppercase;color:white;margin-bottom:8px">' + w.displayName.toUpperCase() + '</div>'
-    + '<div style="font-family:var(--font-num);font-size:3.25rem;font-weight:900;color:white;line-height:1">' + w.temp + '°</div>'
-    + '<div style="font-family:var(--font-num);font-size:.8125rem;font-weight:600;color:rgba(255,255,255,.65);margin-top:5px">' + w.tempMin + '° – ' + w.tempMax + '°</div>'
-    + '<div style="font-size:.9375rem;color:rgba(255,255,255,.9);margin-top:3px;font-weight:700">' + w.desc + '</div>'
+    + '<div style="font-size:.68rem;opacity:.7;letter-spacing:.12em;text-transform:uppercase;color:white;margin-bottom:6px">' + w.displayName.toUpperCase() + '</div>'
+    + '<div style="font-family:var(--font-num);font-size:2.75rem;font-weight:900;color:white;line-height:1">' + w.temp + '°</div>'
+    + '<div style="font-family:var(--font-num);font-size:.8125rem;font-weight:600;color:rgba(255,255,255,.65);margin-top:4px">' + w.tempMin + '° – ' + w.tempMax + '°</div>'
+    + '<div style="font-size:.9375rem;color:rgba(255,255,255,.9);margin-top:2px;font-weight:700">' + w.desc + '</div>'
     + '</div>'
-    + '<div style="font-size:3rem;margin-bottom:8px;line-height:1">' + w.icon + '</div>'
+    + '<div style="font-size:2.5rem;margin-bottom:6px;line-height:1">' + w.icon + '</div>'
     + '</div>'
     + forecastHTML
-    + '<div style="display:flex;align-items:center;gap:6px;margin-top:14px">'
+    + '<div id="weather-sync-row" style="display:' + (weatherExpanded ? 'flex' : 'none') + ';align-items:center;gap:6px;margin-top:12px">'
     + '<div style="width:6px;height:6px;border-radius:50%;background:#4ade80;animation:pulse 2s ease infinite"></div>'
     + '<span style="font-family:var(--font-num);font-size:.8125rem;font-weight:700;color:rgba(255,255,255,.5);letter-spacing:.06em">SYNC · ' + timeStr + '</span>'
     + '</div>'
@@ -4884,10 +4884,12 @@ function renderWeatherCard(weatherList, activeIdx) {
 function toggleWeatherForecast() {
   var fc = document.getElementById('weather-forecast');
   var ch = document.getElementById('weather-chevron');
+  var sync = document.getElementById('weather-sync-row');
   if (!fc) return;
   weatherExpanded = !weatherExpanded;
   fc.style.maxHeight = weatherExpanded ? '200px' : '0';
   if (ch) ch.style.transform = weatherExpanded ? 'rotate(180deg)' : '';
+  if (sync) sync.style.display = weatherExpanded ? 'flex' : 'none';
 }
 
 function switchWeatherCity(idx) {
@@ -4928,19 +4930,24 @@ function getTripTimezones(trip) {
   const geoData = GEOGRAPHY_DATA[geoKey];
   const countryTz = (geoData && geoData.tz) || 'Asia/Taipei';
   const cities = trip.cities || (geoData && geoData.cities) || [];
-  const result = [{ label: '台灣', tz: 'Asia/Taipei', isHome: true }];
-  const seen = new Set(['Asia/Taipei']);
-  cities.slice(0, 5).forEach(function(city) {
+
+  // 依「實際時區」分組城市，同時區的城市合併顯示成一行（例如「曼谷、芭達雅、普吉島」）
+  const order = [];
+  const groups = {};
+  cities.slice(0, 6).forEach(function(city) {
     const tz = CITY_TZ_OVERRIDE[city] || countryTz;
-    if (!seen.has(tz)) {
-      seen.add(tz);
-      result.push({ label: city, tz: tz });
-    } else if (result.length === 1) {
-      result.push({ label: city, tz: tz });
-    }
+    if (tz === 'Asia/Taipei') return; // 跟台灣同時區沒有顯示意義，略過
+    if (!groups[tz]) { groups[tz] = []; order.push(tz); }
+    groups[tz].push(city);
   });
-  if (result.length === 1 && geoData && geoData.name) {
+
+  const result = [{ label: '台灣', tz: 'Asia/Taipei', isHome: true }];
+  if (order.length === 0 && geoData && geoData.name) {
     result.push({ label: geoData.name, tz: countryTz });
+  } else {
+    order.forEach(function(tz) {
+      result.push({ label: groups[tz].join('、'), tz: tz });
+    });
   }
   return result;
 }
@@ -4960,15 +4967,22 @@ function renderTzCard(trip) {
   const tzList = getTripTimezones(trip);
   if (tzList.length <= 1) { card.style.display = 'none'; return; }
   card.style.display = 'block';
+  tzListExpanded = false;
   renderTzCityList(tzList);
   if (tzCardTimer) clearInterval(tzCardTimer);
   tzCardTimer = setInterval(function() { renderTzCityList(tzList); }, 30000);
 }
 
+let tzListExpanded = false;
+
 function renderTzCityList(tzList) {
   const el = document.getElementById('tz-city-list');
   if (!el) return;
-  el.innerHTML = tzList.map(function(item) {
+  const destCount = tzList.length - 1; // 扣掉台灣（home）
+  const showMoreNeeded = destCount >= 3;
+  const visibleList = (showMoreNeeded && !tzListExpanded) ? tzList.slice(0, 3) : tzList; // home + 前2個目的地時區
+
+  el.innerHTML = visibleList.map(function(item) {
     const parts = formatTzTime(item.tz).split(' ');
     const weekday = parts[0] || '';
     const time = parts[1] || parts[0] || '--:--';
@@ -4976,8 +4990,17 @@ function renderTzCityList(tzList) {
       + '<span class="tz-city-name">' + (item.isHome ? '🏠 ' : '') + item.label + '</span>'
       + '<span class="tz-city-time"><span class="tz-weekday">' + weekday + '</span>' + time + '</span>'
       + '</div>';
-  }).join('');
+  }).join('')
+  + (showMoreNeeded ? '<div onclick="toggleTzListExpand()" style="text-align:center;padding-top:6px;cursor:pointer">'
+      + '<span style="font-size:.75rem;font-weight:700;color:rgba(255,255,255,.55)">' + (tzListExpanded ? '收起 ▲' : '顯示更多 ▼') + '</span>'
+      + '</div>' : '');
 }
+
+function toggleTzListExpand() {
+  tzListExpanded = !tzListExpanded;
+  renderTzCityList(getTripTimezones(currentTrip));
+}
+window.toggleTzListExpand = toggleTzListExpand;
 
 function toggleTzConverter() {
   tzConverterOpen = !tzConverterOpen;
