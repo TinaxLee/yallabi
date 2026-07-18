@@ -3224,12 +3224,14 @@ function renderMemberAvatars() {
   if (!container) return;
   const shown = membersData.slice(0, 3);
   const extra = membersData.length - 3;
-  container.innerHTML = shown.map((m, i) =>
+  container.innerHTML = '<div onclick="openInvite()" style="display:flex;align-items:center;cursor:pointer;-webkit-tap-highlight-color:transparent">'
+  + shown.map((m, i) =>
     `<div style="width:28px;height:28px;border-radius:50%;background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;border:2px solid var(--bg);margin-left:${i > 0 ? '-8px' : '0'};position:relative;z-index:${10-i};overflow:hidden;flex-shrink:0">
       ${getMemberAvatar(m)}
     </div>`
   ).join('') +
   (extra > 0 ? `<div style="width:28px;height:28px;border-radius:50%;background:var(--bg2);color:var(--text2);font-size:.6rem;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid var(--bg);margin-left:-8px">+${extra}</div>` : '') +
+  '</div>' +
   `<button onclick="openInvite()" style="display:inline-flex;align-items:center;gap:3px;font-size:.68rem;font-weight:600;color:var(--accent);background:var(--accent-soft);padding:4px 9px;border-radius:999px;border:none;margin-left:6px;white-space:nowrap;flex-shrink:0">+ 邀請</button>`;
 }
 
