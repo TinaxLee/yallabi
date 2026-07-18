@@ -42,7 +42,7 @@ window.addEventListener('unhandledrejection', function(e) {
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
 import { getAuth, signInWithPopup, GoogleAuthProvider, OAuthProvider, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-import { getFirestore, collection, doc, addDoc, setDoc, deleteDoc, updateDoc, onSnapshot, getDoc, getDocs, query, orderBy, where, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+import { getFirestore, collection, doc, addDoc, setDoc, deleteDoc, deleteField, updateDoc, onSnapshot, getDoc, getDocs, query, orderBy, where, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js';
 
 // ════════════════════════════════════════
@@ -1393,6 +1393,14 @@ async function setBibiStyle(style) {
   showToast('Bibi 切換成' + styleInfo.label + ' ' + styleInfo.emoji);
 }
 
+// 同步「公開資料」到獨立的子文件（僅暱稱/大頭貼），讓旅伴能互相看到彼此身份
+// 但不會暴露 email 等私密欄位 —— 那些仍留在 users/{uid} 主文件，只有本人能讀
+async function syncPublicProfile(fields) {
+  try {
+    await setDoc(doc(db, 'users', currentUser.uid, 'public', 'profile'), fields, { merge: true });
+  } catch(e) { /* 公開資料同步失敗不影響主要功能，靜默略過 */ }
+}
+
 async function saveBibiNickname() {
   const input = document.getElementById('bibi-nickname-field');
   const name = (input && input.value).trim();
@@ -1400,6 +1408,7 @@ async function saveBibiNickname() {
   userNickname = name;
   try {
     await setDoc(doc(db, 'users', currentUser.uid), { nickname: name }, { merge: true });
+    syncPublicProfile({ nickname: name });
     showToast('Bibi 記住你了：' + name + ' ✦');
     const chat = document.getElementById('bibi-chat');
     if (chat) window.initBibiGreeting();
@@ -3174,9 +3183,21 @@ async function selectTrip(tripId) {
 
   // ⑧ 載入旅伴資料（登入用戶 + 訪客）
   const memberUids = currentTrip.members || [currentUser.uid];
-  const loginMembers = await Promise.all(memberUids.map(async uid => {
-    try { const d = await getDoc(doc(db,'users',uid)); return { uid, type:'user', ...d.data() }; }
-    catch { return { uid, type:'user', name:'旅伴' }; }
+  const loginMembers = await Promise.all(memberUids.map(async (uid, idx) => {
+    const fallbackName = '旅伴 ' + (idx + 1); // 抓不到個人資料時，至少用編號分辨不同的人
+    const isMe = uid === currentUser.uid;
+    try {
+      // 自己：讀完整私人文件（含 email）；其他旅伴：只讀公開資料子文件（不含 email）
+      const d = isMe
+        ? await getDoc(doc(db,'users',uid))
+        : await getDoc(doc(db,'users',uid,'public','profile'));
+      const data = d.exists() ? d.data() : {};
+      const merged = { uid, type:'user', ...data };
+      if (!merged.nickname && !merged.displayName && !merged.name) merged.name = fallbackName;
+      return merged;
+    } catch {
+      return { uid, type:'user', name: fallbackName };
+    }
   }));
   const guestMembers = (currentTrip.guests || []).map(function(g) {
     return { uid: g.guestId, type: 'guest', name: g.name, guestId: g.guestId };
@@ -3317,7 +3338,10 @@ async function fetchLobbyMemberProfiles(trips) {
   if (toFetch.length === 0) return;
   await Promise.all(toFetch.map(async uid => {
     try {
-      const d = await getDoc(doc(db,'users',uid));
+      const isMe = uid === currentUser.uid;
+      const d = isMe
+        ? await getDoc(doc(db,'users',uid))
+        : await getDoc(doc(db,'users',uid,'public','profile'));
       window._lobbyMemberCache[uid] = d.exists() ? d.data() : {};
     } catch { window._lobbyMemberCache[uid] = {}; }
   }));
@@ -3913,7 +3937,7 @@ function openInvite() {
           </div>
           <div style="flex:1;min-width:0">
             <div style="font-size:.88rem;font-weight:500;color:var(--text)">${m.nickname || m.displayName || m.name || '旅伴'}${isMe ? ' <span style="font-size:.65rem;color:var(--text3)">(你)</span>' : ''}</div>
-            <div style="font-size:.68rem;color:var(--text3)">${m.email || ''}</div>
+            <div style="font-size:.68rem;color:var(--text3)">${isMe ? ((currentUser && currentUser.email) || '') : ''}</div>
           </div>
           ${!isMe && (currentTrip && currentTrip.createdBy) === (currentUser && currentUser.uid) ? `<button onclick="removeMember('${m.uid}')" style="font-size:.7rem;color:var(--text3);padding:4px 8px;background:var(--bg2);border-radius:6px">移除</button>` : ''}
         </div>`;
@@ -3994,6 +4018,7 @@ async function saveAvatarProfile() {
 
   try {
     await setDoc(doc(db,'users',currentUser.uid), updates, { merge: true });
+    if (Object.keys(updates).length) syncPublicProfile(updates);
     if (nickname) userNickname = nickname;
     const me = membersData.find(m => m.uid === currentUser.uid);
     if (me) {
@@ -4009,6 +4034,7 @@ async function saveAvatarProfile() {
 async function selectAvatarEmoji(emoji) {
   try {
     await setDoc(doc(db,'users',currentUser.uid), { avatarEmoji: emoji }, { merge: true });
+    syncPublicProfile({ avatarEmoji: emoji });
     // 更新本地 membersData
     const me = membersData.find(m => m.uid === currentUser.uid);
     if (me) me.avatarEmoji = emoji;
@@ -4025,6 +4051,7 @@ async function uploadAvatarPhoto(input) {
     showToast('上傳中...');
     const url = await compressAndUpload(file, `avatars/${currentUser.uid}.jpg`);
     await setDoc(doc(db,'users',currentUser.uid), { avatarUrl: url }, { merge: true });
+    syncPublicProfile({ avatarUrl: url });
     const me = membersData.find(m => m.uid === currentUser.uid);
     if (me) { me.avatarUrl = url; delete me.avatarEmoji; }
     renderMemberAvatars();
@@ -4232,10 +4259,26 @@ onAuthStateChanged(auth, async user => {
       await setDoc(doc(db,'users',user.uid), {
         displayName: user.displayName,
         photoURL: user.photoURL,
-        email: user.email,
-        lastSeen: Date.now()
+        lastSeen: Date.now(),
+        email: deleteField() // 清掉舊版寫入的 email，這份文件現在旅伴之間互相可讀，email 不該留在這
       }, { merge: true });
     } catch(e) { splashDebug('用戶資料儲存失敗: ' + e.code); }
+
+    // 一次性搬遷：把舊版存在私人文件裡的暱稱/頭貼，複製一份到新的公開子文件
+    // 這樣既有使用者不用重新設定一次暱稱，旅伴才看得到
+    try {
+      const pubRef = doc(db,'users',user.uid,'public','profile');
+      const pubSnap = await getDoc(pubRef);
+      if (!pubSnap.exists() || !pubSnap.data().nickname) {
+        const meSnap = await getDoc(doc(db,'users',user.uid));
+        const meData = meSnap.exists() ? meSnap.data() : {};
+        const toCopy = {};
+        if (meData.nickname) toCopy.nickname = meData.nickname;
+        if (meData.avatarEmoji) toCopy.avatarEmoji = meData.avatarEmoji;
+        if (meData.avatarUrl) toCopy.avatarUrl = meData.avatarUrl;
+        if (Object.keys(toCopy).length) await setDoc(pubRef, toCopy, { merge: true });
+      }
+    } catch(e) { /* 搬遷失敗不影響登入，靜默略過 */ }
 
     // Fade out splash
     setTimeout(() => {
@@ -6959,6 +7002,7 @@ async function saveNicknameInline() {
   userNickname = name;
   try {
     await setDoc(doc(db,'users',currentUser.uid), { nickname: name }, { merge: true });
+    syncPublicProfile({ nickname: name });
   } catch(e) {}
   initBibiGreeting();
 }
@@ -6970,6 +7014,7 @@ async function saveNickname() {
   userNickname = name;
   try {
     await setDoc(doc(db,'users',currentUser.uid), { nickname: name }, { merge: true });
+    syncPublicProfile({ nickname: name });
   } catch(e) {}
   closeModal('modal-nickname');
   initBibiGreeting();
