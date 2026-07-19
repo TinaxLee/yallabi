@@ -3743,11 +3743,11 @@ function openEditTrip(tripId) {
   // 切換 Modal 標題與按鈕為「編輯」模式
   const titleEl = document.querySelector('#modal-new-trip .modal-title');
   if (titleEl) titleEl.textContent = '✏️ 編輯旅行';
-  const saveBtn = document.querySelector('#modal-new-trip .btn-primary');
+  const saveBtn = document.getElementById('nt-submit-btn');
   if (saveBtn) { saveBtn.textContent = '儲存變更'; saveBtn.onclick = saveEditedTrip; }
 
   // Load existing guests into ntGuests
-  ntGuests = ((currentTrip && currentTrip.guests) || []).map(function(g) {
+  ntGuests = (trip.guests || []).map(function(g) {
     return { name: g.name, guestId: g.guestId };
   });
   renderGuestTags();
@@ -3802,7 +3802,7 @@ function _resetNewTripModal() {
   _editingTripId = null;
   const titleEl = document.querySelector('#modal-new-trip .modal-title');
   if (titleEl) titleEl.textContent = '新增旅行';
-  const saveBtn = document.querySelector('#modal-new-trip .btn-primary');
+  const saveBtn = document.getElementById('nt-submit-btn');
   if (saveBtn) { saveBtn.textContent = '新增旅行'; saveBtn.onclick = createNewTrip; }
   const form = document.getElementById('form-new-trip');
   if (form) form.reset();
@@ -6433,7 +6433,7 @@ window.toggleWeatherForecast = toggleWeatherForecast;
           </div>
           <div style="font-size:.65rem;color:var(--text3);margin-top:4px">按 Enter 或點新增，點名字標籤刪除</div>
         </div>
-        <button class="btn btn-primary btn-full" onclick="createNewTrip()">新增旅行</button>
+        <button id="nt-submit-btn" class="btn btn-primary btn-full" onclick="createNewTrip()">新增旅行</button>
       </form>
     </div>
   </div>
