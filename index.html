@@ -933,7 +933,7 @@ function renderExpenseSummary() {
     var m = members[bi];
     var paid = (totals[m.uid] && totals[m.uid].paid) || 0;
     var owed = (totals[m.uid] && totals[m.uid].owed) || 0;
-    balances.push({ uid: m.uid, name: m.name || m.displayName || '旅伴', balance: paid - owed });
+    balances.push({ uid: m.uid, name: m.nickname || m.displayName || m.name || '旅伴', balance: paid - owed });
   }
   var transfers = calculateMinTransfers(balances);
 
@@ -1128,7 +1128,7 @@ function renderSplitParticipants(savedParticipants) {
   if (label) label.textContent = '分攤對象（可取消部分成員）';
   grid.innerHTML = members.map(function(m) {
     var uid = m.uid;
-    var name = m.name || m.displayName || '旅伴';
+    var name = m.nickname || m.displayName || m.name || '旅伴';
     var isChecked = !savedParticipants || savedParticipants.includes(uid);
     return '<label class="exp-participant-chip' + (isChecked ? ' selected' : '') + '" id="chip-' + uid + '">'
       + '<input type="checkbox" class="exp-participant-cb" value="' + uid + '"'
@@ -1262,7 +1262,7 @@ function renderPayerOptions() {
   const sel = document.getElementById('exp-payer');
   if (!sel) return;
   const options = membersData.length > 0 ? membersData : [{ uid: (currentUser && currentUser.uid), name:'我' }];
-  sel.innerHTML = options.map(m => `<option value="${m.uid}">${m.name || m.displayName || '我'}</option>`).join('');
+  sel.innerHTML = options.map(m => `<option value="${m.uid}">${m.nickname || m.displayName || m.name || '我'}</option>`).join('');
 }
 
 async function saveExpense() {
@@ -3214,13 +3214,25 @@ async function selectTrip(tripId) {
   console.log('[Yallabi] selectTrip:', tripId, currentTrip.name || '');
 }
 
+// 頭貼來源判斷：依使用者設定的偏好（自訂圖案／暱稱首字／Google大頭貼）決定要顯示什麼
+// 沒設定過偏好的人，維持原本「自訂圖案 → Google大頭貼 → 文字首字」的順序，行為不變
+function resolveAvatarContent(m) {
+  const initial = (m.nickname || m.displayName || m.name || '旅')[0].toUpperCase();
+  const source = m.avatarSource || 'custom';
+  if (source === 'initial') return { type: 'initial', value: initial };
+  if (source === 'google') return m.photoURL ? { type: 'img', value: m.photoURL } : { type: 'initial', value: initial };
+  // 'custom'（預設）
+  if (m.avatarUrl) return { type: 'img', value: m.avatarUrl };
+  if (m.avatarEmoji) return { type: 'emoji', value: m.avatarEmoji };
+  if (m.photoURL) return { type: 'img', value: m.photoURL };
+  return { type: 'initial', value: initial };
+}
+
 function getMemberAvatar(m) {
-  // 三層優先順序：自訂照片 → emoji → Google 首字
-  if (m.avatarUrl) return `<img src="${m.avatarUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
-  if (m.avatarEmoji) return `<span style="font-size:14px;line-height:1">${m.avatarEmoji}</span>`;
-  if (m.photoURL) return `<img src="${m.photoURL}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
-  const initial = (m.nickname || m.displayName || m.name || '?')[0].toUpperCase();
-  return `<span style="font-size:.65rem;font-weight:700">${initial}</span>`;
+  const r = resolveAvatarContent(m);
+  if (r.type === 'img') return `<img src="${r.value}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+  if (r.type === 'emoji') return `<span style="font-size:14px;line-height:1">${r.value}</span>`;
+  return `<span style="font-size:.65rem;font-weight:700">${r.value}</span>`;
 }
 
 function renderMemberAvatars() {
@@ -3361,17 +3373,14 @@ function renderLobbyAvatarFromCache(uid, i) {
   const fg = textColors[i % textColors.length];
   const ml = i > 0 ? 'margin-left:-6px;' : '';
   const base = 'width:26px;height:26px;border-radius:50%;border:2px solid var(--bg);'+ml+'flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center;';
-  if (m.avatarUrl) {
-    return '<div style="'+base+'background:'+bg+'"><img src="'+m.avatarUrl+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%"></div>';
+  const r = resolveAvatarContent(m);
+  if (r.type === 'img') {
+    return '<div style="'+base+'background:'+bg+'"><img src="'+r.value+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%"></div>';
   }
-  if (m.avatarEmoji) {
-    return '<div style="'+base+'background:'+bg+';font-size:.8rem">'+m.avatarEmoji+'</div>';
+  if (r.type === 'emoji') {
+    return '<div style="'+base+'background:'+bg+';font-size:.8rem">'+r.value+'</div>';
   }
-  if (m.photoURL) {
-    return '<div style="'+base+'background:'+bg+'"><img src="'+m.photoURL+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%"></div>';
-  }
-  const initial = (m.nickname||m.displayName||m.name||'旅')[0].toUpperCase();
-  return '<div style="'+base+'background:'+bg+';color:'+fg+';font-size:.62rem;font-weight:700">'+initial+'</div>';
+  return '<div style="'+base+'background:'+bg+';color:'+fg+';font-size:.62rem;font-weight:700">'+r.value+'</div>';
 }
 
 // 訪客（旅伴名單）沒有真實帳號、沒有大頭貼資料，直接用名字首字畫頭像圈圈
@@ -3385,6 +3394,52 @@ function renderLobbyGuestAvatar(guest, i) {
   const initial = ((guest.name||'旅'))[0].toUpperCase();
   return '<div style="'+base+'background:'+bg+';color:'+fg+';font-size:.62rem;font-weight:700">'+initial+'</div>';
 }
+
+// 大廳卡片點頭像 → 不用進入行程也能看這趟旅行的完整成員/訪客名單
+function openLobbyMemberList(tripId) {
+  const trip = (tripsData || []).find(t => t.id === tripId);
+  if (!trip) return;
+  const container = document.getElementById('lobby-members-list');
+  if (!container) return;
+  const colors = ['#c2d9e8','#e8dff0','#d8edd8','#f0dde0','#f0ecd8'];
+  const textColors = ['#3a5f75','#5a4070','#4a6a3a','#7a3d46','#7a6a3a'];
+  let i = 0;
+  let rows = '';
+  (trip.members || []).forEach(function(uid) {
+    const m = window._lobbyMemberCache[uid] || {};
+    const name = m.nickname || m.displayName || m.name || ('旅伴 ' + (i + 1));
+    const bg = colors[i % colors.length];
+    const fg = textColors[i % textColors.length];
+    let avatarHtml;
+    const r = resolveAvatarContent(m);
+    if (r.type === 'img') {
+      avatarHtml = '<img src="' + r.value + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
+    } else if (r.type === 'emoji') {
+      avatarHtml = '<span style="font-size:1.1rem">' + r.value + '</span>';
+    } else {
+      avatarHtml = '<span style="font-size:.9rem;font-weight:700;color:' + fg + '">' + r.value + '</span>';
+    }
+    rows += '<div style="display:flex;align-items:center;gap:12px;padding:10px 4px;border-bottom:1px solid var(--border)">'
+      + '<div style="width:36px;height:36px;border-radius:50%;background:' + bg + ';display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden">' + avatarHtml + '</div>'
+      + '<span style="font-size:.9rem;font-weight:600;color:var(--text)">' + name + (uid === (currentUser && currentUser.uid) ? '<span style="font-size:.7rem;color:var(--text3);margin-left:6px">(你)</span>' : '') + '</span>'
+      + '</div>';
+    i++;
+  });
+  (trip.guests || []).forEach(function(g) {
+    const bg = colors[i % colors.length];
+    const fg = textColors[i % textColors.length];
+    rows += '<div style="display:flex;align-items:center;gap:12px;padding:10px 4px;border-bottom:1px solid var(--border)">'
+      + '<div style="width:36px;height:36px;border-radius:50%;background:' + bg + ';display:flex;align-items:center;justify-content:center;flex-shrink:0">'
+      + '<span style="font-size:.9rem;font-weight:700;color:' + fg + '">' + (g.name || '旅')[0].toUpperCase() + '</span>'
+      + '</div>'
+      + '<span style="font-size:.9rem;font-weight:600;color:var(--text)">' + g.name + '<span style="font-size:.7rem;color:var(--text3);margin-left:6px">未使用 App</span></span>'
+      + '</div>';
+    i++;
+  });
+  container.innerHTML = rows || '<div style="text-align:center;padding:20px;color:var(--text3);font-size:.85rem">還沒有旅伴</div>';
+  openModal('modal-lobby-members');
+}
+window.openLobbyMemberList = openLobbyMemberList;
 
 function renderLobbyAvatars(trip) {
   const members = trip.members || [];
@@ -3400,7 +3455,7 @@ function renderLobbyAvatars(trip) {
   const extraEl = extra > 0
     ? '<div style="width:26px;height:26px;border-radius:50%;background:var(--bg2);color:var(--text3);font-size:.58rem;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid var(--bg);margin-left:-6px;flex-shrink:0">+'+extra+'</div>'
     : '';
-  return '<div style="display:flex;align-items:center">'+memberAvatars+guestAvatars+extraEl+'</div>';
+  return '<div onclick="event.stopPropagation();openLobbyMemberList(\''+trip.id+'\')" style="display:flex;align-items:center;cursor:pointer">'+memberAvatars+guestAvatars+extraEl+'</div>';
 }
 
 function switchLobbyTab(tab) {
@@ -4019,6 +4074,9 @@ function openAvatarEditor() {
     `<button onclick="selectTempEmoji(this, '${e}')" style="width:44px;height:44px;border-radius:50%;font-size:22px;border:2px solid ${e === currentEmoji ? 'var(--accent)' : 'transparent'};background:var(--bg2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s">${e}</button>`
   ).join('');
 
+  // 頭貼來源：反映目前已儲存的偏好，預設「自訂圖案」
+  selectAvatarSourceTemp((me && me.avatarSource) || 'custom');
+
   closeModal('modal-invite');
   openModal('modal-avatar-editor');
 }
@@ -4029,22 +4087,36 @@ function selectTempEmoji(btn, emoji) {
   btn.dataset.selected = 'true';
 }
 
+function selectAvatarSourceTemp(source) {
+  document.querySelectorAll('#avatar-source-tabs button').forEach(function(b) {
+    const active = b.dataset.source === source;
+    b.dataset.selected = active ? 'true' : 'false';
+    b.style.background = active ? 'var(--accent-soft)' : 'var(--bg2)';
+    b.style.borderColor = active ? 'var(--accent)' : 'var(--border)';
+    b.style.color = active ? 'var(--accent)' : 'var(--text3)';
+  });
+}
+window.selectAvatarSourceTemp = selectAvatarSourceTemp;
+
 async function saveAvatarProfile() {
   const nicknameInput = document.getElementById('avatar-nickname-input');
   const nickname = (nicknameInput && nicknameInput.value).trim();
   const selectedBtn = document.querySelector('#avatar-emoji-grid button[data-selected="true"]');
   const emoji = (selectedBtn && selectedBtn.textContent).trim() || '';
+  const selectedSourceBtn = document.querySelector('#avatar-source-tabs button[data-selected="true"]');
+  const avatarSource = (selectedSourceBtn && selectedSourceBtn.dataset.source) || 'custom';
 
-  const updates = {};
+  const updates = { avatarSource: avatarSource };
   if (nickname) updates.nickname = nickname;
   if (emoji) updates.avatarEmoji = emoji;
 
   try {
     await setDoc(doc(db,'users',currentUser.uid), updates, { merge: true });
-    if (Object.keys(updates).length) syncPublicProfile(updates);
+    syncPublicProfile(updates);
     if (nickname) userNickname = nickname;
     const me = membersData.find(m => m.uid === currentUser.uid);
     if (me) {
+      me.avatarSource = avatarSource;
       if (nickname) me.nickname = nickname;
       if (emoji) me.avatarEmoji = emoji;
     }
@@ -6345,6 +6417,18 @@ window.toggleWeatherForecast = toggleWeatherForecast;
   </div>
 </div>
 
+<!-- Modal: 大廳卡片 - 旅行成員快覽（不用進入行程就看得到）-->
+<div id="modal-lobby-members" class="modal-overlay">
+  <div class="modal-sheet" style="height:auto;max-height:60dvh;border-radius:var(--r-xl) var(--r-xl) 0 0">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <span class="modal-title">旅行成員</span>
+      <button class="modal-close" onclick="closeModal('modal-lobby-members')">✕</button>
+    </div>
+    <div class="modal-body" id="lobby-members-list"></div>
+  </div>
+</div>
+
 <!-- Modal: Add Packing -->
 <div id="modal-pack" class="modal-overlay">
   <div class="modal-sheet" style="height:auto;max-height:60dvh;border-radius:var(--r-xl) var(--r-xl) 0 0">
@@ -6542,6 +6626,16 @@ window.toggleWeatherForecast = toggleWeatherForecast;
         <div style="font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:10px">選一個 Emoji 頭貼</div>
         <div id="avatar-emoji-grid" style="display:flex;flex-wrap:wrap;gap:8px"></div>
       </div>
+      <!-- 頭貼顯示方式 -->
+      <div style="margin-top:20px">
+        <div style="font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:8px">頭貼顯示方式</div>
+        <div id="avatar-source-tabs" style="display:flex;gap:6px">
+          <button type="button" data-source="custom" onclick="selectAvatarSourceTemp('custom')" style="flex:1;padding:8px 4px;border-radius:var(--r-md);font-size:.72rem;font-weight:700;border:1.5px solid var(--border);background:var(--bg2);color:var(--text3);cursor:pointer">自訂圖案</button>
+          <button type="button" data-source="initial" onclick="selectAvatarSourceTemp('initial')" style="flex:1;padding:8px 4px;border-radius:var(--r-md);font-size:.72rem;font-weight:700;border:1.5px solid var(--border);background:var(--bg2);color:var(--text3);cursor:pointer">暱稱首字</button>
+          <button type="button" data-source="google" onclick="selectAvatarSourceTemp('google')" style="flex:1;padding:8px 4px;border-radius:var(--r-md);font-size:.72rem;font-weight:700;border:1.5px solid var(--border);background:var(--bg2);color:var(--text3);cursor:pointer">Google 大頭貼</button>
+        </div>
+        <div style="font-size:.65rem;color:var(--text3);margin-top:6px;line-height:1.5">選「Google 大頭貼」但你的帳號沒有設定過的話，會自動退回顯示暱稱首字。</div>
+      </div>
       <button class="btn btn-primary btn-full" style="margin-top:20px" onclick="saveAvatarProfile()">儲存</button>
     </div>
   </div>
@@ -6686,11 +6780,12 @@ window.toggleWeatherForecast = toggleWeatherForecast;
     <div id="btab-content-chat" style="flex:1;display:flex;flex-direction:column;overflow:hidden">
       <!-- 暱稱 + 風格設定列 -->
       <div id="bibi-nickname-bar" style="padding:12px 14px 10px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--bg2)">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
           <div style="font-size:.8125rem;font-weight:600;color:var(--text3);white-space:nowrap">叫我</div>
           <input id="bibi-nickname-field" type="text" placeholder="輸入暱稱..." style="flex:1;background:var(--surface);border:1.5px solid var(--border);border-radius:999px;padding:6px 12px;font-size:.875rem;font-weight:600;color:var(--text);outline:none;transition:border-color .2s;min-width:0" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" onkeydown="if(event.key==='Enter')saveBibiNickname()">
           <button onclick="saveBibiNickname()" style="flex-shrink:0;font-size:.8125rem;font-weight:700;color:var(--accent);background:none;border:none;padding:0 2px;white-space:nowrap">儲存</button>
         </div>
+        <div style="font-size:.65rem;color:var(--text3);margin-bottom:10px;line-height:1.4">這是你整個 app 的暱稱，旅伴也會看到，不只 Bibi 對話用</div>
         <div style="font-size:.8125rem;font-weight:700;color:var(--text3);margin-bottom:6px">Bibi 風格</div>
         <div style="position:relative">
           <div id="bibi-style-chips" style="display:flex;gap:6px;overflow-x:auto;scrollbar-width:none"></div>
