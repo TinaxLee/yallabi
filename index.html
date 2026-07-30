@@ -751,7 +751,7 @@ const EXPENSE_CATEGORIES = [
 
 let expensePersonFilter = 'all';
 let exchangeRates = {};
-let baseCurrency = localStorage.getItem('yallabi_base_cur') || 'TWD';
+let baseCurrency = 'TWD'; // 實際值會在進入行程時依該趟行程記憶重新載入，見 selectTrip()
 let tripCurrency = 'THB';
 let ratesUpdatedAt = null;
 
@@ -801,11 +801,19 @@ async function fetchExchangeRates() {
 function changeBaseCurrency(cur) {
   if (!cur) return;
   baseCurrency = cur;
-  localStorage.setItem('yallabi_base_cur', cur);
+  try { if (currentTripId) localStorage.setItem('yallabi_base_cur_' + currentTripId, cur); } catch(e) {}
   // Re-fetch rates with new base then re-render
   fetchExchangeRates();
 }
 window.changeBaseCurrency = changeBaseCurrency;
+
+// 每趟行程各自記住上次選的結算幣別；沒選過的話，多國/不確定情境下用台幣最安全
+function loadBaseCurrencyForTrip(tripId) {
+  try {
+    const saved = tripId && localStorage.getItem('yallabi_base_cur_' + tripId);
+    baseCurrency = saved || 'TWD';
+  } catch(e) { baseCurrency = 'TWD'; }
+}
 
 function updateRatesTimestamp() {
   const el = document.getElementById('rates-updated-at');
@@ -3149,6 +3157,9 @@ async function selectTrip(tripId) {
   expensesData  = []; flightsData  = []; hotelsData  = [];
   journalData   = [];
   if (journalUnsub) { journalUnsub(); journalUnsub = null; }
+
+  // ③.5 載入這趟行程記住的結算幣別（每趟行程各自獨立，沒選過就用台幣）
+  loadBaseCurrencyForTrip(tripId);
 
   // ④ 立即套用新旅行主題色 + 重設 Day filter
   applyTripTheme(currentTrip.country);
