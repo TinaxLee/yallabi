@@ -67,6 +67,7 @@ const storage = getStorage(app);
 // ════════════════════════════════════════
 const COUNTRY_THEMES = {
   default:   { flag:'🌍', name:'全球',       nameEn:'Global',     theme:'default'   },
+  taiwan:    { flag:'🇹🇼', name:'台灣',      nameEn:'Taiwan',     theme:'default'   },
   thailand:  { flag:'🇹🇭', name:'泰國',      nameEn:'Thailand',   theme:'thailand'  },
   japan:     { flag:'🇯🇵', name:'日本',      nameEn:'Japan',      theme:'japan'     },
   france:    { flag:'🇫🇷', name:'法國',      nameEn:'France',     theme:'france'    },
@@ -85,6 +86,7 @@ const COUNTRY_THEMES = {
 // ════════════════════════════════════════
 const GEOGRAPHY_DATA = {
   default:    { key:'default',    flag:'🌍', name:'全球',      nameEn:'Global',       theme:'default',   currency:'TWD', tz:'Asia/Taipei',            cities:[] },
+  taiwan:     { key:'taiwan',     flag:'🇹🇼', name:'台灣',     nameEn:'Taiwan',       theme:'default',   currency:'TWD', tz:'Asia/Taipei',            cities:['台北','台中','台南','高雄','台東','花蓮','墾丁','日月潭','九份','宜蘭','阿里山','澎湖','小琉球','溪頭'] },
   thailand:   { key:'thailand',   flag:'🇹🇭', name:'泰國',     nameEn:'Thailand',     theme:'thailand',  currency:'THB', tz:'Asia/Bangkok',           cities:['曼谷','清邁','普吉島','芭提雅','蘇美島','清萊','華欣','喀比','大城','拜縣'] },
   japan:      { key:'japan',      flag:'🇯🇵', name:'日本',     nameEn:'Japan',        theme:'japan',     currency:'JPY', tz:'Asia/Tokyo',             cities:['東京','大阪','京都','沖繩','北海道','名古屋','福岡','奈良','神戶','箱根','鎌倉','廣島'] },
   france:     { key:'france',     flag:'🇫🇷', name:'法國',     nameEn:'France',       theme:'france',    currency:'EUR', tz:'Europe/Paris',           cities:['巴黎','尼斯','馬賽','里昂','波爾多','史特拉斯堡','凡爾賽'] },
@@ -4603,10 +4605,12 @@ function renderCitySuggestions(countryKey) {
 function handleCountrySearch(query) {
   const dropdown = document.getElementById('country-autocomplete');
   if (!dropdown) return;
-  const q = query.trim().toLowerCase();
+  if (window._countrySearchComposing) return; // 中文輸入法組字中，先不搜尋，避免抓到選字選到一半的候選字
+  const norm = s => (s || '').toLowerCase().replace(/臺/g, '台'); // 臺/台 是同一個字的兩種寫法，搜尋時視為相同
+  const q = norm(query.trim());
   const list = GEO_LIST || [];
   const results = q === '' ? list
-    : list.filter(g => g.name.includes(q) || g.nameEn.toLowerCase().includes(q) || g.cities.some(c => c.includes(q)));
+    : list.filter(g => norm(g.name).includes(q) || g.nameEn.toLowerCase().includes(q) || g.cities.some(c => norm(c).includes(q)));
 
   if (results.length === 0) {
     const item = document.createElement('div');
@@ -6489,7 +6493,7 @@ window.toggleWeatherForecast = toggleWeatherForecast;
             <label class="form-label">目的地</label>
             <div id="nt-country-display" style="display:flex;align-items:center;gap:8px;padding:0 12px;border-radius:var(--r-md);border:1.5px solid var(--border);background:var(--surface);min-height:46px;cursor:pointer" onclick="document.getElementById('nt-country-search').focus()">
               <span id="nt-country-flag" style="font-size:1.4rem;flex-shrink:0">🌍</span>
-              <input id="nt-country-search" type="text" autocomplete="off" placeholder="搜尋國家... 如：日本、France" style="border:none;outline:none;font-size:.9rem;color:var(--text);background:transparent;flex:1;padding:4px 0;min-width:80px" oninput="handleCountrySearch(this.value)" onfocus="handleCountrySearch(this.value)">
+              <input id="nt-country-search" type="text" autocomplete="off" placeholder="搜尋國家... 如：日本、France" style="border:none;outline:none;font-size:.9rem;color:var(--text);background:transparent;flex:1;padding:4px 0;min-width:80px" oninput="handleCountrySearch(this.value)" onfocus="handleCountrySearch(this.value)" oncompositionstart="window._countrySearchComposing=true" oncompositionend="window._countrySearchComposing=false;handleCountrySearch(this.value)">
             </div>
             <input type="hidden" id="nt-country" value="default">
             <div id="country-autocomplete" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r-md);box-shadow:0 8px 24px var(--shadow);z-index:200;max-height:220px;overflow-y:auto"></div>
