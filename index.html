@@ -4912,6 +4912,7 @@ async function fetchWeather(trip) {
   }
 
   const COORDS = {
+    taiwan:    [{city:'台北',zh:'台北',lat:25.0330,lon:121.5654},{city:'台中',zh:'台中',lat:24.1477,lon:120.6736},{city:'台南',zh:'台南',lat:22.9997,lon:120.2270},{city:'高雄',zh:'高雄',lat:22.6273,lon:120.3014},{city:'台東',zh:'台東',lat:22.7583,lon:121.1444},{city:'花蓮',zh:'花蓮',lat:23.9871,lon:121.6015},{city:'墾丁',zh:'墾丁',lat:21.9481,lon:120.7972},{city:'日月潭',zh:'日月潭',lat:23.8632,lon:120.9155},{city:'九份',zh:'九份',lat:25.1097,lon:121.8446},{city:'宜蘭',zh:'宜蘭',lat:24.7021,lon:121.7378},{city:'阿里山',zh:'阿里山',lat:23.5138,lon:120.8033},{city:'澎湖',zh:'澎湖',lat:23.5711,lon:119.5793},{city:'小琉球',zh:'小琉球',lat:22.3416,lon:120.3711},{city:'溪頭',zh:'溪頭',lat:23.6714,lon:120.7894}],
     thailand:  [{city:'Bangkok',zh:'曼谷',lat:13.7563,lon:100.5018},{city:'Phuket',zh:'普吉島',lat:7.8804,lon:98.3923},{city:'Chiang Mai',zh:'清邁',lat:18.7883,lon:98.9853},{city:'Pattaya',zh:'芭達雅',lat:12.9236,lon:100.8825}],
     japan:     [{city:'Tokyo',zh:'東京',lat:35.6762,lon:139.6503},{city:'Osaka',zh:'大阪',lat:34.6937,lon:135.5023},{city:'Kyoto',zh:'京都',lat:35.0116,lon:135.7681},{city:'Sapporo',zh:'札幌',lat:43.0618,lon:141.3545}],
     france:    [{city:'Paris',zh:'巴黎',lat:48.8566,lon:2.3522},{city:'Nice',zh:'尼斯',lat:43.7102,lon:7.2620},{city:'Lyon',zh:'里昂',lat:45.7640,lon:4.8357}],
@@ -5100,7 +5101,8 @@ function getTripTimezones(trip) {
   });
 
   const result = [{ label: '台灣', tz: 'Asia/Taipei', isHome: true }];
-  if (order.length === 0 && geoData && geoData.name) {
+  if (order.length === 0 && geoData && geoData.name && countryTz !== 'Asia/Taipei') {
+    // 只有「國家本身時區跟台灣不同」才需要補這一行；純國內行程（例如台灣旅遊）不用重複顯示台灣
     result.push({ label: geoData.name, tz: countryTz });
   } else {
     order.forEach(function(tz) {
