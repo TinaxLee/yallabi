@@ -1237,6 +1237,107 @@ function renderExpenseChart() {
   });
 }
 
+// ══════════════════════════════════════════════════════
+// 掃描收據（方案 A+）：OCR 辨識金額 + 店名 + 猜測分類
+// 全部在手機瀏覽器端跑，不用另外的付費 API，辨識結果一定可以手動修改
+// ══════════════════════════════════════════════════════
+let _tesseractLoaded = false;
+function loadTesseract() {
+  if (_tesseractLoaded && window.Tesseract) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    if (window.Tesseract) { _tesseractLoaded = true; resolve(); return; }
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+    script.onload = () => { _tesseractLoaded = true; resolve(); };
+    script.onerror = () => reject(new Error('Tesseract 載入失敗'));
+    document.head.appendChild(script);
+  });
+}
+
+// 分類關鍵字對照表：收據文字裡出現這些字樣，就猜測對應分類
+const RECEIPT_CATEGORY_KEYWORDS = {
+  food: ['restaurant','cafe','coffee','starbucks','mcdonald','kfc','pizza','burger','食堂','食','飯','麵','咖啡','레스토랑','식당','카페','커피','อาหาร','ร้านอาหาร'],
+  transport: ['taxi','uber','grab','metro','subway','bus','train','station','計程車','捷運','公車','地鐵','기차','버스','택시','지하철'],
+  hotel: ['hotel','hostel','resort','inn','旅館','飯店','民宿','호텔','게스트하우스'],
+  shopping: ['mart','market','store','shop','7-eleven','7-11','family mart','daiso','uniqlo','購物','百貨','商店','다이소','마트','상점','편의점'],
+  ticket: ['ticket','museum','park','admission','門票','票券','입장권','티켓'],
+  massage: ['spa','massage','按摩','足浴','스파','마사지'],
+};
+
+function guessCategoryFromText(text) {
+  const lower = text.toLowerCase();
+  for (const [catId, keywords] of Object.entries(RECEIPT_CATEGORY_KEYWORDS)) {
+    if (keywords.some(k => lower.includes(k.toLowerCase()))) return catId;
+  }
+  return null;
+}
+
+function guessAmountFromText(text) {
+  // 優先找「合計/總額/TOTAL」這幾行附近的數字，抓不到再退回「整張收據裡最大的數字」
+  const lines = text.split('\n');
+  const totalKeywords = ['total','합계','총액','小計','合計','금액','sum'];
+  let candidates = [];
+  lines.forEach(line => {
+    const isTotalLine = totalKeywords.some(k => line.toLowerCase().includes(k));
+    const nums = line.match(/[\d][\d,]{1,}(\.\d+)?/g) || [];
+    nums.forEach(n => {
+      const val = parseFloat(n.replace(/,/g, ''));
+      if (!isNaN(val) && val > 0) candidates.push({ val, priority: isTotalLine ? 2 : 1 });
+    });
+  });
+  if (candidates.length === 0) return null;
+  candidates.sort((a, b) => (b.priority - a.priority) || (b.val - a.val));
+  return candidates[0].val;
+}
+
+function guessNameFromText(text) {
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  // 跳過太短或整行都是數字/符號的行，取第一個「看起來像店名」的行
+  const candidate = lines.find(l => l.length >= 2 && l.length <= 20 && !/^[\d\s,.\-\/:]+$/.test(l));
+  return candidate || '';
+}
+
+async function handleReceiptScan(file) {
+  if (!file) return;
+  const statusEl = document.getElementById('exp-scan-status');
+  const btnEl = document.getElementById('exp-scan-btn');
+  if (statusEl) { statusEl.style.display = 'block'; statusEl.textContent = '載入辨識功能中...'; }
+  if (btnEl) btnEl.disabled = true;
+  try {
+    await loadTesseract();
+    if (statusEl) statusEl.textContent = '圖片辨識中，請稍候...（第一次會比較久）';
+    const result = await window.Tesseract.recognize(file, 'eng+kor', {
+      logger: m => {
+        if (statusEl && m.status === 'recognizing text') {
+          statusEl.textContent = '辨識中... ' + Math.round((m.progress || 0) * 100) + '%';
+        }
+      }
+    });
+    const text = (result && result.data && result.data.text) || '';
+    if (!text.trim()) {
+      if (statusEl) statusEl.textContent = '辨識不出文字，請直接手動輸入';
+      return;
+    }
+    const amount = guessAmountFromText(text);
+    const name = guessNameFromText(text);
+    const catId = guessCategoryFromText(text);
+
+    const nameField = document.getElementById('exp-name');
+    const amountField = document.getElementById('exp-amount');
+    const catField = document.getElementById('exp-category');
+    if (name && nameField) nameField.value = name;
+    if (amount && amountField) { amountField.value = amount; updateExpensePreview(); }
+    if (catId && catField) catField.value = catId;
+
+    if (statusEl) statusEl.textContent = '✓ 已自動帶入辨識結果，記得確認金額跟名稱是否正確';
+  } catch (e) {
+    if (statusEl) statusEl.textContent = '辨識失敗，請直接手動輸入';
+  } finally {
+    if (btnEl) btnEl.disabled = false;
+  }
+}
+window.handleReceiptScan = handleReceiptScan;
+
 function openAddExpense(editId = null) {
   if (!currentTripId) { showToast('請先建立或選擇一個旅行'); return; }
   const modal = document.getElementById('modal-expense');
@@ -1262,6 +1363,10 @@ function openAddExpense(editId = null) {
     delete form.dataset.editId;
     document.getElementById('modal-expense-title').textContent = '記下一筆花費';
   }
+  const scanStatus = document.getElementById('exp-scan-status');
+  const scanInput = document.getElementById('exp-receipt-input');
+  if (scanStatus) { scanStatus.style.display = 'none'; scanStatus.textContent = ''; }
+  if (scanInput) scanInput.value = '';
   renderPayerOptions();
   openModal('modal-expense');
 }
@@ -6249,6 +6354,11 @@ window.toggleWeatherForecast = toggleWeatherForecast;
       <button class="modal-close" onclick="closeModal('modal-expense')">✕</button>
     </div>
     <div class="modal-body">
+      <button type="button" onclick="document.getElementById('exp-receipt-input').click()" id="exp-scan-btn" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;margin-bottom:14px;border-radius:var(--r-md);border:1.5px dashed var(--accent);background:var(--accent-soft);color:var(--accent);font-size:.875rem;font-weight:700;cursor:pointer">
+        📷 掃描收據，自動帶入金額
+      </button>
+      <input id="exp-receipt-input" type="file" accept="image/*" capture="environment" style="display:none" onchange="handleReceiptScan(this.files[0])">
+      <div id="exp-scan-status" style="display:none;text-align:center;font-size:.78rem;color:var(--text3);margin:-6px 0 14px"></div>
       <form id="form-expense" onsubmit="return false">
         <div class="card-dashed mb-4">
           <div class="form-group">
